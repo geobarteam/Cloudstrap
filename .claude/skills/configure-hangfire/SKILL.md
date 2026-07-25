@@ -1,15 +1,15 @@
 ---
 name: configure-hangfire
-description: "Use when setting up, configuring, or extending Hangfire with Cloudstrap.Hangfire in a Cloudstrap project. Covers choosing the host topology (Worker / BFF / CFE / WFE proxy), registration (AddHangfireForCloudstrap), scheduling-vs-dashboard wiring, recurring tasks (IBackgroundRecurringTask), one-off & delayed jobs (ICloudstrapBackgroundJobScheduler), dashboard authorization (BFF trusted-subsystem / CFE role / WFE proxy), per-job config overrides, read-only dashboard, server/storage tuning, health checks, and the SQL-client/schema requirements. Use for: adding Hangfire to a new host, serving the dashboard behind a WFE⇒BFF proxy, adding a recurring job, enqueuing background work, fixing 'No registered recurring task' / disappearing jobs / 401 dashboard errors."
+description: "Use when setting up, configuring, or extending Hangfire with Cloudstrap.Hangfire in a Cloudstrap project. Covers choosing the host topology (processing host, dashboard host, proxy host), registration (AddHangfireForCloudstrap), scheduling-vs-dashboard wiring, recurring tasks (IBackgroundRecurringTask), one-off & delayed jobs (ICloudstrapBackgroundJobScheduler), dashboard authorization for protected hosts or proxy hosts, per-job config overrides, read-only dashboard, server/storage tuning, health checks, and the SQL-client/schema requirements. Use for: adding Hangfire to a new host, serving the dashboard behind a proxy, adding a recurring job, enqueuing background work, fixing 'No registered recurring task' / disappearing jobs / 401 dashboard errors."
 metadata:
-  argument-hint: "Describe your scenario, e.g. 'add Hangfire to my worker', 'serve the dashboard on the BFF behind a WFE', 'add a daily recurring job', 'enqueue a one-off job', 'add a Hangfire health check'"
+  argument-hint: "Describe your scenario, e.g. 'add Hangfire to my worker', 'serve the dashboard behind a proxy', 'add a daily recurring job', 'enqueue a one-off job', 'add a Hangfire health check'"
 ---
 
 # Configure Hangfire — Setup, Scheduling, Dashboard & Jobs
 
 Guide for wiring up `Cloudstrap.Hangfire` in a consuming Cloudstrap project. Covers the host
 topology decision, DI registration, scheduling vs dashboard, recurring tasks, one-off/delayed jobs, dashboard
-authorization (incl. the WFE⇒BFF proxy), per-job config overrides, tuning, and health checks.
+authorization for protected hosts and proxy hosts, per-job config overrides, tuning, and health checks.
 
 > **Source of truth.** The package's own guide is the authoritative deep reference:
 > [`src/Cloudstrap.Hangfire/README.md`](../../../src/Cloudstrap.Hangfire/README.md).
@@ -18,7 +18,7 @@ authorization (incl. the WFE⇒BFF proxy), per-job config overrides, tuning, and
 > `ICloudstrapBackgroundJobScheduler`, `HangfireForCloudstrapOptions`, `HealthChecks/`, `Authorization/`) — not external
 > Hangfire docs that may be outdated. Always read before answering questions about keys, defaults, or behavior.
 
-> **Related skills:** dashboard token claims / trusted-subsystem propagation → **`configure-sts`**;
+> **Related skills:** dashboard token claims / service-to-service token propagation → **`configure-sts`**;
 > the Hangfire SQL schema in a DACPAC → **`database-changes`**.
 
 ---
@@ -30,9 +30,8 @@ authorization (incl. the WFE⇒BFF proxy), per-job config overrides, tuning, and
 2. **Dashboard-only hosts set `runServer: false`** — so they never dequeue a job whose implementation they
    don't reference (which would throw `No registered recurring task named 'X'` on every tick).
 3. **All participating hosts share the same storage** — the same connection string / database.
-4. **The `IBackgroundRecurringTask` implementations live with the processing host** (Worker, BFF-no-worker, or
-   CFE-monolith). The dashboard renders jobs via the shared `RecurringTaskRunner` dispatcher and needs no
-   reference to the implementation assembly.
+4. **The `IBackgroundRecurringTask` implementations live with the processing host**. The dashboard renders jobs
+   via the shared `RecurringTaskRunner` dispatcher and needs no reference to the implementation assembly.
 
 ---
 
@@ -42,13 +41,12 @@ Before generating anything, explore the developer's project and infer as much as
 
 1. **Existing Hangfire wiring** — search for `AddHangfireForCloudstrap`, `UseHangfireForCloudstrap`,
    `UseHangfireDashboardForCloudstrap`, `UseHangfireForCloudstrapWithoutDashboard`.
-2. **Host type** — is this a Worker (`Host.CreateApplicationBuilder`), a BFF/WebApi/Blazor-Server
-   (`WebApplication`), a CFE (Blazor WASM host), or a WFE (Blazor Server front-end that proxies to a BFF)?
+2. **Host role** — is this a processing host, a dashboard host, or a proxy host?
 3. **Existing tasks** — search for `IBackgroundRecurringTask` implementations.
 4. **Package references** — is `Cloudstrap.Hangfire` referenced? Is a SQL client present
    (`Microsoft.Data.SqlClient`, or transitively via `Microsoft.EntityFrameworkCore.SqlServer`)?
-5. **Proxy** — for a WFE, is `Cloudstrap.Hangfire.Proxy` or `Cloudstrap.Proxy`
-   referenced, and is there a BFF entry in `Cloudstrap:HttpClientServiceRegistry`?
+5. **Proxy** — if the host is a proxy, is `Cloudstrap.Hangfire.Proxy` or `Cloudstrap.Proxy`
+   referenced, and is there an upstream service entry in `Cloudstrap:HttpClientServiceRegistry`?
 
 Use this to skip questions you can already answer.
 
@@ -59,18 +57,13 @@ Use this to skip questions you can already answer.
 Every host opts into a subset of four concerns: **storage**, **processing server**, **scheduling**,
 **dashboard**. Pick the row that matches the host being configured:
 
-| Host | `AddHangfireForCloudstrap` | `runServer` | Schedules? | Holds task impls? | Dashboard | Dashboard auth |
-|------|----------------------|-------------|-----------|-------------------|-----------|----------------|
-| **Worker** (processing) | ✅ | `true` | ✅ `UseHangfireForCloudstrapWithoutDashboard` | ✅ | — | — |
-| **BFF with worker** (dashboard-only) | ✅ | **`false`** | **no** | no | ✅ `UseHangfireDashboardForCloudstrapBff` | trusted-subsystem (audience) |
-| **BFF no worker** (does everything) | ✅ | `true` | ✅ | ✅ | ✅ `UseHangfireDashboardForCloudstrapBff` | trusted-subsystem (audience) |
-| **CFE monolith** | ✅ | `true` | ✅ | ✅ | ✅ `UseHangfireDashboardForCloudstrapCfe` | end-user role |
-| **CFE with worker** (dashboard-only) | ✅ | **`false`** | **no** | no | ✅ `UseHangfireDashboardForCloudstrapCfe` | end-user role |
-| **WFE** (front-end proxy) | — | — | — | — | forwards `/hangfire` | end-user role (front door) |
+| Host role | `AddHangfireForCloudstrap` | `runServer` | Schedules? | Holds task impls? | Dashboard | Dashboard auth |
+|-----------|----------------------|-------------|-----------|-------------------|-----------|----------------|
+| **Processing host** | ✅ | `true` | ✅ `UseHangfireForCloudstrapWithoutDashboard` | ✅ | — | — |
+| **Dashboard-only host** | ✅ | **`false`** | **no** | no | ✅ `UseHangfireDashboardForCloudstrap` | authenticated user or service token |
+| **Single host (processing + dashboard)** | ✅ | `true` | ✅ | ✅ | ✅ `UseHangfireDashboardForCloudstrap` | authenticated user or service token |
+| **Proxy host** | — | — | — | — | forwards `/hangfire` | authenticated user or configured proxy policy |
 | **Self-hosted / dev (legacy)** | ✅ | `true` | ✅ `UseHangfireForCloudstrap` (combined) | ✅ | ✅ (same call) | localhost-only |
-
-**Maps to the four canonical scenarios** (full walkthroughs in the package README §5–§8):
-A = WFE⇒BFF⇒Worker · B = WFE⇒BFF (no worker) · C = CFE monolith · D = CFE⇒Worker.
 
 ---
 
@@ -119,43 +112,41 @@ ILoggerFactory loggerFactory = BootstrapLoggerFactory.Create(cloudstrapConfigura
 host.UseHangfireForCloudstrapWithoutDashboard(loggerFactory);   // schedules + reconciles orphans. Processing host ONLY.
 ```
 
-### Dashboard-only BFF (behind a WFE) — trusted-subsystem auth, never schedules
-
-```csharp
-app.UseAuthentication();   // validates the JWT bearer audience == this BFF's workload id
-app.UseAuthorization();
-app.UseHangfireDashboardForCloudstrapBff(loggerFactory);        // trusts any token the audience validates. No role, no scheduling.
-```
-
-### CFE — end-user role auth
+### Dashboard-only host (behind a proxy) — never schedules
 
 ```csharp
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseHangfireDashboardForCloudstrapCfe(loggerFactory);        // role from Cloudstrap:Hangfire:Dashboard:AccessRole
+app.UseHangfireDashboardForCloudstrap(loggerFactory);        // no scheduling; serves the dashboard only
 ```
 
-### BFF-no-worker (Scenario B) — schedule AND serve the dashboard (it's the processing host too)
+### Protected host — end-user role auth
+
+```csharp
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseHangfireDashboardForCloudstrap(loggerFactory);        // role from Cloudstrap:Hangfire:Dashboard:AccessRole if configured
+```
+
+### Single host (processing + dashboard)
 
 ```csharp
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseHangfireForCloudstrapWithoutDashboard(loggerFactory);    // WebApplication is an IHost
-app.UseHangfireDashboardForCloudstrapBff(loggerFactory);
+app.UseHangfireDashboardForCloudstrap(loggerFactory);
 ```
 
-### WFE — forward `/hangfire` to the BFF (no storage/server on the WFE)
-
-Recommended (purpose-built, bundles proxy + a role-gated front-door policy):
+### Proxy host — forward `/hangfire` to an upstream host
 
 ```csharp
 using Cloudstrap.Hangfire.Proxy;
 
-builder.Services.AddHangfireDashboardProxyForCloudstrapWfe(cloudstrapConfiguration, HttpClientServicesNames.MyBff);
+builder.Services.AddHangfireDashboardProxyForCloudstrap(cloudstrapConfiguration, HttpClientServicesNames.MyUpstream);
 ...
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseHangfireDashboardProxyForCloudstrapWfe();                // maps /hangfire → BFF, RequireAuthorization(role policy)
+app.UseHangfireDashboardProxyForCloudstrap();                // maps /hangfire → upstream host, RequireAuthorization(policy)
 ```
 
 Lower-level building blocks (custom path or policy):
@@ -163,10 +154,10 @@ Lower-level building blocks (custom path or policy):
 ```csharp
 using Cloudstrap.Proxy;
 
-builder.Services.AddCloudstrapTrustedSubsystemProxy(cloudstrapConfiguration, HttpClientServicesNames.MyBff);
+builder.Services.AddCloudstrapProxy(cloudstrapConfiguration, HttpClientServicesNames.MyUpstream);
 ...
-app.MapCloudstrapTrustedSubsystemForwarder("/hangfire", HttpClientServicesNames.MyBff)
-   .RequireAuthorization(/* your end-user role policy */);
+app.MapCloudstrapForwarder("/hangfire", HttpClientServicesNames.MyUpstream)
+   .RequireAuthorization(/* your policy */);
 ```
 
 ### Legacy self-hosted / dev — combined schedule + dashboard (localhost-only auth)
@@ -281,49 +272,43 @@ builder.Services.AddHealthChecks()
 ## appsettings — what each host needs
 
 The connection string is **root-level** `ConnectionStrings:DefaultConnection` (NOT under `Cloudstrap`); it's used
-when `AddHangfireForCloudstrap(..., connectionString: null)`. The security keys are detailed in the package README
-§9.6 (WFE registry entry, BFF JWT audience, dashboard access role). Minimal per host:
+when `AddHangfireForCloudstrap(..., connectionString: null)`. Minimal per host:
 
 ```jsonc
-// Processing host (Worker / BFF-no-worker / CFE-monolith)
+// Processing host
 {
   "ConnectionStrings": {
     "DefaultConnection": "Server=tcp:my-sql.database.windows.net;Database=Hangfire;Authentication=Active Directory Default;Encrypt=True"
   },
   "Cloudstrap": { "Hangfire": {
-    "Dashboard": { "AccessRole": "HangfireOps" },   // CFE/WFE end-user role; empty => any authenticated user
+    "Dashboard": { "AccessRole": "HangfireOps" },   // empty => any authenticated user
     "Jobs": { "ReminderSender": { "Cron": "0 8 * * *", "Enabled": true } }
   } }
 }
 ```
 
 ```jsonc
-// Dashboard-only BFF (trusted-subsystem) — Dashboard:AccessRole is IGNORED by the BFF filter
+// Dashboard-only host
 {
-  "ConnectionStrings": { "DefaultConnection": "...same database as the worker..." },
-  "Cloudstrap": { "Security": { "Authentication": { "JwtBearer": { "Audience": "my-bff" } } } }
+  "ConnectionStrings": { "DefaultConnection": "...same database as the processing host..." }
 }
 ```
 
 ```jsonc
-// WFE proxy — key must match the bffHttpClientKey passed in code
+// Proxy host
 {
   "Cloudstrap": {
     "Hangfire": { "Dashboard": { "AccessRole": "HangfireOps" } },
     "HttpClientServiceRegistry": {
-      "MyBff": {
-        "BaseAddress": "https://my-bff.example.com",  // BFF cert SAN must cover this host
-        "AddClientAccessToken": true,                          // REQUIRED: attaches the client-credentials token
-        "TokenRequestParameters": { "Scope": "my-bff", "Resource": "my-bff" }  // token aud must == BFF Audience
+      "MyUpstream": {
+        "BaseAddress": "https://upstream.example.com",
+        "AddClientAccessToken": true,
+        "TokenRequestParameters": { "Scope": "upstream", "Resource": "upstream" }
       }
     }
   }
 }
 ```
-
-> **Two values must line up:** the WFE token audience (from `Scope`/`Resource`) == the BFF's
-> `Cloudstrap:Security:Authentication:JwtBearer:Audience`, and the registry `BaseAddress` host == the BFF
-> certificate SAN (TLS is pinned to that host).
 
 ---
 
@@ -349,9 +334,9 @@ when `AddHangfireForCloudstrap(..., connectionString: null)`. The security keys 
 | More than one host schedules | Same as above — only the processing host schedules. |
 | Hosts use different databases/connection strings | They won't see each other's jobs. All share one storage. |
 | Dashboard method called before `UseAuthentication`/`UseAuthorization` | `HttpContext.User` is empty → 401/403. Move it after. |
-| WFE forwards but `AddClientAccessToken` is false / missing token params | The BFF rejects the unauthenticated forward. |
-| WFE token audience ≠ BFF `JwtBearer:Audience` | The BFF's bearer auth rejects the token → 401. |
-| Registry `BaseAddress` host not covered by the BFF cert SAN | TLS validation fails (`RemoteCertificateNameMismatch`). |
+| Proxy forwards but `AddClientAccessToken` is false / missing token params | The upstream host rejects the unauthenticated forward. |
+| Proxy token audience ≠ upstream auth audience | The upstream host rejects the token → 401. |
+| Registry `BaseAddress` host not covered by the upstream cert SAN | TLS validation fails (`RemoteCertificateNameMismatch`). |
 | Host calls `AddHangfireForCloudstrap` with no SQL client referenced | Runtime failure resolving an ADO.NET provider. Add `Microsoft.Data.SqlClient`. |
 | Relying on auto schema in TST/VAL/PRD | Schema isn't auto-prepared there; deploy it via DACPAC. |
 | Per-job `Cron`/`TimeZone` set under the wrong key | Must be `Cloudstrap:Hangfire:Jobs:<JobId>` (matches the task's `JobId`). |
@@ -365,8 +350,8 @@ when `AddHangfireForCloudstrap(..., connectionString: null)`. The security keys 
   scheduling.
 - **Recurring jobs disappear after deploy/restart** → more than one host schedules → only the processing host
   schedules; dashboard-only hosts call a `UseHangfireDashboardForCloudstrap*` method and nothing else.
-- **Dashboard 401/403 behind the WFE** → middleware order, mismatched `/hangfire` prefix, or the WFE's
-  client-credentials token not targeting the BFF audience.
+- **Dashboard 401/403 behind the proxy** → middleware order, mismatched `/hangfire` prefix, or the proxy's
+  client-credentials token not targeting the upstream audience.
 
 (Full troubleshooting in the package README §12.)
 
@@ -377,10 +362,10 @@ when `AddHangfireForCloudstrap(..., connectionString: null)`. The security keys 
 - [ ] Topology chosen (Step 1) — exactly one processing host; dashboard-only hosts are `runServer: false`.
 - [ ] `AddHangfireForCloudstrap` called on every participating host; `backgroundRecurringTaskAssemblies` set on the processing host if impls aren't in the calling assembly.
 - [ ] Only the processing host calls `UseHangfireForCloudstrapWithoutDashboard` (or legacy `UseHangfireForCloudstrap`).
-- [ ] Dashboard method matches the host (`...Bff` / `...Cfe`) and runs after `UseAuthentication`/`UseAuthorization`.
-- [ ] WFE (if any): proxy registered, `/hangfire` forwarded with `RequireAuthorization`, registry entry present with `AddClientAccessToken: true`.
+- [ ] Dashboard method matches the host role and runs after `UseAuthentication`/`UseAuthorization`.
+- [ ] Proxy host (if any): proxy registered, `/hangfire` forwarded with `RequireAuthorization`, registry entry present with `AddClientAccessToken: true`.
 - [ ] All hosts share one storage (`ConnectionStrings:DefaultConnection`).
 - [ ] `IBackgroundRecurringTask` impls live with the processing host; `JobId` stable.
 - [ ] A SQL client (`Microsoft.Data.SqlClient`) is referenced; TST/VAL/PRD schema deployed via DACPAC.
-- [ ] BFF `JwtBearer:Audience` == WFE token audience; `BaseAddress` host == BFF cert SAN.
+- [ ] Upstream auth audience matches the proxy token audience; `BaseAddress` host matches the upstream cert SAN.
 - [ ] Optional: per-job overrides, `HangfireForCloudstrapOptions` tuning, read-only dashboard, health check.

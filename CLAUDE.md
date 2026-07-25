@@ -4,7 +4,7 @@ You are the coding assistant for the Cloudstrap library suite. Read and investig
 
 ## Context
 
-**Cloudstrap** is an MIT-licensed, opinionated open-source .NET library suite that simplifies bootstrapping ASP.NET Core applications for deployment on Azure: configuration + KeyVault, observability (OpenTelemetry + Application Insights), auth (OIDC / client credentials), messaging (Wolverine), background jobs (Hangfire), Blazor Server/WASM helpers, health checks, YARP trusted-subsystem proxy, ops dashboard, cookie consent, and analytics.
+**Cloudstrap** is an MIT-licensed, opinionated open-source .NET library suite that simplifies bootstrapping ASP.NET Core applications for deployment on Azure: configuration + KeyVault, observability (OpenTelemetry + Application Insights), auth (OIDC / client credentials), messaging (Wolverine), background jobs (Hangfire), Blazor server and WebAssembly helpers, health checks, YARP trusted-subsystem proxy, ops dashboard, cookie consent, and analytics.
 
 - Repo: https://github.com/geobarteam/Cloudstrap · packages published to nuget.org under the `Cloudstrap.*` prefix.
 - .NET 10 · MSTest v4 · Moq · `Microsoft.Testing.Platform` · StyleCop (`TreatWarningsAsErrors`).
@@ -41,7 +41,7 @@ Cloudstrap is being extracted from a private enterprise library (`Nihdi.Core.Con
 
 6. Match existing patterns in the same namespace/feature before writing new code. `TreatWarningsAsErrors` is non-negotiable — zero warnings.
 
-7. Follow the Mandatory Workflow Rules below — one step per reply, RED before GREEN, stop at every HUMAN GATE.
+7. Follow the Mandatory Workflow Rules below — one RGR cycle per step, RED before GREEN, stop only at every 🛑 HUMAN GATE (placed at slice boundaries, not after every step).
 
 ---
 
@@ -71,12 +71,12 @@ src/
 ├── Cloudstrap.Authentication.OpenIdConnect/   # OIDC login (stock handler + Duende ATM)
 ├── Cloudstrap.Authentication.ClientCredentials/ # Client-credentials tokens (Duende ATM)
 ├── Cloudstrap.BlazorServer/             # Blazor Server helpers (tracing, typed HttpClient)
-├── Cloudstrap.BlazorWasm/               # WASM BFF client: cookie auth, XSRF, Refit
+├── Cloudstrap.BlazorWasm/               # WebAssembly client helpers: cookie auth, XSRF, Refit
 ├── Cloudstrap.BlazorCommon/             # Shared Blazor abstractions (ErrorHandler, Navigation, ViewModel)
 ├── Cloudstrap.Messaging/                # Wolverine: transports, outbox, conventions
 ├── Cloudstrap.Messaging.AzureBlob/      # Blob claim-check middleware
 ├── Cloudstrap.Hangfire/                 # Hangfire scheduler + recurring-task discovery
-├── Cloudstrap.Hangfire.Proxy/           # Dashboard proxying through a WFE
+├── Cloudstrap.Hangfire.Proxy/           # Dashboard proxying through a proxy host
 ├── Cloudstrap.Proxy/                    # YARP trusted-subsystem forwarder
 ├── Cloudstrap.CookieConsent/            # Cookie consent UI components
 ├── Cloudstrap.Analytics/                # IAnalyticsTracker abstraction (consent-gated)
@@ -211,12 +211,12 @@ dotnet format src/Cloudstrap.sln --verify-no-changes         # Format check
 
 1. **Show plan before coding.**
 2. **Steps must be verifiable and testable** — every step must produce observable behavior (a test passes, an API responds, a UI renders) and at least one automated test. Merge code-review-only steps into an adjacent step.
-3. **ONE step per reply** — never batch multiple steps.
+3. **One RGR cycle per step, steps run back-to-back** — never blend two steps into one cycle; between 🛑 HUMAN GATEs, continue from step to step without waiting for user approval.
 4. **RED before GREEN** — write a failing test, confirm it fails, then write production code.
 5. **Every bugfix gets a regression test first.**
-6. **Code analysis before gate** — after REFACTOR, fix all violations, then run the full test suite.
-7. **🛑 STOP at HUMAN GATE** — do not proceed until user confirms.
-8. **Mark done** — after approval, change `[ ]` → `[x]` in `_plans/<FeatureName>.md`. First unchecked `[ ]` = next step.
+6. **Code analysis every step** — after REFACTOR, fix all violations, then run the full test suite.
+7. **🛑 STOP at HUMAN GATE** — plans place gates at slice boundaries, not after every step; do not proceed past one until the user confirms.
+8. **Mark done** — check a step's `Done` box when its VERIFY passes; check a gate's boxes only after user approval. First unchecked `[ ]` in `_plans/<FeatureName>.md` = where to resume.
 
 ---
 
@@ -240,11 +240,13 @@ Each implementation step follows this cycle:
    - dotnet build src/Cloudstrap.sln → succeeded (zero warnings/errors)
    - {{TestExePath}} → all pass
    - dotnet format src/Cloudstrap.sln --verify-no-changes → exit 0
-9. 🛑 STOP — present results, wait for user approval
-10. MARK DONE — update _plans/<FeatureName>.md: change [ ] → [x] on this step's checkboxes
+9. MARK DONE — update _plans/<FeatureName>.md: change [ ] → [x] on this step's Done checkbox
+10. NEXT — if the next plan item is a step, start its cycle immediately (no user approval
+    between steps); if it is a 🛑 HUMAN GATE, STOP: present the results of all steps since
+    the previous gate, wait for user approval, then check the gate's boxes
 ```
 
-**Never batch steps. Never skip RED. Never skip CODE ANALYSIS. Never proceed past 🛑 without user confirmation.**
+**Never blend steps into one cycle. Never skip RED. Never skip CODE ANALYSIS. Never proceed past a 🛑 HUMAN GATE without user confirmation.**
 
 ---
 
@@ -253,7 +255,7 @@ Each implementation step follows this cycle:
 The agent **stops and waits for user confirmation** at every gate. This is non-negotiable:
 
 - After plan creation → user approves before any code is written.
-- After each step → user reviews the changes before the next step starts.
+- At each 🛑 HUMAN GATE (end of each vertical slice, plus any extra gates the plan places) → user reviews all steps completed since the previous gate before the next slice starts. Steps between gates do not require user review.
 - Before any Git push → user confirms the branch/commit/PR.
 - Risk area changes (auth, public API surface, shared contracts, dependency updates) → user explicitly reviews.
 
@@ -293,7 +295,7 @@ The agent **stops and waits for user confirmation** at every gate. This is non-n
 
 | File | `applyTo` pattern | Content |
 |------|------------------|---------|
-| [blazor.md](.claude/instructions/blazor.md) | `src/Cloudstrap.Blazor*/**` | BFF auth, HTTP client registration, distributed tracing, Scrutor scanning |
+| [blazor.md](.claude/instructions/blazor.md) | `src/Cloudstrap.Blazor*/**` | browser-auth patterns, HTTP client registration, distributed tracing, Scrutor scanning |
 | [functional.md](.claude/instructions/functional.md) | `src/Cloudstrap.Functional/**` | `Result<T>`, `Unit`, `Preconditions`, `ICommandHandler` conventions |
 | [nuget-packaging.md](.claude/instructions/nuget-packaging.md) | `**/*.csproj` | MSBuild packaging, GitVersion SemVer, SourceLink |
 | [public-api.md](.claude/instructions/public-api.md) | `src/Cloudstrap*/**` | XML docs, sealed-by-default, guard clauses, `CancellationToken`, `ObsoleteAttribute` |

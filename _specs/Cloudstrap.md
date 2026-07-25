@@ -1,6 +1,6 @@
 # Spec: Cloudstrap — Open-Source Extraction of Nihdi.Core.Configuration
 
-> **Source reference**: file paths in this spec (e.g. `Common/DistributedTracing/...`) refer to the private source repository `Nihdi.Core.Configuration`, locally at `D:\Data\gv10141\Repos\Common\Nihdi-Core-Configuration` (read-only reference for the extraction).
+> **Source reference**: file paths in this spec (e.g. `Common/DistributedTracing/...`) refer to the private source repository `Nihdi.Core.Configuration`, locally at `D:\source\Nihdi-Core-Configuration` (read-only reference for the extraction).
 
 ## User Story
 
@@ -151,9 +151,9 @@ The OTel pipeline in `Common/DistributedTracing/ServiceCollectionExtensions.cs` 
 ## Auth Replacement
 
 - `Cloudstrap.Authentication.OpenIdConnect`: `AddCloudstrapOpenIdConnect` — stock OIDC handler, secure cookie defaults, PKCE, token refresh via Duende ATM user-token management.
-- `Cloudstrap.Authentication.ClientCredentials`: `AddCloudstrapClientCredentials` — Duende ATM client-credentials token client with caching/renewal; feeds the typed `HttpClient` registration (`AddCloudstrapHttpServiceClient<TI,TImpl>`) and the YARP trusted-subsystem proxy.
+- `Cloudstrap.Authentication.ClientCredentials`: `AddCloudstrapClientCredentials` — Duende ATM client-credentials token client with caching/renewal; feeds the typed `HttpClient` registration (`AddCloudstrapHttpServiceClient<TI,TImpl>`) and proxy-forwarding helpers.
 - `Cloudstrap.WebApi`: `AddCloudstrapJwtBearer` — stock JWT bearer with hardened defaults (audience validation on, clock skew reduced, HTTPS metadata required outside Development).
-- BlazorWasm BFF pattern (cookie auth + XSRF + `BffAuthenticationStateProvider`) ports as-is — it has no internal dependencies.
+- Blazor WebAssembly browser-auth pattern (cookie auth + XSRF + `BffAuthenticationStateProvider`) ports as-is — it has no internal dependencies.
 
 ### Acceptance Criteria — Auth
 

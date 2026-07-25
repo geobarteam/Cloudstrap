@@ -1,13 +1,13 @@
 ---
 name: build-feature
-description: "Use when implementing a new feature or vertical slice in Cloudstrap after a _plans/<FeatureName>.md (repo root) is approved. Executes plan steps using Red-Green-Refactor. Each plan step is a vertical behavior slice that may touch multiple layers. Provides code templates for each layer as a reference catalog: Domain entity, Application command/query/handler, Persistence repository, Contracts DTOs, BFF controller, Database SQL, Presentation ViewModel/ServiceClient/Refit."
+description: "Use when implementing a new feature or vertical slice in Cloudstrap after a _plans/<FeatureName>.md (repo root) is approved. Executes plan steps using Red-Green-Refactor. Each plan step is a vertical behavior slice that may touch multiple layers. Provides code templates for each layer as a reference catalog: Domain entity, Application command/query/handler, Persistence repository, Contracts DTOs, API controller, Database SQL, Presentation ViewModel/ServiceClient/Refit."
 metadata:
   argument-hint: "Which plan step to implement, e.g. 'Step 1 — Display prescription list'"
 ---
 
 # Build Feature — Implementation Skill
 
-Execute approved `_plans/<FeatureName>.md` steps using Red-Green-Refactor, one step per reply, following existing patterns from the **reference feature** specified in the plan.
+Execute approved `_plans/<FeatureName>.md` steps using Red-Green-Refactor, running consecutive steps back-to-back and stopping **only** at 🛑 HUMAN GATE checkpoints, following existing patterns from the **reference feature** specified in the plan.
 
 Each plan step is a **vertical behavior slice** that may touch multiple layers in one cycle. The Layer Templates below are a **reference catalog** — look up the layers your current step needs, not a sequential order to follow.
 
@@ -27,24 +27,25 @@ When executing a plan step, check whether it is a stub step or a wire step, and 
 - A **`_plans/<FeatureName>.md`** (repo root) must exist and be **approved by the user** before using this skill.
 - The plan's **Overview** section names the reference feature. If it doesn't, **ask the user** which existing feature to use as the pattern before proceeding.
 - Read the plan step you're implementing. Read the reference feature files for **all layers** that step touches.
-- **Do not skip ahead.** Complete one step, prove it, stop at the gate.
+- **Do not skip past a gate.** Prove every step (full RGR cycle, VERIFY green), then continue directly to the next step — stop only when the next plan item is a 🛑 HUMAN GATE.
 
 ## Progress Tracking
 
-The plan file is a **living document**. Track progress using the HUMAN GATE checkboxes:
+The plan file is a **living document**. Track progress using the step `Done` checkboxes and the 🛑 HUMAN GATE checkboxes:
 
-- **Before starting**: read `_plans/<FeatureName>.md` and find the **first step with unchecked `[ ]`** checkboxes — that is the next step to implement. All steps with `[x]` are already completed and approved.
-- **After user approves a step**: update `_plans/<FeatureName>.md` — change `[ ]` to `[x]` on every checkbox in that step's **🛑 HUMAN GATE** section.
+- **Before starting**: read `_plans/<FeatureName>.md` and find the **first unchecked `[ ]`**. On a step's `Done` box → that is the next step to implement. On a 🛑 HUMAN GATE box → the preceding steps are done but not yet approved: stop and wait for the user.
+- **After a step's VERIFY passes**: change its `Done` checkbox to `[x]` and continue straight to the next step — no user approval between steps.
+- **After the user approves at a gate**: change `[ ]` to `[x]` on every checkbox in that **🛑 HUMAN GATE** block, then continue with the next step.
 - This ensures continuity across sessions — if the conversation restarts, any agent can read the plan and know exactly where to resume.
 
 ## Mandatory Workflow Per Step
 
-Follow the **Red-Green-Refactor-Proof Loop** defined in `AGENTS.md` — one step per reply, RED before GREEN, stop at every 🛑 HUMAN GATE, and delegate code-analysis sweeps to `@code-analysis`.
+Follow the **Red-Green-Refactor-Proof Loop** defined in `CLAUDE.md` — one RGR cycle per step, RED before GREEN, steps run back-to-back, stop **only** at a 🛑 HUMAN GATE, and delegate code-analysis sweeps to `@code-analysis`.
 
 Skill-specific notes:
 - **READ** — find the first step with unchecked `[ ]` in `_plans/<FeatureName>.md`; read the reference feature for every layer that step touches before writing any code.
 - **CODE ANALYSIS** — for non-trivial violation sweeps, invoke `@code-analysis` instead of running the grep manually; it owns the disabled-rule list and the common fix table.
-- **MARK DONE** — after the user approves, change `[ ]` → `[x]` on this step's HUMAN GATE checkboxes in the plan file so the next session can resume.
+- **MARK DONE** — when a step's VERIFY passes, check its `Done` box in the plan file; when the user approves at a gate, check that 🛑 HUMAN GATE's boxes — so the next session can resume.
 
 > **Note**: If packages are missing, run `dotnet restore src/Cloudstrap.sln --interactive` first.
 
@@ -237,12 +238,12 @@ DTOs are `record` types. No logic. No domain dependencies.
 
 ---
 
-### BFF Controller
+### API Controller
 
-Location: `src/Host/BFF/Controllers/<Feature>Controller.cs`:
+Location: `src/Host/Controllers/<Feature>Controller.cs`:
 
 ```csharp
-namespace Cloudstrap.Host.Bff.Controllers;
+namespace Cloudstrap.Host.Controllers;
 
 [ApiController]
 [Route("api/<feature-kebab>")]
@@ -314,10 +315,10 @@ CREATE TABLE [<Schema>].[<Entity>] (
 
 ### Presentation Layer
 
-**Refit Client** in `src/Presentation/Shared/ServiceClients/Bff/Clients/I<Feature>Client.cs`:
+**Refit Client** in `src/Presentation/Shared/ServiceClients/Clients/I<Feature>Client.cs`:
 
 ```csharp
-namespace Cloudstrap.Presentation.Shared.ServiceClients.Bff.Clients;
+namespace Cloudstrap.Presentation.Shared.ServiceClients.Clients;
 
 using Refit;
 
@@ -342,7 +343,7 @@ public interface I<Feature>Client
 ```csharp
 namespace Cloudstrap.Presentation.<Feature>.ServiceClients;
 
-using Cloudstrap.Presentation.Shared.ServiceClients.Bff;
+using Cloudstrap.Presentation.Shared.ServiceClients;
 
 public class <Feature>ServiceClient(I<Feature>Client client) : I<Feature>ServiceClient
 {

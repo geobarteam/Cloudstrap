@@ -1,6 +1,6 @@
 ---
 applyTo: "src/Cloudstrap.Blazor*/**"
-description: "Blazor conventions for BlazorWasm, BlazorServer, and BlazorCommon projects. Covers BFF auth, HTTP client registration, distributed tracing, Scrutor scanning, and shared abstractions."
+description: "Blazor conventions for BlazorWasm, BlazorServer, and BlazorCommon projects. Covers browser-auth patterns, HTTP client registration, distributed tracing, Scrutor scanning, and shared abstractions."
 ---
 
 # Blazor Project Conventions
@@ -11,9 +11,9 @@ description: "Blazor conventions for BlazorWasm, BlazorServer, and BlazorCommon 
 |---------|------|--------------|
 | **BlazorCommon** | Shared interfaces (`IErrorHandler`, `INavigationService`, `IViewModel`) | Scrutor only |
 | **BlazorServer** | SSR helpers, distributed tracing, typed HTTP clients | `Common` |
-| **BlazorWasm** | BFF cookie auth, XSRF, Refit HTTP clients | Minimal (no project refs) |
+| **BlazorWasm** | browser-based cookie auth, XSRF, Refit HTTP clients | Minimal (no project refs) |
 
-## BlazorWasm — BFF Cookie Authentication
+## BlazorWasm — Browser Cookie Authentication
 
 - Auth is **cookie-based** using `CookieHandler` which auto-attaches browser cookies and XSRF tokens.
 - XSRF token (`X-XSRF-TOKEN`) is sent on mutating HTTP methods (POST, PUT, DELETE, PATCH) via `AntiforgeryTokenStore`.

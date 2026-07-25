@@ -34,10 +34,10 @@ src/
 ├── Cloudstrap.WebApi/              # WebApi bootstrap: versioning, Swagger, middleware
 ├── Cloudstrap.Worker/              # Worker-service bootstrap, health listener
 ├── Cloudstrap.Authentication.*/    # OIDC + client-credentials (Duende ATM)
-├── Cloudstrap.Blazor*/             # BlazorServer, BlazorWasm (BFF auth), BlazorCommon
+├── Cloudstrap.Blazor*/             # BlazorServer, BlazorWasm (browser-auth), BlazorCommon
 ├── Cloudstrap.Messaging/           # Wolverine bootstrap: transports, outbox, conventions
 ├── Cloudstrap.Hangfire/            # Hangfire scheduler + recurring-task discovery
-├── Cloudstrap.Proxy/               # YARP trusted-subsystem forwarder
+├── Cloudstrap.Proxy/               # proxy forwarding helpers
 ├── Cloudstrap.Dashboard.*/         # Ops dashboard (contracts, API, components)
 ├── Cloudstrap.Analytics.*/         # IAnalyticsTracker + Matomo / GA4 adapters
 ├── Cloudstrap.Localization/        # Thin setup over ASP.NET Core localization
