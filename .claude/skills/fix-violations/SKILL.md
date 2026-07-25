@@ -1,104 +1,112 @@
 ---
 name: fix-violations
-description: "Use when fixing code analysis violations, StyleCop warnings (SA*), Roslyn analyzer issues (CA*), compiler warnings (CS*), or MSTest warnings. Quick-reference lookup of common fixes and the project's disabled rules. Use for: fixing build warnings, resolving SA/CA/CS codes, running dotnet format, understanding which rules are disabled."
+description: "Use when fixing compiler diagnostics and analyzer findings with modern .NET and C# best practices. Prefer the native compiler, SDK analyzers, and idiomatic code over legacy StyleCop-only guidance."
 metadata:
-  argument-hint: "Rule code or description, e.g. 'SA1210', 'fix all warnings', 'CA1822'"
+  argument-hint: "Warning code or symptom, e.g. 'CA1859', 'nullable warning', 'use collection expressions'"
 ---
 
-# Fix Violations — Code Analysis Quick Reference
+# Fix Violations — Modern .NET Code Analysis
 
-Fix .NET analyzer violations in Cloudstrap. Run `dotnet format` first, then fix remaining issues manually.
+Use this skill when you need to clean up warnings and analyzer violations in a modern .NET codebase. The default approach is to trust the native C# compiler, the .NET SDK analyzers, and broadly accepted community practices rather than older StyleCop-centric workflows.
 
-> **When to reach for this vs `@code-analysis`:** use this skill as a **lookup table** for a specific rule code (e.g. "how do I fix SA1210?"). Use the `@code-analysis` agent when you need to **orchestrate** a full sweep — it collects violations, runs the formatter, fixes them file-by-file, and verifies. This skill's tables are the agent's reference; keep them in sync.
->
-> `build-feature`'s CODE ANALYSIS step invokes `@code-analysis`, which in turn consults these tables.
+## Core principles
 
-## Step 1 — Auto-fix with `dotnet format`
+- Treat warnings as errors in build and CI whenever possible.
+- Prefer the compiler and SDK analyzers over custom style rule churn.
+- Favor modern C# and .NET idioms: nullable reference types, `required` members, pattern matching, switch expressions, collection expressions, `using` declarations, and `await using`.
+- Prefer clarity and correctness over unnecessary abstraction.
+- Only suppress a warning when there is a strong, documented reason.
+
+## Preferred workflow
+
+1. Build with warnings promoted to errors:
+
+```powershell
+dotnet build src/Cloudstrap.sln -warnaserror
+```
+
+2. Apply formatting and style fixes:
 
 ```powershell
 dotnet format src/Cloudstrap.sln
 ```
 
-This resolves many SA rules automatically (whitespace, spacing, ordering).
+3. Review the remaining diagnostics and fix them in this order:
+   - compiler errors and warnings
+   - nullable warnings
+   - SDK analyzer findings (`CA*`, `IDE*`)
+   - formatting issues
 
-## Step 2 — Collect remaining violations
+4. Re-run the build and verify the workspace is clean.
+
+## Modern rule families
+
+### Compiler and nullable issues
+
+| Warning | Typical fix |
+|--------|-------------|
+| `CS8600`, `CS8602`, `CS8604`, `CS8618` | Fix nullability with guards, annotations, `required`, `?`, `!`, or better null-handling flow. |
+| `CS0618` | Replace the obsolete API with the supported alternative. |
+| `CS1998` | Remove `async` when no await is used, or add the missing await. |
+| `CS4014` | Await the task or explicitly ignore the result when intentional. |
+
+### Common .NET analyzer rules
+
+| Rule | Fix |
+|------|-----|
+| `CA1001` | Ensure disposable types are properly disposed. |
+| `CA1031` | Avoid broad catch blocks; catch specific exceptions or rethrow appropriately. |
+| `CA1305` | Use culture-aware formatting and avoid implicit culture-sensitive conversions. |
+| `CA1307` | Specify `StringComparison` for string comparisons. |
+| `CA1310` | Prefer `string.Contains`/`StartsWith` with `StringComparison` rather than culture-sensitive overloads. |
+| `CA1508` | Simplify complex conditional logic or extract helper methods. |
+| `CA1822` | Mark helpers as `static` when they do not use instance state. |
+| `CA1848` | Use `LoggerMessage`-style logging patterns for high-volume logging paths when applicable. |
+| `CA1859` | Use `static` local functions where appropriate. |
+| `CA1860` | Prefer `string.Equals` with `StringComparison` over `==` for culture-aware semantics. |
+| `CA1861` | Avoid passing constant arrays as arguments; extract them to a `static readonly` field or use a collection expression. |
+| `CA2000` | Dispose objects created by `new` when ownership is clear. |
+| `CA2208` | Throw `ArgumentException`/`ArgumentNullException` with the correct constructor overload. |
+| `CA2249` | Prefer `ArgumentNullException.ThrowIfNull` over ad-hoc null checks. |
+
+### Modern IDE style rules
+
+| Rule | Fix |
+|------|-----|
+| `IDE0055` | Apply formatter output and consistent spacing. |
+| `IDE0060` | Remove unused parameters when the API allows it. |
+| `IDE0290` | Prefer primary constructors for simple types when it improves clarity. |
+| `IDE0300` | Use collection expressions such as `[]` instead of `new List<T>()`. |
+| `IDE0301` | Use `System.Collections.Frozen` or other modern collection patterns when appropriate. |
+| `IDE0320` | Simplify `file`-scoped namespace and using organization. |
+
+## Practical patterns to prefer
+
+- Use `ArgumentNullException.ThrowIfNull(value)` instead of manual null checks.
+- Use `string.Equals(a, b, StringComparison.Ordinal)` for ordinal comparisons.
+- Use `await using` for `IAsyncDisposable` resources.
+- Use `using var` for disposable values that should be scoped to a block.
+- Prefer `switch` expressions and pattern matching over large `if` chains.
+- Prefer `record` for immutable data containers when the model fits.
+- Use `sealed` classes by default unless inheritance is explicitly required.
+
+## What to avoid
+
+- Treating StyleCop as the primary source of truth for code quality.
+- Adding suppressions without a clear reason.
+- Chasing style-only changes that do not improve readability or correctness.
+- Using old patterns just because they are familiar if the compiler and analyzers already guide a better option.
+
+## Verification
+
+Use these commands to prove the result:
 
 ```powershell
-dotnet build src/Cloudstrap.sln 2>&1 | Select-String -Pattern ": (warning|error) (SA|SX|CA|CS|MSTEST)\d+" | Sort-Object | Get-Unique
+dotnet build src/Cloudstrap.sln -warnaserror
 ```
-
-Output format: `<FilePath>(<line>,<col>): warning <RuleId>: <Message> [<project>]`
-
-## Step 3 — Fix by rule
-
-### StyleCop Rules (SA*)
-
-| Rule | Fix |
-|------|-----|
-| **SA1210** | Sort `using` directives alphabetically (System first, then others) |
-| **SA1028** | Remove trailing whitespace on the line |
-| **SA1412** | Re-save as UTF-8 with BOM: `$c = Get-Content file -Raw; [IO.File]::WriteAllText(file, $c, [Text.UTF8Encoding]::new($true))` |
-| **SA1507** | Remove duplicate blank lines |
-| **SA1508** | Remove blank line before closing brace |
-| **SA1516** | Add/remove blank line between members as required |
-| **SA1515** | Single-line comment must be preceded by blank line |
-| **SA1127** | Generic type constraints must be on their own line |
-| **SA1128** | Constructor initializer must be on its own line |
-| **SA1201** | Elements must appear in the correct order (fields → constructors → properties → methods) |
-
-### Roslyn/CA Rules
-
-| Rule | Fix |
-|------|-----|
-| **CA1822** | Add `static` modifier to method that doesn't access instance data |
-| **CA1510** | Replace `if (x == null) throw new ArgumentNullException(...)` with `ArgumentNullException.ThrowIfNull(x)` |
-| **CA1827** | Replace `.Count() > 0` with `.Any()` |
-| **CA1829** | Use `Length`/`Count` property instead of `Count()` method |
-| **CA1861** | Avoid constant arrays as arguments — extract to `static readonly` field |
-| **CA2007** | Add `.ConfigureAwait(false)` to awaited tasks (library code only) |
-
-### SonarQube Rules (S*)
-
-| Rule | Fix |
-|------|-----|
-| **S1155** | Replace `.Count() == 0` with `!.Any()` |
-| **S1481** | Remove unused local variable |
-| **S6678** | Use PascalCase for structured log placeholders: `{doctorId}` → `{DoctorId}` |
-| **S2325** | Mark method as static (same as CA1822 — suppress if needed for module pattern) |
-
-### MSTest Rules
-
-| Rule | Fix |
-|------|-----|
-| **MSTEST0049** | Add `CancellationToken` parameter: use `TestContext.CancellationToken` |
-
-## Disabled Rules — DO NOT FIX
-
-These rules are disabled in `Directory.Build.props`. Skip them if they appear:
-
-```
-SA0001 SA1100 SA1101 SA1124 SA1200 SA1202 SA1309 SA1310 SA1413
-SA1502 SA1504 SA1512 SA1600 SA1601 SA1602 SA1604 SA1605 SA1609
-SA1611 SA1615 SA1618 SA1619 SA1629 SA1633 SA1634 SA1635 SA1636
-SA1637 SA1638 SA1640 SA1641 SA1649 SA1652 SX1101
-```
-
-Key disabled rules to remember:
-- **SA1309** disabled → `_camelCase` private fields are **allowed** (project convention)
-- **SA1600–SA1652** disabled → XML doc comments are **not required**
-- **SA1101** disabled → `this.` prefix is **not required**
-
-## Step 4 — Verify
 
 ```powershell
-dotnet build src/Cloudstrap.sln 2>&1 | Select-String -Pattern ": (warning|error) (SA|SX|CA|CS|MSTEST)\d+"
+dotnet format src/Cloudstrap.sln --verify-no-changes
 ```
 
-Output must be empty. If violations remain, repeat Step 3.
-
-## Analyzer Config
-
-- **Package**: `StyleCop.Analyzers.Unstable` v1.2.0.556
-- **`TreatWarningsAsErrors = true`** — non-excluded warnings are build errors
-- **StyleCop SA/SX rules** are in `WarningsNotAsErrors` — they produce warnings (not errors) but should still be fixed
-- Analyzer rules in `Directory.Build.props` are **fixed** — do not modify the file
+If warnings remain, fix them until both commands succeed.
