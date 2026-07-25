@@ -27,6 +27,8 @@
 | Localization | **Ported** as `Cloudstrap.Localization` — thin setup layer over stock ASP.NET Core localization (culture negotiation defaults, one-call registration), no custom localization engine. |
 | Messaging durability store | **SQL Server only in v1**, but behind a storage-provider seam (`AddCloudstrapMessaging(...).UseSqlServer(...)`) so PostgreSQL can be added later without breaking the API. |
 | Functional primitives | **Not ported.** The hand-rolled `Nihdi.Core.Functional` (`Result<T>`, `Option`, `Preconditions`) is replaced by the **LanguageExt.Core** NuGet package (MIT) as a direct dependency of consuming packages — there is no `Cloudstrap.Functional` package. Exact type mapping (e.g. `Fin<T>` / `Either<Error, T>` for success/failure, `Option<T>`, `Unit`) is settled when the first consuming package is planned. Decided 2026-07-25. |
+| Root settings type name | **`CloudstrapOptions`** (accessor `GetCloudstrapOptions()`) — renamed from `CloudstrapConfiguration` to follow the repo-wide `*Options` naming convention. Decided at the deliverable-1 spec gate, 2026-07-25 (see `_specs/1-CoreSettingsModel.md` Decision Log). |
+| Hosting targets | **Azure Web Apps + containers/Kubernetes only** (cloud-native); on-prem IIS/VM hosting is a Non-Goal. Features that exist to detect or accommodate on-prem hosting (e.g. the source's `IsRunningInAks()` cloud-vs-on-prem discriminator) are dropped in favor of explicit configuration and credential conventions (`DefaultAzureCredential`) that behave identically across supported targets. Decided 2026-07-25 (deliverable-1 amendment). |
 | Aspire posture | **Coexist without depending.** Zero `Aspire.*` package references in any shipped v1 package — Cloudstrap builds on the same substrate Aspire does (`Microsoft.Extensions.*`, OpenTelemetry .NET, Azure SDK) and must compose cleanly inside an Aspire app (see the **Aspire Coexistence** section, AC-ASP1–AC-ASP3). Deeper integration, if demand ever justifies it, is one optional post-v1 leaf package `Cloudstrap.Aspire`. Decided 2026-07-25. |
 
 ---
@@ -42,6 +44,7 @@
 
 - Not a fork kept in sync with Nihdi.Core.Configuration — Cloudstrap is a one-time extraction that evolves independently. NIHDI may later consume Cloudstrap and layer internal conventions on top, but that is a separate effort.
 - No multi-cloud abstraction: Azure is the opinionated target (KeyVault, Blob, Service Bus, Application Insights). The OTLP mode is the escape hatch for other backends, not a support commitment.
+- No on-prem hosting: the supported matrix is Azure Web Apps and containers/Kubernetes (cloud-native). No IIS/VM-era accommodations — no machine-name config conventions, no local log-file defaults, no runtime environment sniffing to bridge cloud-vs-on-prem behavior differences (decided 2026-07-25).
 - No backward compatibility with existing `Nihdi:*` configuration sections or `*ForNihdi` APIs.
 
 ---
@@ -70,7 +73,7 @@ Aspire and Cloudstrap sit on the same substrate — `Microsoft.Extensions.Config
 | Nihdi package | Cloudstrap package | Notes |
 |---|---|---|
 | Nihdi.Core.Functional | — *(not ported)* | Replaced by the **LanguageExt.Core** NuGet dependency (MIT); consuming packages reference it directly. |
-| Nihdi.Core.Configuration | `Cloudstrap.Core` | Settings model → `CloudstrapConfiguration`, section `Cloudstrap:`. **Break the inverted dependency on Dashboard.Contracts** — dashboard settings move to the dashboard package. |
+| Nihdi.Core.Configuration | `Cloudstrap.Core` | Settings model → `CloudstrapOptions`, section `Cloudstrap:`. **Break the inverted dependency on Dashboard.Contracts** — dashboard settings move to the dashboard package. |
 | Nihdi.Core.Configuration.Common | `Cloudstrap.Extensions` (config/KeyVault/HTTP) + `Cloudstrap.Observability` (Serilog, OTel, correlation) | Split the grab-bag: observability is the flagship feature and deserves its own package. |
 | — (new) | `Cloudstrap.Observability.AzureMonitor` | Azure Monitor exporter wiring, isolated so the base package stays exporter-agnostic. |
 | Nihdi.Core.Configuration.WebApi | `Cloudstrap.WebApi` | Versioning, NSwag/Scalar, middleware. |

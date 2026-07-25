@@ -95,8 +95,8 @@ builder.Services.AddHangfireForCloudstrap(
 
 ```csharp
 IConfiguration configuration = BootstrapConfiguration.ReadAppSettings();
-CloudstrapConfiguration cloudstrapConfiguration = configuration.GetCloudstrapConfiguration();
-ILoggerFactory loggerFactory = BootstrapLoggerFactory.Create(cloudstrapConfiguration);
+CloudstrapOptions cloudstrapOptions = configuration.GetCloudstrapOptions();
+ILoggerFactory loggerFactory = BootstrapLoggerFactory.Create(cloudstrapOptions);
 ```
 
 ---

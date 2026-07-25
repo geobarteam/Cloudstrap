@@ -70,7 +70,7 @@ Cloudstrap coexists with Aspire **without depending on it** — full posture + A
 _plans/                                  # Feature/extraction plans (approve before implementing)
 _specs/                                  # Specifications — Cloudstrap.md is the founding spec
 src/
-├── Cloudstrap.Core/                     # CloudstrapConfiguration settings model + validation
+├── Cloudstrap.Core/                     # CloudstrapOptions settings model + validation
 ├── Cloudstrap.Extensions/               # KeyVault config, typed HttpClients, hosting helpers
 ├── Cloudstrap.Observability/            # Serilog bootstrap, OTel traces/metrics/logs, correlation
 ├── Cloudstrap.Observability.AzureMonitor/ # Application Insights exporter wiring
