@@ -1,0 +1,42 @@
+name: Cleanup preview packages
+
+# Feed hygiene for the GitHub Packages preview channel: keep the most recent 20 preview
+# versions per package. Stable packages live on nuget.org only and are never touched.
+on:
+  schedule:
+    - cron: '0 3 * * 0' # weekly, Sundays 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  packages: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List the owner's Cloudstrap NuGet packages
+        id: list
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const params = { package_type: 'nuget', per_page: 100 };
+            let packages = [];
+            try {
+              packages = await github.paginate('GET /orgs/{org}/packages', { org: owner, ...params });
+            } catch (error) {
+              // Owner is a user account, not an organization.
+              packages = await github.paginate('GET /users/{username}/packages', { username: owner, ...params });
+            }
+            const names = packages.map((p) => p.name).filter((n) => n.startsWith('Cloudstrap.'));
+            core.setOutput('names', names.join(','));
+            core.info(names.length ? `Found: ${names.join(', ')}` : 'No packages found — nothing to clean up.');
+
+      - name: Keep only the last 20 preview versions per package
+        if: steps.list.outputs.names != ''
+        uses: actions/delete-package-versions@v5
+        with:
+          package-names: ${{ steps.list.outputs.names }}
+          package-type: nuget
+          min-versions-to-keep: 20
+          delete-only-pre-release-versions: 'true'

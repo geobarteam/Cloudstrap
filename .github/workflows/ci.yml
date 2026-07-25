@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # packages: write is needed only by the guarded preview-publish step; GitHub has no
+    # step-level permissions, so the single job carries it. PR runs never reach the publish
+    # step (if-guard below), and fork PR tokens are read-only regardless.
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout (full history for GitVersion)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Set up GitVersion
+        uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: '6.x'
+
+      - name: Compute version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4
+
+      - name: Build (Release — analyzers enforce strictness)
+        run: dotnet build src/Cloudstrap.sln -c Release -p:ContinuousIntegrationBuild=true -p:Version=${{ steps.gitversion.outputs.semVer }}
+
+      - name: Run all MTP test executables
+        run: |
+          shopt -s globstar nullglob
+          status=0
+          count=0
+          for proj in src/Test/**/*.Tests.csproj; do
+            name="$(basename "${proj%.csproj}")"
+            exe="$(dirname "$proj")/bin/Release/net10.0/$name"
+            if [ ! -x "$exe" ]; then
+              echo "::error::Expected test executable not found: $exe"
+              exit 1
+            fi
+            echo "Running $exe"
+            "$exe" || status=1
+            count=$((count + 1))
+          done
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No test executables found under src/Test — the test leg must never silently vanish."
+            exit 1
+          fi
+          exit "$status"
+
+      - name: Format check
+        run: dotnet format src/Cloudstrap.sln --verify-no-changes
+
+      - name: Publish previews to GitHub Packages (dev pushes only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          shopt -s globstar nullglob
+          packages=(src/**/bin/Release/*.nupkg)
+          if [ "${#packages[@]}" -eq 0 ]; then
+            echo "No packages produced — preview publish is a no-op (no packable projects yet)."
+            exit 0
+          fi
+          for pkg in "${packages[@]}"; do
+            # GitHub Packages has no symbol server: push .nupkg only (previews rely on SourceLink metadata)
+            dotnet nuget push "$pkg" \
+              --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
+              --api-key "$NUGET_AUTH_TOKEN" \
+              --no-symbols \
+              --skip-duplicate
+          done
