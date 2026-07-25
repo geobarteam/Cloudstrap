@@ -132,7 +132,7 @@ Notes:
 
 **`release.yml`** — the dedicated stable build. Trigger: push of tag `v*` on `main` (gate decision).
 1. Same build + test + format gates (a release never ships what CI didn't verify).
-2. Push `.nupkg` + `.snupkg` at the stable GitVersion version to **nuget.org only** (gate decision — no GitHub Packages mirror) using the `NUGET_API_KEY` repository secret.
+2. Push `.nupkg` + `.snupkg` at the stable GitVersion version to **nuget.org only** (gate decision — no GitHub Packages mirror) via **nuget.org Trusted Publishing** (decided 2026-07-25, replacing the long-lived `NUGET_API_KEY` secret): the publishing job declares `id-token: write`, exchanges the GitHub OIDC token for a 1-hour API key with `NuGet/login@v1` immediately before the push, and passes it to `dotnet nuget push`. The only repository secret is `NUGET_USER` (the nuget.org owner name — not a credential).
 
 **`cleanup-previews.yml`** — scheduled feed hygiene (gate decision). Runs on a schedule (plus manual dispatch); deletes preview versions from the GitHub Packages feed, keeping the **most recent 20 preview versions per package** (via GitHub's maintained `actions/delete-package-versions`). Stable packages are never touched (they live on nuget.org only). Full verification is deferred until packable projects exist; until then the workflow must run green as a no-op.
 
@@ -140,7 +140,7 @@ Documented caveat: **GitHub Packages requires authentication even for public NuG
 
 Operational prerequisites (user, manual, before first stable publish):
 - Reserve the `Cloudstrap.` ID prefix on nuget.org (founding-spec decision; verified free 2026-07-24).
-- Create the `NUGET_API_KEY` repository secret.
+- Create the nuget.org Trusted Publishing policy (owner `Cloudstrap`, repo `geobarteam/Cloudstrap`, workflow `release.yml`, no environment) and the `NUGET_USER` repository secret. *(Policy created and Active 2026-07-25.)*
 
 ---
 

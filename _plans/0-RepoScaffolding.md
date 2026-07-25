@@ -199,14 +199,14 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 **RED** *(recorded explicitly: pure-configuration step — same deferral as Step 4; behavioral proof at Gate 2)*.
 
 **GREEN**:
-- `release.yml` — trigger: `push` of tags `v*` (on `main`). Repeats the full verification gates from `ci.yml` (checkout full-history → setup-dotnet → GitVersion → Release build with `-p:ContinuousIntegrationBuild=true` and the stable GitVersion version → run all MTP test exes → format check — a release never ships what CI didn't verify), then pushes `.nupkg` + `.snupkg` to `https://api.nuget.org/v3/index.json` with `--api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate`; shell-guarded to **no-op green with zero packable projects** (AC-R6). No GitHub Packages mirror. `ci.yml` never publishes stables.
+- `release.yml` — trigger: `push` of tags `v*` (on `main`). Repeats the full verification gates from `ci.yml` (checkout full-history → setup-dotnet → GitVersion → Release build with `-p:ContinuousIntegrationBuild=true` and the stable GitVersion version → run all MTP test exes → format check — a release never ships what CI didn't verify), then authenticates via **nuget.org Trusted Publishing** (decided 2026-07-25 — no long-lived key): job `permissions: contents: read` + `id-token: write`, and a `NuGet/login@v1` step (`user: ${{ secrets.NUGET_USER }}`, `id: login`) placed **after** the verification gates and immediately before the push (the issued key lives 1 hour and is single-use), then pushes `.nupkg` + `.snupkg` to `https://api.nuget.org/v3/index.json` with `--api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate`; shell-guarded to **no-op green with zero packable projects** (AC-R6). No GitHub Packages mirror. `ci.yml` never publishes stables.
 - `cleanup-previews.yml` — triggers: `schedule` (weekly, `cron: '0 3 * * 0'` — *assumption, confirm at Gate 2*) + `workflow_dispatch`; `permissions: packages: write`. Enumerates the owner's NuGet packages dynamically (GitHub API via `gh api`/`actions/github-script` — an empty list makes the job a **green no-op** today), then for each package runs `actions/delete-package-versions` with `min-versions-to-keep: 20` and `delete-only-pre-release-versions: true` (stables live on nuget.org only and are never touched).
 
 **DB changes**: none.
 
 **VERIFY** *(local — CI behavior deferred to Gate 2, recorded explicitly)*:
 1. YAML validity for both files (actionlint or YAML parse) → zero errors.
-2. Static checklist: `release.yml` triggers **only** on `v*` tags; nuget.org is the only publish target; `NUGET_API_KEY` referenced only via `secrets.`; cleanup keeps 20 and deletes pre-release versions only.
+2. Static checklist: `release.yml` triggers **only** on `v*` tags; nuget.org is the only publish target; the publish job declares `id-token: write` and takes its key from `NuGet/login@v1` (no long-lived key anywhere; `NUGET_USER` referenced only via `secrets.`); the workflow file name stays `release.yml` (the Trusted Publishing policy matches on it); cleanup keeps 20 and deletes pre-release versions only.
 3. **Final De-NIHDI sweep (AC-R8)** across the entire deliverable:
    ```powershell
    Get-ChildItem -Recurse -File -Path src, .github, assets, global.json, nuget.config, GitVersion.yml |
@@ -228,7 +228,8 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 
 **Manual prerequisites (user, on nuget.org / GitHub — from the spec's operational prerequisites):**
 - [ ] Reserve the `Cloudstrap.` package ID prefix on nuget.org (verified free 2026-07-24; required before the first *real* stable publish).
-- [ ] Create the `NUGET_API_KEY` repository secret (referenced by `release.yml`; the push step no-ops while zero packages exist, but the secret should exist before tagging becomes routine).
+- [x] Trusted Publishing policy on nuget.org — `Cloudstrap-GitHubActions-Release`: owner `Cloudstrap`, repo `geobarteam/Cloudstrap`, workflow `release.yml`, no environment. **Active 2026-07-25** (public repo → no 7-day pending window). Replaces the previously planned `NUGET_API_KEY` secret.
+- [x] Create the `NUGET_USER` repository secret — **set to `Cloudstrap` on 2026-07-25**; consumed by `NuGet/login@v1`. Fall back to `geobarteam` if the token exchange reports no matching policy — the docs do not state which one applies to organization-owned policies, so this is settled at the first real push).
 
 **Behavioral verification on GitHub (user + executor together):**
 - [ ] GitVersion probes reviewed: Step 3 outputs show tag `v0.9.9` → exactly `0.9.9` and local `dev` → `-preview.N` incrementing per commit (AC-R9).
