@@ -9,8 +9,8 @@ Cloudstrap is an MIT-licensed suite of NuGet packages that takes an ASP.NET Core
 - **Authentication** — OIDC login and client-credentials flows on stock ASP.NET Core handlers + Duende.AccessTokenManagement
 - **Messaging** — Wolverine-based bootstrap: Azure Service Bus / SQL Server transports, durable transactional outbox, Azure Blob claim check
 - **Background jobs** — Hangfire scheduler with recurring-task discovery and dashboard auth patterns
-- **Blazor** — Server helpers and a WASM BFF client (cookie auth, XSRF, Refit)
-- **Web** — WebApi bootstrap (versioning, OpenAPI, hardened middleware), Worker-service bootstrap, YARP trusted-subsystem proxy
+- **Blazor** — server and WebAssembly helpers for browser-based apps (cookie auth, XSRF, Refit)
+- **Web** — WebApi bootstrap (versioning, OpenAPI, hardened middleware), Worker-service bootstrap, proxy forwarding helpers
 - **Extras** — health checks, ops dashboard, cookie consent, consent-gated analytics (Matomo / GA4), localization setup
 
 ## Status

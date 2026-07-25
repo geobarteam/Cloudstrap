@@ -1,5 +1,5 @@
 ---
-description: "Scaffold a new feature end-to-end using the vertical-slice workflow: delegate planning to the planner subagent, then implement one approved step at a time using the build-feature skill."
+description: "Scaffold a new feature end-to-end using the vertical-slice workflow: delegate planning to the planner subagent, then implement gate to gate using the build-feature skill, stopping only at 🛑 HUMAN GATEs."
 argument-hint: "<feature name> [— short description], e.g. 'Prescriptions — patient views and creates prescribed medications'"
 ---
 
@@ -22,14 +22,14 @@ The user provides a **feature name** and, optionally, user stories or acceptance
    - Produce `_plans/<FeatureName>.md` at the repo root using `.claude/templates/plan-template.md`.
    - **Stop and wait for user approval.** No code is written.
 
-2. **Implement one step at a time** — once the plan is approved, invoke the `build-feature` skill for the **first unchecked `[ ]` step** in `_plans/<FeatureName>.md`. The skill executes the RGR-Proof loop from `CLAUDE.md`, stops at the 🛑 HUMAN GATE, and marks the checkboxes `[x]` after user approval.
+2. **Implement gate to gate** — once the plan is approved, invoke the `build-feature` skill starting at the **first unchecked `[ ]`** in `_plans/<FeatureName>.md`. The skill executes the RGR-Proof loop from `CLAUDE.md` for each step, runs consecutive steps back-to-back (checking each step's `Done` box as its VERIFY passes), stops at the next 🛑 HUMAN GATE, and marks the gate's checkboxes `[x]` after user approval.
 
-3. **Repeat step 2** for each subsequent unchecked step until the plan is complete.
+3. **Repeat step 2** for each subsequent gate until the plan is complete.
 
 ## Rules
 
 - **Never skip the planner.** A new feature always needs a plan before any code is written (see the Planning Gate in `CLAUDE.md`).
-- **Never batch plan steps.** One step per reply; the HUMAN GATE is non-negotiable.
+- **Never blend plan steps into one RGR cycle, and never skip a gate.** Steps run continuously between gates; stopping at every 🛑 HUMAN GATE is non-negotiable.
 - **Never re-decide the workflow here.** Planning rules live in `.claude/agents/planner.md`; execution rules live in `CLAUDE.md` and `.claude/skills/build-feature/SKILL.md`.
 
 ## See Also

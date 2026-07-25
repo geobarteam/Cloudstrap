@@ -1,13 +1,13 @@
 ---
 name: refit
-description: "Use when creating, modifying, or reviewing Refit HTTP service clients in Cloudstrap. Covers interface definition, client registration (BlazorServer via AddCloudstrapRefitClient, BlazorWasm via AddRefitClientWithCookies), feature service wrapping, DTO mapping, Result<T> error handling, and Refit attributes ([Body], [Query], [Multipart], [AliasAs], CancellationToken)."
+description: "Use when creating, modifying, or reviewing Refit HTTP service clients in Cloudstrap. Covers interface definition, client registration, feature service wrapping, DTO mapping, Result<T> error handling, and Refit attributes ([Body], [Query], [Multipart], [AliasAs], CancellationToken)."
 metadata:
-  argument-hint: "Describe the Refit task, e.g. 'add a Refit client for the Invoices feature' or 'register a new BFF service client'"
+  argument-hint: "Describe the Refit task, e.g. 'add a Refit client for the Invoices feature' or 'register a new service client'"
 ---
 
 # Refit HTTP Service Clients
 
-Refit generates `HttpClient` implementations from C# interfaces decorated with HTTP-method attributes. In this solution, Refit clients are the **only** way to call BFF/API endpoints from the presentation layer.
+Refit generates `HttpClient` implementations from C# interfaces decorated with HTTP-method attributes. In this solution, Refit clients are the **only** way to call API endpoints from the presentation layer.
 
 > **Related:** `build-feature` skill's Presentation Layer template shows how the Refit interface fits into a full vertical slice (Refit → `*ServiceClient` → ViewModel → Page). This skill drills into the Refit interface itself — attributes, error handling, file uploads.
 
@@ -68,7 +68,7 @@ public interface I<Feature>ServiceClient
 
 ### BlazorServer — `AddCloudstrapRefitClient<T>`
 
-Register in the `BffClientConfigurator` (or equivalent configurator class):
+Register in the shared client configurator (or equivalent configurator class):
 
 ```csharp
 private static readonly RefitSettings DefaultRefitSettings = new()
@@ -96,14 +96,14 @@ private static IServiceCollection AddCloudstrapRefitClient<TClient>(
 Usage — one line per client:
 
 ```csharp
-services.AddCloudstrapRefitClient<I<Feature>Client>("Bff<Feature>");
+services.AddCloudstrapRefitClient<I<Feature>Client>("<Feature>");
 ```
 
 The `configSectionName` maps to an `appsettings.json` entry under `Cloudstrap.Common.HttpClient` which provides the base address, resilience policies, and token management.
 
 ### BlazorWasm — `AddRefitClientWithCookies<T>`
 
-Register in `BffServiceClients.AddBffServiceClients()`:
+Register in the service-client registration entry point:
 
 ```csharp
 private static readonly RefitSettings DefaultRefitSettings = new()
@@ -164,7 +164,7 @@ public class <Feature>Service(I<Feature>ServiceClient client) : I<Feature>Servic
 
 - Use primary constructor injection.
 - Map DTO → Model inside the service. ViewModels never see DTOs.
-- Return `Result<T>` (from `Cloudstrap.Functional`) for operations that can fail.
+- Return a success/failure type from **LanguageExt.Core** (e.g. `Fin<T>` / `Either<Error, T>`, per the plan's chosen mapping) for operations that can fail — Cloudstrap has no hand-rolled `Result<T>`.
 - Return plain collections for read-only queries.
 
 ---
@@ -250,7 +250,7 @@ Task<List<<Feature>Dto>> SearchAsync(
 
 | Don't | Do |
 |-------|-----|
-| Register Refit clients in `Program.cs` | Use `BffClientConfigurator` (Server) or `BffServiceClients` (WASM) |
+| Register Refit clients in `Program.cs` | Use the shared client configurator / service-client registration entry point |
 | Skip `CancellationToken` on Refit methods | Always include as last parameter with `= default` |
 | Return DTOs from feature services | Map DTO → Model in the service layer |
 | Inject Refit clients into ViewModels | Inject the `I<Feature>Service` wrapper |

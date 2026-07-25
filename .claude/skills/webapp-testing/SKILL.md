@@ -11,7 +11,7 @@ metadata:
 
 | Situation | Approach |
 |-----------|----------|
-| **Full-stack launch + test** (BlazorServer/BlazorWasm templates) | Use the **`/e2e-test`** skill — starts STS, BFF, WFE/Cfe, Azurite |
+| **Full-stack launch + test** (BlazorServer/BlazorWasm templates) | Use the **`/e2e-test`** skill — starts the identity provider, app hosts, proxy hosts if applicable, and Azurite |
 | **Server already running, persisted .NET tests** | Use this skill — `PageTest` base, MSTest, runs in CI |
 | **Ad-hoc Node.js browser script** | Use the **`playwright-skill`** — writes to `/tmp`, not persisted |
 | **Static HTML check** | Read the HTML file, then write Playwright assertions |

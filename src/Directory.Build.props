@@ -1,0 +1,42 @@
+<Project>
+
+  <!-- Build strictness — this ruleset is frozen after deliverable #0; per-rule tightening only, via src/.editorconfig -->
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!-- NuGet audit advisories stay warnings: an overnight advisory must not brick every build -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <!-- Language defaults -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!-- Central Package Management: versions live only in src/Directory.Packages.props -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!-- Shared packaging metadata for packable projects; ContinuousIntegrationBuild is passed by CI only -->
+  <PropertyGroup>
+    <Authors>Cloudstrap</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/geobarteam/Cloudstrap</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/geobarteam/Cloudstrap</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>cloudstrap;azure;aspnetcore</PackageTags>
+    <PackageIcon>icon.png</PackageIcon>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)../assets/icon.png" Pack="true" PackagePath="/" Condition="'$(IsPackable)' != 'false'" />
+  </ItemGroup>
+
+</Project>

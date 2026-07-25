@@ -1,0 +1,32 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{19408830-42F5-4EEE-AD54-79B27FA25215}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UnitTest", "UnitTest", "{CCD63FA8-44FC-456A-9753-BA81AE205BEA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cloudstrap.Scaffolding.Tests", "Test\UnitTest\Cloudstrap.Scaffolding.Tests\Cloudstrap.Scaffolding.Tests.csproj", "{9F1CDCD0-0DA7-4DAA-8C38-9471A330B4D1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9F1CDCD0-0DA7-4DAA-8C38-9471A330B4D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F1CDCD0-0DA7-4DAA-8C38-9471A330B4D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F1CDCD0-0DA7-4DAA-8C38-9471A330B4D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F1CDCD0-0DA7-4DAA-8C38-9471A330B4D1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CCD63FA8-44FC-456A-9753-BA81AE205BEA} = {19408830-42F5-4EEE-AD54-79B27FA25215}
+		{9F1CDCD0-0DA7-4DAA-8C38-9471A330B4D1} = {CCD63FA8-44FC-456A-9753-BA81AE205BEA}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3364A037-5441-4A9F-BCA3-B176DE209723}
+	EndGlobalSection
+EndGlobal
