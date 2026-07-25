@@ -8,7 +8,7 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 
 **AC coverage map** (from `_specs/0-RepoScaffolding.md`): AC-R1/R3/R7/R10/R11 → Step 1 · AC-R2 + AC-R11(test side) → Step 2 · AC-R9 → Step 3 · AC-R4/R5 → Step 4 + Gate 2 · AC-R6 → Step 5 + Gate 2 · AC-R8 → Step 5 VERIFY.
 
-**Assumptions to confirm at Gate 1** (spec is silent; defaults chosen, not TBD): `Authors=geobarteam`; `Nullable=enable` + `ImplicitUsings=enable` repo-wide in `src/Directory.Build.props` (CLAUDE.md mandates nullable reference types); base `PackageTags=cloudstrap;azure;aspnetcore`. **At Gate 2**: cleanup schedule = weekly (`0 3 * * 0`).
+**Assumptions to confirm at Gate 1** (spec is silent; defaults chosen, not TBD): `Authors=Cloudstrap` *(decided 2026-07-25: the nuget.org owner is the `Cloudstrap` organization — package author metadata matches the reserved-prefix owner)*; `Nullable=enable` + `ImplicitUsings=enable` repo-wide in `src/Directory.Build.props` (CLAUDE.md mandates nullable reference types); base `PackageTags=cloudstrap;azure;aspnetcore`. **At Gate 2**: cleanup schedule = weekly (`0 3 * * 0`).
 
 ---
 
@@ -18,7 +18,7 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 
 ## Step 1 — Clean clone restores from nuget.org only, builds, and format-checks under full strictness
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `global.json` *(create)* — SDK `10.0.x` (current installed 10.0 feature band), `"rollForward": "latestFeature"`.
@@ -62,7 +62,7 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 
 ## Step 2 — Test leg proves itself: a failing NUnit test fails the run, the passing suite goes green (MTP executable, no `dotnet test`)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/Directory.Build.props` *(create)* — test-layer defaults, layered on the root props.
@@ -111,7 +111,7 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 - [ ] Behavioral verification: the three local gates are green on a clean working tree (`dotnet build`, test exe run direct → pass/exit 0, `dotnet format --verify-no-changes` → exit 0); the four Step 1 probe outputs show CS1591, IDE1006, CA-rule, and NU1008 each **failing the build/restore as errors**; the Step 2 RED run output shows the deliberately failing test reported with non-zero exit.
 - [ ] Code review — `src/Directory.Build.props` (⚠️ frozen after approval): `AnalysisLevel=latest-recommended`, `EnforceCodeStyleInBuild`, NU1901–NU1904 carve-out, CPM switch, packaging metadata defaults; **zero StyleCop remnants**.
 - [ ] Code review — `src/.editorconfig` as the single style authority: naming rules at `warning`, no SA block, no company identifiers, no CS1591 downgrade.
-- [ ] Confirm the flagged assumptions: `Authors=geobarteam` · `Nullable`+`ImplicitUsings` enabled repo-wide · base `PackageTags` · placeholder `assets/icon.png` acceptable until final artwork.
+- [ ] Confirm the flagged assumptions: `Authors=Cloudstrap` *(settled 2026-07-25 — matches the nuget.org `Cloudstrap` organization that owns the reserved prefix)* · `Nullable`+`ImplicitUsings` enabled repo-wide · base `PackageTags` · placeholder `assets/icon.png` acceptable until final artwork.
 - [ ] ⚠️ Dependency review (risk area): NUnit 4.6.1+ / NUnit3TestAdapter 6.2.0+ / NUnit.Analyzers 4.14.0+ — all MIT, versions pinned only in `src/Directory.Packages.props`.
 - [ ] User approved — implementation may continue past this gate
 
