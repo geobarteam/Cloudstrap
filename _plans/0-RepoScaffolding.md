@@ -108,12 +108,12 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 
 ⚠️ **This gate freezes the analyzer ruleset.** Per CLAUDE.md, the rules in `Directory.Build.props` are immutable after this deliverable — loosening is impossible later, only per-rule tightening via `.editorconfig`. Review accordingly.
 
-- [ ] Behavioral verification: the three local gates are green on a clean working tree (`dotnet build`, test exe run direct → pass/exit 0, `dotnet format --verify-no-changes` → exit 0); the four Step 1 probe outputs show CS1591, IDE1006, CA-rule, and NU1008 each **failing the build/restore as errors**; the Step 2 RED run output shows the deliberately failing test reported with non-zero exit.
-- [ ] Code review — `src/Directory.Build.props` (⚠️ frozen after approval): `AnalysisLevel=latest-recommended`, `EnforceCodeStyleInBuild`, NU1901–NU1904 carve-out, CPM switch, packaging metadata defaults; **zero StyleCop remnants**.
-- [ ] Code review — `src/.editorconfig` as the single style authority: naming rules at `warning`, no SA block, no company identifiers, no CS1591 downgrade.
-- [ ] Confirm the flagged assumptions: `Authors=Cloudstrap` *(settled 2026-07-25 — matches the nuget.org `Cloudstrap` organization that owns the reserved prefix)* · `Nullable`+`ImplicitUsings` enabled repo-wide · base `PackageTags` · placeholder `assets/icon.png` acceptable until final artwork.
-- [ ] ⚠️ Dependency review (risk area): NUnit 4.6.1+ / NUnit3TestAdapter 6.2.0+ / NUnit.Analyzers 4.14.0+ — all MIT, versions pinned only in `src/Directory.Packages.props`.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: the three local gates are green on a clean working tree (`dotnet build`, test exe run direct → pass/exit 0, `dotnet format --verify-no-changes` → exit 0); the four Step 1 probe outputs show CS1591, IDE1006, CA-rule, and NU1008 each **failing the build/restore as errors**; the Step 2 RED run output shows the deliberately failing test reported with non-zero exit.
+- [x] Code review — `src/Directory.Build.props` (⚠️ frozen after approval): `AnalysisLevel=latest-recommended`, `EnforceCodeStyleInBuild`, NU1901–NU1904 carve-out, CPM switch, packaging metadata defaults; **zero StyleCop remnants**. *(Approved with executor deviation: `dotnet_diagnostic.IDE1006.severity = warning` added to `src/.editorconfig` — naming-rule severities are IDE-only; this line makes naming build-breaking per AC-R7.)*
+- [x] Code review — `src/.editorconfig` as the single style authority: naming rules at `warning`, no SA block, no company identifiers, no CS1591 downgrade.
+- [x] Confirm the flagged assumptions: `Authors=Cloudstrap` *(settled 2026-07-25 — matches the nuget.org `Cloudstrap` organization that owns the reserved prefix)* · `Nullable`+`ImplicitUsings` enabled repo-wide · base `PackageTags` · placeholder `assets/icon.png` acceptable until final artwork.
+- [x] ⚠️ Dependency review (risk area): NUnit 4.6.1 / NUnit3TestAdapter 6.2.0 / NUnit.Analyzers 4.14.0 — all MIT, versions pinned only in `src/Directory.Packages.props`. *(Approved with executor deviation: `CA1707` added to the test-layer `NoWarn` — the `<Method>_<Scenario>_<Expected>` convention requires underscores; suppressed under `src/Test/` only.)*
+- [x] User approved — implementation may continue past this gate *(approved 2026-07-25)*
 
 ---
 
@@ -123,7 +123,7 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 
 ## Step 3 — GitVersion computes `-preview.N` on dev and exact `X.Y.Z` from tags on main
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `GitVersion.yml` *(create, repo root)* — GitVersion 6.x configuration.
@@ -155,7 +155,7 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 
 ## Step 4 — CI enforces build + test + format on every PR/push; `dev` pushes publish previews to GitHub Packages
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `.github/workflows/ci.yml` *(create)*.
@@ -190,7 +190,7 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 
 ## Step 5 — Pushing a `v*` tag releases stables to nuget.org; a scheduled job trims the preview feed to the last 20 versions
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `.github/workflows/release.yml` *(create)*.
