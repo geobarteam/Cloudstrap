@@ -4,6 +4,11 @@
       "Read",
       "Edit",
       "Write",
+      "Edit(.claude/**)",
+      "Edit(CLAUDE.md)",
+      "Edit(_plans/**)",
+      "Edit(_specs/**)",
+      "Edit(*/**)",
       "Glob",
       "Grep",
       "TodoWrite",
@@ -32,3 +37,4 @@
     "defaultMode": "acceptEdits"
   }
 }
+

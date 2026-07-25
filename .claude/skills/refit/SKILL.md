@@ -164,7 +164,7 @@ public class <Feature>Service(I<Feature>ServiceClient client) : I<Feature>Servic
 
 - Use primary constructor injection.
 - Map DTO → Model inside the service. ViewModels never see DTOs.
-- Return `Result<T>` (from `Cloudstrap.Functional`) for operations that can fail.
+- Return a success/failure type from **LanguageExt.Core** (e.g. `Fin<T>` / `Either<Error, T>`, per the plan's chosen mapping) for operations that can fail — Cloudstrap has no hand-rolled `Result<T>`.
 - Return plain collections for read-only queries.
 
 ---

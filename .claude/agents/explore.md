@@ -26,7 +26,6 @@ The user specifies one of three levels. Default to **medium** if not specified.
 
 ```
 src/
-├── Cloudstrap.Functional/          # Result<T>, Option, Preconditions (zero dependencies)
 ├── Cloudstrap.Core/                # CloudstrapConfiguration settings model, validation
 ├── Cloudstrap.Extensions/          # KeyVault config, typed HttpClients, hosting helpers
 ├── Cloudstrap.Observability/       # Serilog bootstrap, OpenTelemetry pipeline, correlation

@@ -7,7 +7,7 @@ You are the coding assistant for the Cloudstrap library suite. Read and investig
 **Cloudstrap** is an MIT-licensed, opinionated open-source .NET library suite that simplifies bootstrapping ASP.NET Core applications for deployment on Azure: configuration + KeyVault, observability (OpenTelemetry + Application Insights), auth (OIDC / client credentials), messaging (Wolverine), background jobs (Hangfire), Blazor server and WebAssembly helpers, health checks, YARP trusted-subsystem proxy, ops dashboard, cookie consent, and analytics.
 
 - Repo: https://github.com/geobarteam/Cloudstrap · packages published to nuget.org under the `Cloudstrap.*` prefix.
-- .NET 10 · MSTest v4 · Moq · `Microsoft.Testing.Platform` · StyleCop (`TreatWarningsAsErrors`).
+- .NET 10 · NUnit 4 · Moq · `Microsoft.Testing.Platform` · .NET SDK analyzers (`TreatWarningsAsErrors`, `AnalysisLevel=latest-recommended`, `EnforceCodeStyleInBuild`) — no StyleCop.
 - **Founding spec: [`_specs/Cloudstrap.md`](_specs/Cloudstrap.md)** — package map, migration decisions, acceptance criteria. Read it before any extraction work.
 
 ## Extraction Phase (current)
@@ -16,8 +16,18 @@ Cloudstrap is being extracted from a private enterprise library (`Nihdi.Core.Con
 
 - **Source reference repo (read-only)**: `D:\Data\gv10141\Repos\Common\Nihdi-Core-Configuration` — read it to port code, never modify it, and never copy it wholesale.
 - Apply the **De-NIHDI-fication Checklist** in the spec to everything you port: no hard-coded enterprise KeyVault/storage naming, no internal hostnames/URLs/feeds, no `Nihdi`/`NIHDI`/`Riziv` identifiers, no company copyright headers.
-- Replacements decided in the spec: Dynatrace → Application Insights (Azure Monitor OTel exporter; keep OTLP/Console modes) · NServiceBus → Wolverine (SQL Server durability, provider seam for PostgreSQL) · internal `Nihdi.AspNetCore.*` auth → stock ASP.NET Core auth + Duende.AccessTokenManagement · property-level message encryption → dropped · internal design system → plain MudBlazor.
-- Extraction proceeds bottom-up through the dependency graph (see the spec's package map): Functional → Core → Observability → Extensions/hosting → auth → Messaging → Hangfire/Proxy → Dashboard/Analytics/Localization.
+- Replacements decided in the spec: Dynatrace → Application Insights (Azure Monitor OTel exporter; keep OTLP/Console modes) · NServiceBus → Wolverine (SQL Server durability, provider seam for PostgreSQL) · internal `Nihdi.AspNetCore.*` auth → stock ASP.NET Core auth + Duende.AccessTokenManagement · property-level message encryption → dropped · internal design system → plain MudBlazor · `Nihdi.Core.Functional` → **LanguageExt.Core** NuGet (MIT), not ported.
+- Extraction proceeds bottom-up through the dependency graph (see the spec's package map): Core → Observability → Extensions/hosting → auth → Messaging → Hangfire/Proxy → Dashboard/Analytics/Localization.
+- The **`project-manager`** subagent owns `_plans/ROADMAP.md` — the ordered list of port deliverables and their status. Consult it to decide what to port next; it produces the hand-off brief the **`technical-analyst`** turns into a specification `_specs/<Deliverable>.md` (critical analysis of the source code: port / redesign / replace-with-library / drop, with open questions for the user), which the `planner` then turns into a detailed `_plans/<Deliverable>.md`. Workflow: `project-manager` (what/order) → `technical-analyst` (what exactly & why) → `planner` (how) → `build-feature` (implementation).
+
+## Aspire Coexistence (design rule)
+
+Cloudstrap coexists with Aspire **without depending on it** — full posture + AC-ASP1–AC-ASP3 acceptance criteria in the founding spec's **Aspire Coexistence** section. In short:
+
+- **Zero `Aspire.*` package references** in any shipped package. Aspire may appear only in docs and sample projects (the "Cloudstrap in an Aspire app" sample AppHost). The only sanctioned home for a reference is a future optional `Cloudstrap.Aspire` leaf — post-v1, user-approved.
+- Build on the shared substrate instead: `Microsoft.Extensions.*`, OpenTelemetry .NET, the Azure SDK.
+- **Composability is a spec-level requirement** wherever Cloudstrap overlaps Aspire ServiceDefaults: observability supports pipeline-**owner** (default) and **contribute**-only modes (enrich an existing OTel pipeline with samplers/noise filters/enrichment/`IBusinessTrace` — no duplicate exporters); typed `HttpClient` registration tolerates resilience handlers already applied via `ConfigureHttpClientDefaults`; KeyVault config is documented "Cloudstrap's or Aspire's, not both".
+- **Speak platform conventions**: standard `ConnectionStrings:` names and well-known env vars (`APPLICATIONINSIGHTS_CONNECTION_STRING`) where sensible; health checks registered additively via the stock `IHealthChecksBuilder`.
 
 ---
 
@@ -60,7 +70,6 @@ Cloudstrap is being extracted from a private enterprise library (`Nihdi.Core.Con
 _plans/                                  # Feature/extraction plans (approve before implementing)
 _specs/                                  # Specifications — Cloudstrap.md is the founding spec
 src/
-├── Cloudstrap.Functional/               # Result<T>, Option, Preconditions (zero deps)
 ├── Cloudstrap.Core/                     # CloudstrapConfiguration settings model + validation
 ├── Cloudstrap.Extensions/               # KeyVault config, typed HttpClients, hosting helpers
 ├── Cloudstrap.Observability/            # Serilog bootstrap, OTel traces/metrics/logs, correlation
@@ -167,7 +176,7 @@ public static class ServiceCollectionExtensions
 
 ## Test Conventions
 
-- AAA (Arrange/Act/Assert), MSTest v4, `[TestClass]` / `[TestMethod]`.
+- AAA (Arrange/Act/Assert), NUnit 4, `[TestFixture]` / `[Test]`; assertions use the `Assert.That` constraint model.
 - Mock at boundary (interfaces only, Moq). No real external services in unit tests (no live Azure, no live Application Insights).
 - Integration tests: verify DI registration, service resolution, and cross-cutting concerns.
 - Messaging tests run on Wolverine's in-memory/local transport — no network.
@@ -232,7 +241,7 @@ Each implementation step follows this cycle:
 5. RUN     — {{TestExePath}} --filter "<TestMethod>" → confirm PASS
 6. REFACTOR — cleanup if needed
 7. CODE ANALYSIS — fix all violations before proving:
-   a. dotnet build src/Cloudstrap.sln 2>&1 | Select-String -Pattern ": (warning|error) (SA|SX|CA|CS|MSTEST)\d+" | Sort-Object | Get-Unique
+   a. dotnet build src/Cloudstrap.sln 2>&1 | Select-String -Pattern ": (warning|error) (CS|CA|IDE|NUnit)\d+" | Sort-Object | Get-Unique
    b. dotnet format src/Cloudstrap.sln  (auto-fix formatting)
    c. Fix any remaining violations manually (skip disabled rules)
    d. Repeat a–c until the Select-String output is empty
@@ -270,10 +279,12 @@ The agent **stops and waits for user confirmation** at every gate. This is non-n
 | File | `subagent_type` | Purpose |
 |------|------|---------|
 | [bugfix.md](.claude/agents/bugfix.md) | `bugfix` | Fix a bug with a regression test first (RED-first, ≤ 2 files) |
-| [code-analysis.md](.claude/agents/code-analysis.md) | `code-analysis` | Fix StyleCop / Roslyn / CA warnings; full code-quality sweep |
+| [code-analysis.md](.claude/agents/code-analysis.md) | `code-analysis` | Fix compiler / SDK analyzer diagnostics (CS/CA/IDE/NUnit); full code-quality sweep |
 | [explore.md](.claude/agents/explore.md) | `explore` | Read-only codebase exploration and Q&A |
 | [git.md](.claude/agents/git.md) | `git` | Git workflow: branches, GitHub PRs, tags, hotfixes, GitVersion |
 | [planner.md](.claude/agents/planner.md) | `planner` | Create `_plans/<FeatureName>.md` before implementing |
+| [project-manager.md](.claude/agents/project-manager.md) | `project-manager` | Own the extraction roadmap (`_plans/ROADMAP.md`): define port deliverables + order, decide the next port, produce the technical-analyst hand-off brief |
+| [technical-analyst.md](.claude/agents/technical-analyst.md) | `technical-analyst` | Produce `_specs/<Deliverable>.md` from a roadmap deliverable: critical analysis of the source code (port / redesign / replace-with-library / drop), library alternatives, open questions for the user |
 
 ### Skills — `.claude/skills/`
 
@@ -284,7 +295,7 @@ The agent **stops and waits for user confirmation** at every gate. This is non-n
 | `add-public-api` | Adding a new public type, interface, method, or options class |
 | `build-feature` | Implementing an approved `_plans/<FeatureName>.md` step by step |
 | `configure-hangfire` | Setting up / extending Cloudstrap.Hangfire (topology, recurring jobs, dashboard auth) |
-| `fix-violations` | Fixing SA*/CA*/CS* violations, `dotnet format`, StyleCop warnings |
+| `fix-violations` | Fixing CS*/CA*/IDE*/NUnit* violations, `dotnet format` issues |
 | `refit` | Creating or modifying Refit HTTP service clients |
 | `webapp-testing` | Writing .NET Playwright tests for the running web app |
 | `pdf` / `pptx` / `xlsx` | Working with PDF / PowerPoint / Excel files |
@@ -296,7 +307,6 @@ The agent **stops and waits for user confirmation** at every gate. This is non-n
 | File | `applyTo` pattern | Content |
 |------|------------------|---------|
 | [blazor.md](.claude/instructions/blazor.md) | `src/Cloudstrap.Blazor*/**` | browser-auth patterns, HTTP client registration, distributed tracing, Scrutor scanning |
-| [functional.md](.claude/instructions/functional.md) | `src/Cloudstrap.Functional/**` | `Result<T>`, `Unit`, `Preconditions`, `ICommandHandler` conventions |
 | [nuget-packaging.md](.claude/instructions/nuget-packaging.md) | `**/*.csproj` | MSBuild packaging, GitVersion SemVer, SourceLink |
 | [public-api.md](.claude/instructions/public-api.md) | `src/Cloudstrap*/**` | XML docs, sealed-by-default, guard clauses, `CancellationToken`, `ObsoleteAttribute` |
 | [tests.md](.claude/instructions/tests.md) | `src/Test/**` | MSTest conventions, AAA, Moq, integration test factory pattern |
@@ -319,8 +329,9 @@ The agent **stops and waits for user confirmation** at every gate. This is non-n
 
 - `configure-wolverine` skill — replaces the old NServiceBus skill once `Cloudstrap.Messaging` exists.
 - `observability` instructions — OTel + Application Insights conventions once `Cloudstrap.Observability` exists.
+- `functional` instructions — LanguageExt.Core usage conventions (success/failure type mapping, `Option<T>`, `Unit`) once the first consuming package is planned. Replaces the removed `Cloudstrap.Functional` instructions — that package is not ported.
 - GitHub Actions workflows (`.github/workflows/ci.yml`, `release.yml`).
-- `GitVersion.yml`, `Directory.Build.props` (StyleCop settings inlined — no internal build-props package), `src/Cloudstrap.sln`.
+- `GitVersion.yml`, `Directory.Build.props` (`TreatWarningsAsErrors` + SDK analyzer settings — no StyleCop, no internal build-props package), `src/Cloudstrap.sln`.
 
 > Migrated artefacts were adapted from the source repo by mechanical rename; when you first use one during extraction, sanity-check examples/paths against the actual Cloudstrap code and fix drift.
 

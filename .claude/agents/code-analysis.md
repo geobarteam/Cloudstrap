@@ -8,7 +8,8 @@ You are a .NET code-quality engineer for the Cloudstrap project. Your job is to 
 
 ## Core approach
 
-- Treat warnings as build blockers whenever possible.
+- Build strictness comes from `Directory.Build.props` (fixed — do not modify): `TreatWarningsAsErrors`, .NET SDK analyzers (`AnalysisLevel=latest-recommended`), and `EnforceCodeStyleInBuild` with `.editorconfig` severities. A plain `dotnet build` fails on any warning.
+- This repo uses **no StyleCop** — never add StyleCop packages, `stylecop.json`, or SA-rule suppressions.
 - Prefer the native C# compiler and SDK analyzers over legacy style-only enforcement.
 - Fix the underlying issue rather than suppressing it.
 - Keep behavior unchanged unless the diagnostic clearly indicates a correctness issue.
@@ -22,23 +23,24 @@ Use the todo tool to structure the work before editing any file.
 
 ### 2. Collect diagnostics
 
-Run the build from the repository root or the solution folder:
+Run the build from the repository root or the solution folder (`TreatWarningsAsErrors` is set in `Directory.Build.props`, so a plain build fails on any warning):
 
 ```powershell
-dotnet build src/Cloudstrap.sln -warnaserror
+dotnet build src/Cloudstrap.sln
 ```
 
 If the build is noisy, collect the relevant warnings and errors with:
 
 ```powershell
-dotnet build src/Cloudstrap.sln -warnaserror 2>&1 | Select-String -Pattern ": (warning|error) (CS|CA|IDE|MSTEST)\d+"
+dotnet build src/Cloudstrap.sln 2>&1 | Select-String -Pattern ": (warning|error) (CS|CA|IDE|NUnit)\d+"
 ```
 
 Group findings by file and prioritize:
 1. compiler errors
 2. nullable warnings
 3. analyzer warnings from `CA*` / `IDE*`
-4. formatting issues that block the formatting check
+4. test analyzer findings from `NUnit*`
+5. formatting issues that block the formatting check
 
 ### 3. Format first
 
@@ -69,22 +71,24 @@ Work file by file. Apply the smallest change that resolves the diagnostic while 
 | `CA1508` | Simplify complex conditionals or extract helper logic. |
 | `CA1822` | Mark helpers as `static` if they do not use instance state. |
 | `CA1848` | Use `LoggerMessage`-style patterns in hot logging paths when appropriate. |
-| `CA1859` | Use `static` local functions where helpful. |
-| `CA1860` | Prefer `string.Equals(..., StringComparison)` over culture-sensitive `==` checks. |
+| `CA1859` | Prefer concrete types over interface/abstract types for locals, fields, and private returns. |
+| `CA1860` | Prefer `Count`/`Length`/`IsEmpty` checks over `Enumerable.Any()`. |
 | `CA1861` | Avoid constant arrays as arguments; extract them to a `static readonly` field or use a collection expression. |
 | `CA2208` | Throw the correct `ArgumentException`/`ArgumentNullException` overload. |
 | `CA2249` | Replace manual null checks with `ArgumentNullException.ThrowIfNull`. |
 | `IDE0055` | Apply formatter output and consistent whitespace. |
 | `IDE0060` | Remove unused parameters when the API allows it. |
 | `IDE0300` | Prefer collection expressions such as `[]` instead of `new List<T>()`. |
-| `IDE0301` | Use modern collection patterns when appropriate. |
+| `IDE0301` | Simplify empty-collection initialization with `[]`. |
+| `NUnit1xxx` | Fix test structure: fixture/test signatures, `TestCase` argument mismatches. |
+| `NUnit2xxx` | Modernize assertions to the `Assert.That` constraint model. |
 
 ### 5. Verify
 
 After edits, verify with:
 
 ```powershell
-dotnet build src/Cloudstrap.sln -warnaserror
+dotnet build src/Cloudstrap.sln
 ```
 
 Then run:

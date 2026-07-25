@@ -26,6 +26,8 @@
 | Dashboard scope | **Full port** (ASB queue peek/purge/retry, diagnostics, claims viewer) minus the decryption feature; internal design system replaced by plain MudBlazor. |
 | Localization | **Ported** as `Cloudstrap.Localization` — thin setup layer over stock ASP.NET Core localization (culture negotiation defaults, one-call registration), no custom localization engine. |
 | Messaging durability store | **SQL Server only in v1**, but behind a storage-provider seam (`AddCloudstrapMessaging(...).UseSqlServer(...)`) so PostgreSQL can be added later without breaking the API. |
+| Functional primitives | **Not ported.** The hand-rolled `Nihdi.Core.Functional` (`Result<T>`, `Option`, `Preconditions`) is replaced by the **LanguageExt.Core** NuGet package (MIT) as a direct dependency of consuming packages — there is no `Cloudstrap.Functional` package. Exact type mapping (e.g. `Fin<T>` / `Either<Error, T>` for success/failure, `Option<T>`, `Unit`) is settled when the first consuming package is planned. Decided 2026-07-25. |
+| Aspire posture | **Coexist without depending.** Zero `Aspire.*` package references in any shipped v1 package — Cloudstrap builds on the same substrate Aspire does (`Microsoft.Extensions.*`, OpenTelemetry .NET, Azure SDK) and must compose cleanly inside an Aspire app (see the **Aspire Coexistence** section, AC-ASP1–AC-ASP3). Deeper integration, if demand ever justifies it, is one optional post-v1 leaf package `Cloudstrap.Aspire`. Decided 2026-07-25. |
 
 ---
 
@@ -44,11 +46,30 @@
 
 ---
 
+## Aspire Coexistence
+
+Aspire and Cloudstrap sit on the same substrate — `Microsoft.Extensions.Configuration/DependencyInjection/HealthChecks`, OpenTelemetry .NET, the Azure SDK. That substrate predates Aspire and survives it; Cloudstrap targets the substrate directly. Coexistence with Aspire is a **docs-and-design posture, not a dependency**:
+
+1. **No Aspire references.** No shipped package references any `Aspire.*` package. If demand ever justifies deeper integration, it becomes one optional leaf `Cloudstrap.Aspire` (post-v1, user-approved) — quarantined the same way `Cloudstrap.Observability.AzureMonitor` quarantines the exporter.
+2. **Composable, not conflicting.** The one real collision point is OTel: an app using Aspire's ServiceDefaults already has a tracer/meter/logger pipeline. `UseCloudstrapObservability` therefore supports two documented modes: **owner** (default — Cloudstrap wires the full pipeline) and **contribute** (Cloudstrap adds only its differentiated pieces — samplers, noise filters, enrichment, `IBusinessTrace` — to the existing pipeline; OTel's builder API is additive by design; no duplicate exporters). Likewise the typed `HttpClient` registration must tolerate resilience handlers already applied via `ConfigureHttpClientDefaults` (no stacked resilience), and KeyVault-configuration docs state "use Cloudstrap's or Aspire's, not both" (secret-prefix filtering is Cloudstrap's differentiator).
+3. **Speak the platform's conventions.** Support standard `ConnectionStrings:` names and well-known environment variables (`APPLICATIONINSIGHTS_CONNECTION_STRING`) where sensible; register health checks through the stock `IHealthChecksBuilder` (inherently additive). Cloudstrap features then drop into an Aspire solution without ceremony.
+4. **A sample, not a reference.** "Cloudstrap in an Aspire app" ships as a docs page plus a sample AppHost — Aspire packages appear only in that sample project, never in a shipped package.
+
+### Acceptance Criteria — Aspire Coexistence
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-ASP1 | An app with an existing OTel pipeline (Aspire ServiceDefaults-style) | `UseCloudstrapObservability` runs in contribute mode | Cloudstrap samplers/filters/enrichment apply to the existing pipeline; no second exporter, no duplicate spans. |
+| AC-ASP2 | Any shipped Cloudstrap package | Its dependency closure is inspected | Zero `Aspire.*` packages. |
+| AC-ASP3 | Resilience handlers already applied via `ConfigureHttpClientDefaults` | `AddCloudstrapHttpServiceClient<TI,TImpl>` registers a typed client | The client works; Cloudstrap does not stack a second resilience layer. |
+
+---
+
 ## Package Map (old → new)
 
 | Nihdi package | Cloudstrap package | Notes |
 |---|---|---|
-| Nihdi.Core.Functional | `Cloudstrap.Functional` | Pure; rename only. |
+| Nihdi.Core.Functional | — *(not ported)* | Replaced by the **LanguageExt.Core** NuGet dependency (MIT); consuming packages reference it directly. |
 | Nihdi.Core.Configuration | `Cloudstrap.Core` | Settings model → `CloudstrapConfiguration`, section `Cloudstrap:`. **Break the inverted dependency on Dashboard.Contracts** — dashboard settings move to the dashboard package. |
 | Nihdi.Core.Configuration.Common | `Cloudstrap.Extensions` (config/KeyVault/HTTP) + `Cloudstrap.Observability` (Serilog, OTel, correlation) | Split the grab-bag: observability is the flagship feature and deserves its own package. |
 | — (new) | `Cloudstrap.Observability.AzureMonitor` | Azure Monitor exporter wiring, isolated so the base package stays exporter-agnostic. |
@@ -180,7 +201,7 @@ The OTel pipeline in `Common/DistributedTracing/ServiceCollectionExtensions.cs` 
 - GitVersion + tags on `main` for SemVer, `-preview.N` on `dev` — same model as today.
 - GitHub Actions: build, test (MSTest v4 / Microsoft.Testing.Platform), format check, pack, publish to nuget.org on tag. SourceLink + symbol packages.
 - Reserve the `Cloudstrap.` ID prefix on nuget.org before first publish.
-- Docs: README per package + docs site (e.g. docfx) with a "zero to deployed on Azure" quick-start; sample app replacing TestProject/WasmTestProject as public samples.
+- Docs: README per package + docs site (e.g. docfx) with a "zero to deployed on Azure" quick-start; sample app replacing TestProject/WasmTestProject as public samples. Include a "Cloudstrap in an Aspire app" docs page + sample AppHost — Aspire packages appear only in that sample project (see Aspire Coexistence).
 - StyleCop + `TreatWarningsAsErrors` carried over (build props inlined, no internal package).
 
 ---
@@ -193,6 +214,7 @@ The OTel pipeline in `Common/DistributedTracing/ServiceCollectionExtensions.cs` 
 - Multi-targeting: `net10.0` only.
 - Property-level message encryption and the Dashboard message-decryption feature (dropped permanently; transport-level security is the baseline).
 - PostgreSQL messaging durability (planned post-v1; the v1 API reserves the provider seam).
+- `Cloudstrap.Aspire` integration package — post-v1 option only if demand justifies it; v1 ships zero `Aspire.*` references (see Aspire Coexistence).
 
 ---
 

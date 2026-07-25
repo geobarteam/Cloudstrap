@@ -158,7 +158,7 @@ public record Add<Entity>Command(string Name, string Email)
 ```csharp
 namespace Cloudstrap.Core.Application.Functionalities.<Feature>.Commands.<Action>;
 
-using Cloudstrap.Functional;
+using LanguageExt;
 
 public class Add<Entity>CommandHandler(I<Entity>Repository repository)
     : ICommandHandler<Add<Entity>Command, Result<Unit>>
@@ -412,8 +412,7 @@ DI: auto-registered by `PresentationModule` (suffix `ViewModel` → Transient).
 ## Key Reminders
 
 - **ICommandHandler<TCommand, TResult>** is the Application-layer command interface. Handlers are auto-scanned.
-- **Result<T>** from `Cloudstrap.Functional` — constructor `new Result<T>(value)` for success, `new Result<T>("error msg")` for failure. Check `result.IsSuccess`.
-- **Unit** from `Cloudstrap.Functional` — use `Unit.Default()` for void-equivalent returns.
+- **Functional primitives** come from the **LanguageExt.Core** NuGet package (MIT) — there is no `Cloudstrap.Functional` package. The templates above show source-repo-style `Result<T>`/`Unit` flow; map it to the LanguageExt types chosen in the plan (e.g. `Fin<T>` or `Either<Error, T>` for success/failure, `Option<T>`, `Unit`/`unit` for void-equivalent).
 - **ApiException** — catch in ServiceClient, convert via `ex.ConvertApiExceptionToResult<T>()`.
 - **BaseRepository<T>** — provides `AddAsync`, `GetByIdAsync`, `ListAllAsync`, `Update`, `Delete`, `SaveChangesAsync`.
 - **DbSet registration** — add `DbSet<<Entity>>` to `CloudstrapDbContext`.
