@@ -1,5 +1,6 @@
 namespace Cloudstrap.Core
 {
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Options;
 
     /// <summary>
@@ -9,9 +10,23 @@ namespace Cloudstrap.Core
     /// </summary>
     internal sealed class CloudstrapOptionsValidator : IValidateOptions<CloudstrapOptions>
     {
-        private static readonly ApplicationOptionsValidator _applicationValidator = new();
-        private static readonly LoggingOptionsValidator _loggingValidator = new();
-        private static readonly OpenTelemetryOptionsValidator _openTelemetryValidator = new();
+        private readonly ApplicationOptionsValidator _applicationValidator = new();
+        private readonly LoggingOptionsValidator _loggingValidator = new();
+        private readonly OpenTelemetryOptionsValidator _openTelemetryValidator;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CloudstrapOptionsValidator"/> class.
+        /// </summary>
+        /// <param name="configuration">
+        /// The configuration forwarded to the OpenTelemetry validator, which consults it for the standard
+        /// <c>OTEL_EXPORTER_OTLP_ENDPOINT</c> variable.
+        /// </param>
+        public CloudstrapOptionsValidator(IConfiguration configuration)
+        {
+            ArgumentNullException.ThrowIfNull(configuration);
+
+            _openTelemetryValidator = new OpenTelemetryOptionsValidator(configuration);
+        }
 
         /// <summary>
         /// Validates the supplied options graph, reporting every failure rather than stopping at the first.

@@ -41,7 +41,7 @@ This package introduces **no new configuration section** — everything it reads
 
 ## Step 1 — `OTEL_EXPORTER_OTLP_ENDPOINT` satisfies the Otlp endpoint rule on both validation paths (Core amendment, AC-C6 as amended 2026-07-27)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope** *(Cloudstrap.Core only — the spec-1 Decision Log schedules this amendment inside this plan; deliverable 1 stays closed)*:
 - `src/Cloudstrap.Core/OpenTelemetryOptionsValidator.cs` *(modify)*
@@ -84,7 +84,7 @@ This package introduces **no new configuration section** — everything it reads
 
 ## Step 2 — Pre-host code logs to console (and file) through `CloudstrapBootstrapLogger` (package + test project bootstrap)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Observability/Cloudstrap.Observability.csproj` *(create)* — Sdk project, `TargetFramework=net10.0`, `GeneratePackageOnBuild=true`, `GenerateDocumentationFile=true`; `<ProjectReference>` to `..\Cloudstrap.Core\Cloudstrap.Core.csproj`; `<PackageReference>`s `Serilog`, `Serilog.Extensions.Hosting`, `Serilog.Sinks.Console`, `Serilog.Sinks.File`. **No framework reference yet** (added in Step 4, where ASP.NET Core types are first needed). Description/tags/README metadata land in Step 12.

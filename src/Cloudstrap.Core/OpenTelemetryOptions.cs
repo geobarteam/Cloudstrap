@@ -17,8 +17,11 @@ namespace Cloudstrap.Core
         public OpenTelemetryMode Mode { get; set; } = OpenTelemetryMode.Disabled;
 
         /// <summary>
-        /// Gets or sets the endpoint telemetry is exported to. Required, and must be an absolute
-        /// <c>http</c> or <c>https</c> URI, when <see cref="Mode"/> is <see cref="OpenTelemetryMode.Otlp"/>.
+        /// Gets or sets the endpoint telemetry is exported to. Required when <see cref="Mode"/> is
+        /// <see cref="OpenTelemetryMode.Otlp"/>, unless the OpenTelemetry SDK's standard
+        /// <c>OTEL_EXPORTER_OTLP_ENDPOINT</c> variable is present in configuration. When set, the value must
+        /// be an absolute <c>http</c> or <c>https</c> URI — an explicit endpoint is validated even when the
+        /// standard variable is also present.
         /// </summary>
         /// <value>The OTLP endpoint, or <see langword="null"/> when no endpoint is configured.</value>
         public Uri? Endpoint

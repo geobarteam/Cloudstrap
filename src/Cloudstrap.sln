@@ -10,6 +10,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cloudstrap.Core", "Cloudstr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cloudstrap.Core.Tests", "Test\UnitTest\Cloudstrap.Core.Tests\Cloudstrap.Core.Tests.csproj", "{1A53D91A-42B5-4D50-85ED-FF7C4E42F3DD}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cloudstrap.Observability", "Cloudstrap.Observability\Cloudstrap.Observability.csproj", "{5D9E8B7A-3C41-4F27-9A85-2E6B0D1C4F73}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cloudstrap.Observability.Tests", "Test\UnitTest\Cloudstrap.Observability.Tests\Cloudstrap.Observability.Tests.csproj", "{8F2C1D5E-7A94-4B36-BD08-9C3E5A7F2461}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,6 +28,14 @@ Global
 		{1A53D91A-42B5-4D50-85ED-FF7C4E42F3DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A53D91A-42B5-4D50-85ED-FF7C4E42F3DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1A53D91A-42B5-4D50-85ED-FF7C4E42F3DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D9E8B7A-3C41-4F27-9A85-2E6B0D1C4F73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D9E8B7A-3C41-4F27-9A85-2E6B0D1C4F73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D9E8B7A-3C41-4F27-9A85-2E6B0D1C4F73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D9E8B7A-3C41-4F27-9A85-2E6B0D1C4F73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F2C1D5E-7A94-4B36-BD08-9C3E5A7F2461}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F2C1D5E-7A94-4B36-BD08-9C3E5A7F2461}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F2C1D5E-7A94-4B36-BD08-9C3E5A7F2461}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F2C1D5E-7A94-4B36-BD08-9C3E5A7F2461}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -31,6 +43,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{CCD63FA8-44FC-456A-9753-BA81AE205BEA} = {19408830-42F5-4EEE-AD54-79B27FA25215}
 		{1A53D91A-42B5-4D50-85ED-FF7C4E42F3DD} = {CCD63FA8-44FC-456A-9753-BA81AE205BEA}
+		{8F2C1D5E-7A94-4B36-BD08-9C3E5A7F2461} = {CCD63FA8-44FC-456A-9753-BA81AE205BEA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3364A037-5441-4A9F-BCA3-B176DE209723}

@@ -84,6 +84,20 @@ namespace Cloudstrap.Core.Tests
         }
 
         [Test]
+        public void AddCloudstrapCore_WithOtlpModeAndStandardVariable_StartupValidationSucceeds()
+        {
+            // Arrange
+            Dictionary<string, string?> values = MinimalValid();
+            values["Cloudstrap:OpenTelemetry:Mode"] = "Otlp";
+            values["OTEL_EXPORTER_OTLP_ENDPOINT"] = "https://collector.example.com";
+            using ServiceProvider provider = BuildProvider(values);
+            IStartupValidator validator = provider.GetRequiredService<IStartupValidator>();
+
+            // Act & Assert
+            Assert.DoesNotThrow(validator.Validate);
+        }
+
+        [Test]
         public void AddCloudstrapCore_WithInvalidHttpClient_StartupValidationThrowsNamingClientEntry()
         {
             // Arrange
