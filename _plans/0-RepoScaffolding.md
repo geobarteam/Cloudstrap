@@ -227,15 +227,15 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 *Executor: STOP here. Present the results of all covered steps and WAIT for user approval — do not start the next step. Every push below requires the user's explicit go-ahead (CLAUDE.md: no Git push without confirmation).*
 
 **Manual prerequisites (user, on nuget.org / GitHub — from the spec's operational prerequisites):**
-- [ ] Reserve the `Cloudstrap.` package ID prefix on nuget.org (verified free 2026-07-24; required before the first *real* stable publish).
+- [x] Reserve the `Cloudstrap.` package ID prefix on nuget.org (verified free 2026-07-24; required before the first *real* stable publish). **Reserved — confirmed by the user 2026-07-26.**
 - [x] Trusted Publishing policy on nuget.org — `Cloudstrap-GitHubActions-Release`: owner `Cloudstrap`, repo `geobarteam/Cloudstrap`, workflow `release.yml`, no environment. **Active 2026-07-25** (public repo → no 7-day pending window). Replaces the previously planned `NUGET_API_KEY` secret.
 - [x] Create the `NUGET_USER` repository secret — **set to `Cloudstrap` on 2026-07-25**; consumed by `NuGet/login@v1`. Fall back to `geobarteam` if the token exchange reports no matching policy — the docs do not state which one applies to organization-owned policies, so this is settled at the first real push).
 
 **Behavioral verification on GitHub (user + executor together):**
-- [ ] GitVersion probes reviewed: Step 3 outputs show tag `v0.9.9` → exactly `0.9.9` and local `dev` → `-preview.N` incrementing per commit (AC-R9).
-- [ ] Push the working branch and open a PR → `ci.yml` runs: build, test, and format checks all execute and pass; the preview-publish step does **not** run on the PR (AC-R4).
-- [ ] After merge: create/push the `dev` branch → `ci.yml` completes green and the preview-publish step runs as a **graceful no-op** (zero packable projects) (AC-R5).
-- [ ] Manually dispatch `cleanup-previews.yml` → completes green as a no-op; confirm the weekly schedule (assumption: Sundays 03:00 UTC) is acceptable.
-- [ ] Recommended (optional now, required before deliverable 1 publishes anything): push tag `v0.1.0` on `main` → `release.yml` runs all gates green and no-ops the nuget.org push (AC-R6), anchoring the stable version baseline for future previews.
-- [ ] Code review across Steps 3–5: workflow permissions are minimal; secrets never echoed; action versions pinned; `release.yml` is the only stable path and nuget.org its only target; De-NIHDI sweep output (AC-R8) is empty.
-- [ ] User approved — implementation may continue past this gate *(deliverable #0 done; ROADMAP status update belongs to the project-manager, not the executor)*
+- [x] GitVersion probes reviewed: Step 3 outputs show tag `v0.9.9` → exactly `0.9.9` and local `dev` → `-preview.N` incrementing per commit (AC-R9).
+- [x] Push the working branch and open a PR → `ci.yml` runs: build, test, and format checks all execute and pass; the preview-publish step does **not** run on the PR (AC-R4).
+- [x] After merge: create/push the `dev` branch → `ci.yml` completes green and the preview-publish step runs as a **graceful no-op** (zero packable projects) (AC-R5).
+- [x] Manually dispatch `cleanup-previews.yml` → completes green as a no-op; confirm the weekly schedule (assumption: Sundays 03:00 UTC) is acceptable.
+- [x] Recommended (optional now, required before deliverable 1 publishes anything): push tag `v0.1.0` on `main` → `release.yml` runs all gates green and no-ops the nuget.org push (AC-R6), anchoring the stable version baseline for future previews.
+- [x] Code review across Steps 3–5: workflow permissions are minimal; secrets never echoed; action versions pinned; `release.yml` is the only stable path and nuget.org its only target; De-NIHDI sweep output (AC-R8) is empty.
+- [x] User approved — implementation may continue past this gate *(deliverable #0 done — user confirmed complete 2026-07-26; ROADMAP status update belongs to the project-manager, not the executor)*

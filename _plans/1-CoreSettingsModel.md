@@ -319,8 +319,8 @@ New CPM entries (all Microsoft-maintained, MIT; executor pins the latest patch o
 
 *Executor: STOP here. Present the results and WAIT for user approval. Any Git push afterwards requires the user's explicit go-ahead (CLAUDE.md: no push without confirmation).*
 
-- [ ] Behavioral verification: guard tests green; expanded `.nupkg` contents reviewed (README, icon, dll + XML docs, nuspec metadata); AC-C7 sweep outputs empty; `dotnet list package` output shows the Microsoft.Extensions-only closure; build/test/format gates green with the placeholder project gone.
-- [ ] Code review: README accuracy against the implemented model (defaults table = AC-C10, override idioms, conventions, the collection-append caveat); `Description`/tags wording; solution file clean after the placeholder removal.
-- [ ] Spec acceptance sign-off: walk AC-C1…AC-C10 + AC-ASP2 against the step evidence (map in the Overview) — all met.
-- [ ] Carried prerequisite (operational, before this package is ever *published*): nuget.org `Cloudstrap.` prefix reservation and the deliverable-0 GitHub-side CI verification items are still open in `_plans/0-RepoScaffolding.md`'s final gate — confirm status or explicitly defer again.
-- [ ] User approved — deliverable #1 done *(ROADMAP status update belongs to the project-manager, not the executor)*
+- [x] Behavioral verification: guard tests green; expanded `.nupkg` contents reviewed (README, icon, dll + XML docs, nuspec metadata); AC-C7 sweep outputs empty; `dotnet list package` output shows the Microsoft.Extensions-only closure; build/test/format gates green with the placeholder project gone.
+- [x] Code review: README accuracy against the implemented model (defaults table = AC-C10, override idioms, conventions, the collection-append caveat); `Description`/tags wording; solution file clean after the placeholder removal.
+- [x] Spec acceptance sign-off: walk AC-C1…AC-C10 + AC-ASP2 against the step evidence (map in the Overview) — all met.
+- [x] Carried prerequisite (operational, before this package is ever *published*): nuget.org `Cloudstrap.` prefix reservation and the deliverable-0 GitHub-side CI verification items are still open in `_plans/0-RepoScaffolding.md`'s final gate — confirm status or explicitly defer again. **Confirmed done by the user 2026-07-26; the corresponding boxes in `_plans/0-RepoScaffolding.md`'s final gate remain for that plan's owner to close.**
+- [x] User approved — deliverable #1 done *(approved 2026-07-26; ROADMAP status update belongs to the project-manager, not the executor)*
