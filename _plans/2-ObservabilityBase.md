@@ -134,10 +134,10 @@ This package introduces **no new configuration section** — everything it reads
 
 ⚠️ **Risk areas at this gate**: Step 1 changes the **shipped** `Cloudstrap.Core` validation behavior (spec-amended 2026-07-27, but it is a behavior change in a published-surface package — review the failure-message wording and the "explicit setting still validated" semantics). Step 2 introduces the repo's **first non-Microsoft dependencies**.
 
-- [ ] Behavioral verification: Core test exe shows the three AC-C6 amendment cases (variable satisfies the rule / neither source still fails naming both / explicit endpoint still validated) green on both entry paths; Observability test exe shows bootstrap console + file logging with the file under exactly the configured path (AC-B8) and `None`/disabled-console writing nothing.
-- [ ] Code review: validator ctor-injection mechanics (planner mechanic (a) — `IConfiguration` in the validator, DI unchanged, eager path per-call); `CloudstrapBootstrapLogger`/`SerilogPipeline` vs the spec's Drop rows (no OTLP branch, no async wrapper, no enrichers, no `Log.Logger` mutation); `LogLevel.None` handling (planner mechanic (b)); the `log-.log` file-name choice (planner mechanic (c)).
-- [ ] ⚠️ Dependency review (risk area): first third-party pins — `Serilog` 4.4.0, `Serilog.Extensions.Hosting` 10.0.0, `Serilog.Sinks.Console` 6.1.1, `Serilog.Sinks.File` 7.0.0 (all Apache-2.0, CPM-pinned).
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: Core test exe shows the three AC-C6 amendment cases (variable satisfies the rule / neither source still fails naming both / explicit endpoint still validated) green on both entry paths; Observability test exe shows bootstrap console + file logging with the file under exactly the configured path (AC-B8) and `None`/disabled-console writing nothing.
+- [x] Code review: validator ctor-injection mechanics (planner mechanic (a) — `IConfiguration` in the validator, DI unchanged, eager path per-call); `CloudstrapBootstrapLogger`/`SerilogPipeline` vs the spec's Drop rows (no OTLP branch, no async wrapper, no enrichers, no `Log.Logger` mutation); `LogLevel.None` handling (planner mechanic (b)); the `log-.log` file-name choice (planner mechanic (c)).
+- [x] ⚠️ Dependency review (risk area): first third-party pins — `Serilog` 4.4.0, `Serilog.Extensions.Hosting` 10.0.0, `Serilog.Sinks.Console` 6.1.1, `Serilog.Sinks.File` 7.0.0 (all Apache-2.0, CPM-pinned).
+- [x] User approved — implementation may continue past this gate *(approved 2026-07-29; executor decisions confirmed: public ctors on internal validators, CA1848 test-layer NoWarn, InvariantCulture sinks, `None` override = full source exclusion)*
 
 ---
 
@@ -147,7 +147,7 @@ This package introduces **no new configuration section** — everything it reads
 
 ## Step 3 — `UseCloudstrapObservability()` adds Serilog console/file alongside the consumer's providers and applies the configured levels (never `ClearProviders`)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Observability/HostApplicationBuilderExtensions.cs` *(create)* — the one public entry point (spec's Redesign of the source `AddOpenTelemetry`/`AddSerilogNihdi`/`ConfigureForNihdiOpenTelemetry` split).
