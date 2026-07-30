@@ -1,6 +1,7 @@
 namespace Cloudstrap.Observability
 {
     using Cloudstrap.Core;
+    using Cloudstrap.Observability.Correlation;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
@@ -61,6 +62,8 @@ namespace Cloudstrap.Observability
             CloudstrapOptions options = builder.Configuration.GetCloudstrapOptions();
 
             builder.Services.AddCloudstrapCore();
+
+            builder.Services.AddCloudstrapCorrelation();
 
             ExporterContributionMarker contributionMarker = new();
             builder.Services.AddSingleton(contributionMarker);

@@ -434,7 +434,7 @@ This package introduces **no new configuration section** — everything it reads
 
 ## Step 8 — Any code reads and sets the ambient correlation id via DI (`ICorrelationContextAccessor` + `ICorrelationSource`)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope** *(namespace `Cloudstrap.Observability.Correlation` — the coherent group deliverable 4 imports alone)*:
 - `src/Cloudstrap.Observability/Correlation/ICorrelationContextAccessor.cs` *(create)* — public interface, `string? CorrelationId { get; set; }` (spec Redesign: the value is the id itself, no disposable object graph, no `ThrowIfUnavailable`).
@@ -477,7 +477,7 @@ This package introduces **no new configuration section** — everything it reads
 
 ## Step 9 — Inbound requests establish correlation, and endpoints can require it: header honored, absent id generated, 400 `problem+json` when mandated (AC-B4 inbound, AC-B5, AC-B6)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Observability/Correlation/CloudstrapCorrelationMiddleware.cs` *(create)* — `internal sealed`; the **one** merged establish+validate middleware (spec Redesign fixing source finding 1 — MVC hosts no longer drop the caller's id).
@@ -523,7 +523,7 @@ This package introduces **no new configuration section** — everything it reads
 
 ## Step 10 — Outbound HTTP calls propagate the correlation id (`CorrelationHttpDelegatingHandler` + `AddCloudstrapCorrelationHandler`) (AC-B4 outbound)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Observability/Correlation/CorrelationHttpDelegatingHandler.cs` *(create)* — `public sealed : DelegatingHandler` (the deliverable-4 seam; spec Redesign).
