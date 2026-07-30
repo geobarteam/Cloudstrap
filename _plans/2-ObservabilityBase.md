@@ -203,9 +203,9 @@ This package introduces **no new configuration section** — everything it reads
 
 ⚠️ **Risk area — public API surface.** `UseCloudstrapObservability(...) : CloudstrapObservabilityBuilder` is the flagship signature every later hosting package (4/5/6/7/12/14) builds on, and `CloudstrapObservabilityOptions` grows through the remaining slices — review the shape now, before the pipeline is built on it.
 
-- [ ] Behavioral verification: test exe output shows AC-B3 (pre-registered provider survives, Serilog added alongside), the level-seed/override precedence tests, the host-path AC-B8 file test, and the `ConfigurationValidationException`-at-the-call test all green.
-- [ ] Code review: entry-point signature and `CloudstrapObservabilityBuilder`/`CloudstrapObservabilityOptions` vs the spec's Public API Sketch (names, nullability, `Action<>` members); ordering inside the entry point (eager validate → AddCloudstrapCore → Serilog → levels); XML-doc completeness; no `ClearProviders` anywhere.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: test exe output shows AC-B3 (pre-registered provider survives, Serilog added alongside), the level-seed/override precedence tests, the host-path AC-B8 file test, and the `ConfigurationValidationException`-at-the-call test all green.
+- [x] Code review: entry-point signature and `CloudstrapObservabilityBuilder`/`CloudstrapObservabilityOptions` vs the spec's Public API Sketch (names, nullability, `Action<>` members); ordering inside the entry point (eager validate → AddCloudstrapCore → Serilog → levels); XML-doc completeness; no `ClearProviders` anywhere.
+- [x] User approved — implementation may continue past this gate *(approved 2026-07-29; executor decision confirmed: Serilog registered as an added `SerilogLoggerProvider`, not via `AddSerilog`'s factory replacement — AC-B3 letter over sketch letter)*
 
 ---
 
@@ -215,7 +215,7 @@ This package introduces **no new configuration section** — everything it reads
 
 ## Step 4 — An active mode registers traces/metrics/logs with Cloudstrap resource identity; `Disabled` stays inert (AC-B1 pipeline half, AC-B2, AC-B9)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Observability/OpenTelemetryPipeline.cs` *(create)* — `internal static` owner-mode composition (spec Redesign of `ConfigureTracing`/`ConfigureMetrics`).
@@ -265,7 +265,7 @@ This package introduces **no new configuration section** — everything it reads
 
 ## Step 5 — Probe and static-asset noise disappears from traces; Blazor hub chatter is sampled out (AC-O3, AC-B10)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Observability/TraceNoiseFilter.cs` *(create)* — `internal static` predicates over `HttpContext` (inbound) and `HttpRequestMessage` (outbound) (spec Redesign of `ShouldTracePath`/`ShouldTraceHttpClientRequest`/`IsStaticAssetPath`).
@@ -314,7 +314,7 @@ This package introduces **no new configuration section** — everything it reads
 
 ## Step 6 — `Otlp` mode exports over OTLP (explicit endpoint or standard variable); `AzureMonitor` with no exporter fails startup loudly (AC-O2 export half, AC-B13 exporter half, AC-B7)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Observability/OtlpExporterSetup.cs` *(create)* — `internal static`: endpoint/headers resolution + per-signal registration (spec Redesign of `GetOtlpEndpoint`/`GetOtlpHeaders`).
@@ -365,10 +365,10 @@ This package introduces **no new configuration section** — everything it reads
 
 ⚠️ **Risk areas at this gate**: the **first `Microsoft.AspNetCore.App` framework reference** in the suite (Step 4 — gate decision OQ-1; confirm the one-package posture and that `Cloudstrap.Core`'s host-agnostic closure is untouched) · the **OpenTelemetry dependency family** (seven packages, Apache-2.0, all pinned 1.17.0) · the AC-B7 failure mode is a public behavior contract deliverable 3 depends on.
 
-- [ ] Behavioral verification: test exe output shows — Disabled inert / Console exporting with the full `cloudstrap.*` + semconv resource identity and zero `nihdi.*` (AC-B9); every noise-filter and sampler knob incl. composition with a pre-set filter (AC-O3, AC-B10); OTLP per-signal paths + headers, the standard-variable hand-off (AC-B13), `ConfigureOtlpExporter` precedence; AzureMonitor fail-fast + `MarkExporterContributed` seam (AC-B7).
-- [ ] Code review: `OpenTelemetryPipeline` vs the spec's Behaviors table (exporter selection, sampler chain, gates for every `Enable*` flag); no `NServiceBus` sources/meters; enrichment limited to `DisplayName` + `endpoint.name`; filter composition implemented as post-configuration (Step 7 depends on it); `CloudstrapObservabilityOptions`/`CloudstrapObservabilityBuilder` growth vs the Public API Sketch.
-- [ ] ⚠️ Dependency review (risk area): OTel pins (`Extensions.Hosting`, four instrumentations, two exporters, test-only InMemory — 1.17.0) + the framework reference; `dotnet list src/Cloudstrap.Observability/Cloudstrap.Observability.csproj package` shows zero `Azure.*`, zero `Aspire.*`.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: test exe output shows — Disabled inert / Console exporting with the full `cloudstrap.*` + semconv resource identity and zero `nihdi.*` (AC-B9); every noise-filter and sampler knob incl. composition with a pre-set filter (AC-O3, AC-B10); OTLP per-signal paths + headers, the standard-variable hand-off (AC-B13), `ConfigureOtlpExporter` precedence; AzureMonitor fail-fast + `MarkExporterContributed` seam (AC-B7).
+- [x] Code review: `OpenTelemetryPipeline` vs the spec's Behaviors table (exporter selection, sampler chain, gates for every `Enable*` flag); no `NServiceBus` sources/meters; enrichment limited to `DisplayName` + `endpoint.name`; filter composition implemented as post-configuration (Step 7 depends on it); `CloudstrapObservabilityOptions`/`CloudstrapObservabilityBuilder` growth vs the Public API Sketch.
+- [x] ⚠️ Dependency review (risk area): OTel pins (`Extensions.Hosting`, four instrumentations, two exporters, test-only InMemory — 1.17.0) + the framework reference; `dotnet list src/Cloudstrap.Observability/Cloudstrap.Observability.csproj package` shows zero `Azure.*`, zero `Aspire.*`.
+- [x] User approved — implementation may continue past this gate *(approved 2026-07-29; executor notes confirmed: NU1510-driven removal of the redundant `Microsoft.Extensions.Hosting.Abstractions` PackageReference, internal `ExporterContributionMarker` file addition)*
 
 ---
 
@@ -378,7 +378,7 @@ This package introduces **no new configuration section** — everything it reads
 
 ## Step 7 — Contribute mode applies Cloudstrap's samplers/filters/enrichment to a ServiceDefaults-style pipeline — no second exporter, no duplicate spans, no `service.name` takeover (AC-ASP1, AC-B9 contribute half)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Observability/ObservabilityPipelineMode.cs` *(create)* — `public enum ObservabilityPipelineMode { Owner = 0, Contribute = 1 }`.
@@ -422,9 +422,9 @@ This package introduces **no new configuration section** — everything it reads
 
 *Executor: STOP here. Present the results and WAIT for user approval — do not start the next step.*
 
-- [ ] Behavioral verification: test exe output shows the exactly-one-exporter/one-span proof, the preserved host `service.name`, sampler + filter application to the foreign pipeline, the `ApplySampler` opt-out, and the no-exporter/no-guard assertions — AC-ASP1 end to end.
-- [ ] Code review: the contribute branch adds nothing beyond the spec's differentiated-pieces list; `ObservabilityPipelineMode` naming/docs vs the sketch; confirm the founding spec's Aspire posture is described accurately in the XML docs.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: test exe output shows the exactly-one-exporter/one-span proof, the preserved host `service.name`, sampler + filter application to the foreign pipeline, the `ApplySampler` opt-out, and the no-exporter/no-guard assertions — AC-ASP1 end to end.
+- [x] Code review: the contribute branch adds nothing beyond the spec's differentiated-pieces list; `ObservabilityPipelineMode` naming/docs vs the sketch; confirm the founding spec's Aspire posture is described accurately in the XML docs.
+- [x] User approved — implementation may continue past this gate *(approved 2026-07-29)*
 
 ---
 

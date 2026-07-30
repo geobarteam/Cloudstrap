@@ -10,10 +10,16 @@ namespace Cloudstrap.Observability
     /// </summary>
     public sealed class CloudstrapObservabilityBuilder
     {
-        internal CloudstrapObservabilityBuilder(IServiceCollection services, OpenTelemetryOptions telemetry)
+        private readonly ExporterContributionMarker _contributionMarker;
+
+        internal CloudstrapObservabilityBuilder(
+            IServiceCollection services,
+            OpenTelemetryOptions telemetry,
+            ExporterContributionMarker contributionMarker)
         {
             Services = services;
             Telemetry = telemetry;
+            _contributionMarker = contributionMarker;
         }
 
         /// <summary>
@@ -33,5 +39,13 @@ namespace Cloudstrap.Observability
         {
             get;
         }
+
+        /// <summary>
+        /// Records that an exporter package has contributed an exporter to the pipeline. Exporter packages —
+        /// <c>Cloudstrap.Observability.AzureMonitor</c> in particular — call this after registering their
+        /// exporter; when <c>Cloudstrap:OpenTelemetry:Mode</c> is <c>AzureMonitor</c> and nothing was
+        /// contributed, host startup fails rather than silently dropping telemetry.
+        /// </summary>
+        public void MarkExporterContributed() => _contributionMarker.Contributed = true;
     }
 }

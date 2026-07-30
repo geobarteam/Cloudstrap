@@ -62,6 +62,9 @@ namespace Cloudstrap.Observability
 
             builder.Services.AddCloudstrapCore();
 
+            ExporterContributionMarker contributionMarker = new();
+            builder.Services.AddSingleton(contributionMarker);
+
             LoggerConfiguration loggerConfiguration = new();
             SerilogPipeline.Configure(loggerConfiguration, options);
             observabilityOptions.ConfigureSerilog?.Invoke(loggerConfiguration);
@@ -84,7 +87,19 @@ namespace Cloudstrap.Observability
                 builder.Logging.AddFilter(levelOverride.Key, levelOverride.Value);
             }
 
-            return new CloudstrapObservabilityBuilder(builder.Services, options.OpenTelemetry);
+            if (options.OpenTelemetry.IsActive)
+            {
+                if (observabilityOptions.PipelineMode == ObservabilityPipelineMode.Contribute)
+                {
+                    OpenTelemetryPipeline.ConfigureContribute(builder.Services, options, observabilityOptions);
+                }
+                else
+                {
+                    OpenTelemetryPipeline.ConfigureOwner(builder.Services, options, observabilityOptions, builder.Environment);
+                }
+            }
+
+            return new CloudstrapObservabilityBuilder(builder.Services, options.OpenTelemetry, contributionMarker);
         }
     }
 }
