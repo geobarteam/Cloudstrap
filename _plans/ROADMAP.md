@@ -96,8 +96,8 @@ Old-package edges extracted from the source `.csproj` files:
 |---|-------------|----------|------------|--------|------|
 | 0 | Repo scaffolding | `src/Cloudstrap.sln`, `Directory.Build.props` (SDK analyzers, no StyleCop), `Directory.Packages.props` (CPM), `.editorconfig`, `GitVersion.yml`, `global.json`, `nuget.config`, CI workflows | — | ✅ | `_plans/0-RepoScaffolding.md` |
 | 1 | Core settings model | Cloudstrap.Core | 0 | ✅ | `_plans/1-CoreSettingsModel.md` |
-| 2 | Observability base ← **next** | Cloudstrap.Observability | 1 ✅ | 📝 | `_specs/2-ObservabilityBase.md` (spec in progress) |
-| 3 | Azure Monitor exporter | Cloudstrap.Observability.AzureMonitor | 2 | ⬜ | — |
+| 2 | Observability base | Cloudstrap.Observability | 1 ✅ | ✅ | `_plans/2-ObservabilityBase.md` |
+| 3 | Azure Monitor exporter ← **next** | Cloudstrap.Observability.AzureMonitor | 2 ✅ | ⬜ | — |
 | 4 | Config/KeyVault/HTTP extensions | Cloudstrap.Extensions | 1, 2 | ⬜ | — |
 | 5 | WebApi bootstrap | Cloudstrap.WebApi | 4 | ⬜ | — |
 | 6 | MVC bootstrap | Cloudstrap.Mvc | 4 | ⬜ | — |
@@ -120,15 +120,15 @@ Old-package edges extracted from the source `.csproj` files:
 | 23 | Google Analytics adapter | Cloudstrap.Analytics.GoogleAnalytics | 22 | ⬜ | — |
 | 24 | Localization setup | Cloudstrap.Localization | 1 | ⬜ | — |
 
-**Reconciled with reality 2026-07-26** (globbed `src/**/*.csproj`, read every plan's gate
-checkboxes): two `.csproj` files exist — `src/Cloudstrap.Core/Cloudstrap.Core.csproj` and
-`src/Test/UnitTest/Cloudstrap.Core.Tests/Cloudstrap.Core.Tests.csproj`. The deliverable-0
-placeholder `Cloudstrap.Scaffolding.Tests` is gone (retired by deliverable 1, as both specs
-prescribed). Both foundation plans are 100% complete with every 🛑 gate box checked:
-`_plans/0-RepoScaffolding.md` (5 steps, 2 gates — final gate closed 2026-07-26, including
-the nuget.org prefix reservation) → #0 ✅; `_plans/1-CoreSettingsModel.md` (5 steps, 3
-gates, 19/19 boxes) → #1 ✅. **The publish path is open** — nothing operational blocks
-pushing a `Cloudstrap.*` package to a feed. Everything 2–24 is honestly ⬜ (#2 in planning).
+**Reconciled with reality 2026-07-30** (globbed `src/**/*.csproj`, read every plan's gate
+checkboxes): four `.csproj` files exist — `src/Cloudstrap.Core/`, `src/Cloudstrap.Observability/`
+and their two test projects under `src/Test/UnitTest/`. All three executed plans are 100%
+complete with every 🛑 gate box checked: `_plans/0-RepoScaffolding.md` (final gate closed
+2026-07-26, incl. the nuget.org prefix reservation) → #0 ✅; `_plans/1-CoreSettingsModel.md`
+(19/19 boxes) → #1 ✅; `_plans/2-ObservabilityBase.md` (12 steps, 6 gates — final gate
+accepted 2026-07-30) → #2 ✅. **The publish path remains open** — nothing operational blocks
+pushing a `Cloudstrap.*` package to a feed. Everything 3–24 is honestly ⬜; #3 is the next
+schedulable deliverable (its only dependency, 2, is ✅).
 
 ## Deliverable details
 
@@ -165,6 +165,8 @@ pushing a `Cloudstrap.*` package to a feed. Everything 2–24 is honestly ⬜ (#
 
 ### 2. Observability base
 - **Goal**: A consumer calls `UseCloudstrapObservability` to get Serilog bootstrap logging plus a vendor-neutral OTel traces/metrics/logs pipeline (modes `Disabled | Console | Otlp`, `AzureMonitor` enum reserved) with correlation and noise filtering.
+- **Spec**: `_specs/2-ObservabilityBase.md` — acceptance criteria (AC-O2/O3/O4, AC-ASP1/ASP2, AC-B1…AC-B13, + amended AC-C6) walked and signed off at the plan's final gate.
+- **Plan**: `_plans/2-ObservabilityBase.md` — fully executed (12 steps, 6 🛑 gates, all boxes checked; final gate accepted 2026-07-30).
 - **Source material** *(file list re-verified against the reference repo 2026-07-26)*: `Nihdi.Core.Configuration.Common\` —
   - `DistributedTracing\` — `ServiceCollectionExtensions.cs` (the pipeline; spec says it ports largely unchanged), `BlazorHubSampler.cs`, `NihdiResourceAttributes.cs`, `IBusinessTrace.cs`/`BusinessTrace.cs`, `IBusinessTraceScope.cs`/`BusinessTraceScope.cs`;
   - `Logging\` — `BootstrapLoggerFactory.cs`, `DeferredLoggerFactory.cs`, `NihdiConfigurationExtensions.cs`, `NihdiConsoleFormatter.cs`, `TracingEnricher.cs`, `MessageIdEnricher.cs`, `W3CTracingMiddleware.cs`;
@@ -177,7 +179,16 @@ pushing a `Cloudstrap.*` package to a feed. Everything 2–24 is honestly ⬜ (#
 - **De-NIHDI items**: correlation header `NIHDI.Correlation` → `X-Correlation-ID` (configurable); resource attributes `nihdi.*` → `cloudstrap.*`/standard semconv; probe path `/probe.aspx` → `/healthz` + `/ready` (configurable); log path `D:\logsint` default removed.
 - **Definition of done**: build/tests/format green; XML docs; AC-O2 (Otlp mode, no Azure dependency loaded), AC-O3 (probe/`_blazor` noise filtered), AC-O4 (zero "Dynatrace" occurrences) verifiable; AC-ASP1 (contribute mode composes with a pre-existing OTel pipeline — no duplicate exporters) covered by test; zero `Nihdi` identifiers.
 - **Risks**: ⚠️ Largest port of the foundation bands; ⚠️ new external deps: Serilog suite (Apache-2.0), OpenTelemetry.* (Apache-2.0) — versions to re-pin (CPM: `src/Directory.Packages.props`, which currently holds only Microsoft.Extensions 10.0.10 + the NUnit trio); ⚠️ splitting Common cleanly so Extensions (4) doesn't drag observability internals; ⚠️ **Aspire overlap** — OTel wiring and health checks are exactly what Aspire ServiceDefaults also does, so owner/contribute composability (AC-ASP1) and additive `IHealthChecksBuilder` registration are spec-level requirements, not implementation details; ⚠️ this is the first package with an `Microsoft.AspNetCore.App` framework reference — keep any WASM-relevant surface out of it, and do not regress Core's host-agnostic closure.
-- **Status**: 📝 — **next deliverable, in planning**. Dependencies 0 ✅ and 1 ✅. The technical-analyst is writing `_specs/2-ObservabilityBase.md` from the agreed hand-off brief (started 2026-07-26); the planner turns the approved spec into `_plans/2-ObservabilityBase.md`. Scope and source material below are unchanged and already agreed.
+- **Delivered (2026-07-30)** — `src/Cloudstrap.Observability/` + `src/Test/UnitTest/Cloudstrap.Observability.Tests/`. Verified on the final tree: build zero warnings · Cloudstrap.Core.Tests 52/52 · Cloudstrap.Observability.Tests 91/91 · `dotnet format --verify-no-changes` clean · Release `.nupkg` contents reviewed (README, icon, XML docs, nuspec metadata).
+  - **Shipped surface**: Serilog bootstrap + host logging (`CloudstrapBootstrapLogger`, `UseCloudstrapObservability`); vendor-neutral OTel pipeline with **owner** (default) and **contribute** modes across `Disabled|Console|Otlp|AzureMonitor` (AC-ASP1 proven end to end); trace noise filter + Blazor hub sampler; OTLP per-signal exporter setup; AzureMonitor fail-fast guard; `Cloudstrap.Observability.Correlation` (accessor, source, middleware, attributes); `IBusinessTrace`/`IBusinessTraceScope`; `CloudstrapActivitySources`; full package metadata + README; `PackageSurfaceTests` guards the public surface.
+  - **Seams and facts later deliverables inherit** (established here, do not re-litigate per package):
+    1. `MarkExporterContributed()` — the seam deliverable 3 fills to lift the AzureMonitor fail-fast guard.
+    2. `CorrelationHttpDelegatingHandler` + `AddCloudstrapCorrelationHandler` — the typed-HttpClient correlation seam deliverable 4 consumes.
+    3. `CloudstrapHealthCheckTags` (`"live"`/`"ready"`) — the cross-package health-tag contract consumed by deliverables 4, 5, 7 and 12.
+    4. **Core amendment (AC-C6)**: `OTEL_EXPORTER_OTLP_ENDPOINT` now satisfies the Otlp endpoint-required rule on both Core validation paths (DI `ValidateOnStart` and eager `GetCloudstrapOptions()`); Cloudstrap.Core.Tests grew to 52.
+    5. **First `Microsoft.AspNetCore.App` framework reference** in the suite (gate decision OQ-1 — one-package posture; the runtime-image consequence is documented in the package README). Core's host-agnostic closure is unregressed.
+    6. **First non-Microsoft dependencies**: Serilog 4.4.0 family + OpenTelemetry 1.17.0 family (all Apache-2.0, CPM-pinned in `src/Directory.Packages.props`); zero `Azure.*`, zero `Aspire.*` (AC-ASP2).
+- **Status**: ✅ — done 2026-07-30 (plan's final 🛑 gate checked; definition of done holds; user accepted 2026-07-30).
 
 ### 3. Azure Monitor exporter
 - **Goal**: A consumer sets `Cloudstrap:OpenTelemetry:Mode = AzureMonitor` + a connection string and telemetry lands in Application Insights, correlated by operation ID.
@@ -415,4 +426,5 @@ pushing a `Cloudstrap.*` package to a feed. Everything 2–24 is honestly ⬜ (#
 | 2026-07-26 | **Deliverable #1 (Cloudstrap.Core) → ✅.** `_plans/1-CoreSettingsModel.md` fully executed (5 steps, 3 🛑 gates, 19/19 boxes; gates approved 2026-07-26); AC-C1…AC-C10 + AC-ASP2 signed off. §1 gains a **Delivered** entry recording the shipped public surface, the Microsoft.Extensions-only / zero-`Aspire.*` / zero-`LanguageExt.*` dependency closure, and four facts later deliverables inherit: (1) `Microsoft.Extensions.Options.DataAnnotations` deliberately NOT taken — `[OptionsValidator]` source generation emits the `[Required]` checks (deviates from the spec's dependency table; user-confirmed at the Slice-2 gate); (2) get-only collection options mean configured values **append** to defaults rather than replace them (only `CorrelationRequestOptions.HealthEndpoints` ships non-empty defaults) — every consuming package inherits and must document this; (3) a broken section-level rule is reported twice at startup (root-relative + section-relative) — user-acknowledged; (4) the LanguageExt type-mapping decision stays open, deferred to the first genuine consumer. Overview row #2 marked **next**. | Deliverable complete and verified on disk (build 0/0, 49/49 tests, format exit 0, Release nupkg+snupkg clean). Facts 1–3 are cross-package conventions, so they belong at roadmap level rather than buried in one plan. |
 | 2026-07-26 | **Deliverable #0 (Repo scaffolding) → ✅.** Status went 📝 → 🔨 → ✅ within the day: the roadmap first recorded it as 🔨 because six operational boxes of the plan's final 🛑 gate were open (nuget.org prefix reservation · GitVersion probe review · PR `ci.yml` run · `dev` preview-publish no-op · `cleanup-previews.yml` dispatch · optional `v0.1.0` tag · workflow code review), which gated the first *publish* rather than local development. The user closed all of them the same day and approved the gate — `_plans/0-RepoScaffolding.md` is now 100% complete. **The `Cloudstrap.` package ID prefix is reserved on nuget.org**; together with the active Trusted Publishing policy and the `NUGET_USER` secret, the publish path is fully open and the prefix-reservation risk on §0 is resolved. | Roadmap rule: ✅ only when the plan's final gate is checked `[x]` — verified box-by-box on disk before flipping. The foundation band (0 + 1) is now closed and nothing operational stands between a finished package and a feed. |
 | 2026-07-26 | §2 source material re-verified file-by-file against the reference repo and expanded (DistributedTracing / Logging / Correlation / HealthChecks inventories, plus `Dynatrace\*` marked read-and-delete). Noted that `CorrelationHttpDelegatingHandler.cs` + `IHttpClientBuilderExtensions.cs` live in `Correlation\` — confirming the Observability-before-Extensions order — and that the Logging/OpenTelemetry/Correlation/HealthChecks **options types already ship in `Cloudstrap.Core`**, so #2 consumes rather than redefines them. §2 risks gain the explicit Aspire-overlap flag and a "do not regress Core's host-agnostic closure" note. | Pre-hand-off scope check for the next deliverable (ordering rule: verify against the source repo before scheduling). Two files the earlier entry omitted (`DeferredLoggerFactory.cs`, `NihdiConsoleFormatter.cs`) surfaced; the Core options boundary changed since the entry was written. |
+| 2026-07-30 | **Deliverable #2 (Cloudstrap.Observability) → ✅.** `_plans/2-ObservabilityBase.md` fully executed (12 steps, 6 🛑 gates, all boxes checked; user accepted 2026-07-30); AC-O2/O3/O4, AC-ASP1/ASP2, AC-B1…AC-B13 (+ amended AC-C6) signed off at the final gate. §2 gains a **Delivered** entry recording the shipped surface and six inherited seams/facts: the `MarkExporterContributed()` guard seam (#3), the correlation delegating-handler seam (#4), the `CloudstrapHealthCheckTags` `"live"`/`"ready"` contract (#4/5/7/12), the AC-C6 Core amendment (`OTEL_EXPORTER_OTLP_ENDPOINT` satisfies the Otlp endpoint rule on both validation paths), the suite's first `Microsoft.AspNetCore.App` framework reference (OQ-1, one-package posture), and the first non-Microsoft deps (Serilog 4.4.0 + OpenTelemetry 1.17.0 families, CPM-pinned, zero `Azure.*`/`Aspire.*`). Overview row #3 marked **next** (its only dependency, 2, is ✅); reconciliation note refreshed to 2026-07-30. | Roadmap rule: ✅ only when the plan's final gate is checked `[x]` — verified box-by-box on disk (52/52 + 91/91 tests, zero warnings, format clean, Release nupkg verified). |
 | 2026-07-25 | Hosting posture adopted (user-directed): supported matrix is **Azure Web Apps + containers/Kubernetes** (cloud-native) — on-prem IIS/VM hosting added to the founding spec's Non-Goals + Decisions Made. `_specs/1-CoreSettingsModel.md` amended post-approval: `IsRunningInAks()` verdict Redesign → **Drop** (no `CloudstrapEnvironment` helper ships); later packages expose explicit options wherever the source branched on the environment. technical-analyst instructions gain the matching drop-heuristic for legacy-hosting accommodations. | The source's K8s check was a cloud-AKS-vs-on-prem proxy that mis-classifies Azure Web Apps (no `KUBERNETES_SERVICE_HOST`); explicit, overridable options beat un-overridable environment sniffing. |
