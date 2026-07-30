@@ -567,9 +567,9 @@ This package introduces **no new configuration section** — everything it reads
 
 ⚠️ **Risk area — public API surface**: `ICorrelationContextAccessor`, `ICorrelationSource`, `CorrelationHttpDelegatingHandler`, `AddCloudstrapCorrelationHandler` and the two attributes are the seam deliverables 4 and 14 consume — permanent surface.
 
-- [ ] Behavioral verification: test exe output shows the ambient accessor flowing/isolated across async flows; the merged middleware honoring the inbound header, generating the trace id when absent, returning 400 `application/problem+json` naming the configured header, and all four exemptions (health path, excluded path, `[AllowNoCorrelation]`, health-check metadata); the delegating handler propagating the same value in the same header with set-if-absent and idempotent registration (AC-B4/B5/B6).
-- [ ] Code review: `Cloudstrap.Observability.Correlation` surface vs the Public API Sketch, type by type; no resurrected Drop rows (`CorrelationHeader` constant, `ICorrelationContext`/`DefaultCorrelationContext`, static `AsyncLocal`, already-set throw, `/swagger`-style hard-coded exemptions, display-name matching, response-header echo); ⚠️ planner mechanic (d) — `AddCloudstrapCorrelation` calling the framework's additive `AddProblemDetails()` — confirm or direct a change.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: test exe output shows the ambient accessor flowing/isolated across async flows; the merged middleware honoring the inbound header, generating the trace id when absent, returning 400 `application/problem+json` naming the configured header, and all four exemptions (health path, excluded path, `[AllowNoCorrelation]`, health-check metadata); the delegating handler propagating the same value in the same header with set-if-absent and idempotent registration (AC-B4/B5/B6).
+- [x] Code review: `Cloudstrap.Observability.Correlation` surface vs the Public API Sketch, type by type; no resurrected Drop rows (`CorrelationHeader` constant, `ICorrelationContext`/`DefaultCorrelationContext`, static `AsyncLocal`, already-set throw, `/swagger`-style hard-coded exemptions, display-name matching, response-header echo); ⚠️ planner mechanic (d) — `AddCloudstrapCorrelation` calling the framework's additive `AddProblemDetails()` — confirm or direct a change.
+- [x] User approved — implementation may continue past this gate *(approved 2026-07-29; planner mechanic (d) — additive `AddProblemDetails()` — confirmed)*
 
 ---
 
@@ -579,7 +579,7 @@ This package introduces **no new configuration section** — everything it reads
 
 ## Step 11 — Consumers record low-cardinality business spans through `IBusinessTrace`; the shared health-check tag vocabulary ships; AC-B1 resolution proven whole (AC-B1 full)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Observability/IBusinessTrace.cs` *(create)* — public interface: `IBusinessTraceScope StartSpan(string operation, string component)` (spec Port — with the documented low-cardinality guidance, no user/document identifiers).
@@ -623,7 +623,7 @@ This package introduces **no new configuration section** — everything it reads
 
 ## Step 12 — The package is publishable: complete metadata + README (incl. the shared-framework requirement), guarded dependency closure, zero enterprise identifiers (AC-B11, AC-B12, AC-O4, AC-O2/AC-ASP2 guards)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Observability/Cloudstrap.Observability.csproj` *(modify)* — `<Description>` (Serilog logging + vendor-neutral OpenTelemetry pipeline + correlation + business tracing driven by the `Cloudstrap:` section), `<PackageTags>$(PackageTags);observability;opentelemetry;serilog;tracing;correlation</PackageTags>`, `<PackageReadmeFile>README.md</PackageReadmeFile>` + `<None Include="README.md" Pack="true" PackagePath="/" />`.

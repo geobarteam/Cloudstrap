@@ -64,6 +64,7 @@ namespace Cloudstrap.Observability
             builder.Services.AddCloudstrapCore();
 
             builder.Services.AddCloudstrapCorrelation();
+            builder.Services.AddCloudstrapBusinessTrace();
 
             ExporterContributionMarker contributionMarker = new();
             builder.Services.AddSingleton(contributionMarker);

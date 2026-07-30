@@ -53,6 +53,7 @@ namespace Cloudstrap.Observability
                         tracing.SetSampler(BuildSampler(telemetry));
                     }
 
+                    tracing.AddSource(CloudstrapActivitySources.Business);
                     tracing.AddAspNetCoreInstrumentation();
                     tracing.AddHttpClientInstrumentation(instrumentation => instrumentation.RecordException = true);
 
@@ -164,9 +165,17 @@ namespace Cloudstrap.Observability
                 observabilityOptions.ConfigureResource?.Invoke(resourceBuilder);
             });
 
-            if (telemetry.EnableTracing && observabilityOptions.ApplySampler)
+            if (telemetry.EnableTracing)
             {
-                openTelemetry.WithTracing(tracing => tracing.SetSampler(BuildSampler(telemetry)));
+                openTelemetry.WithTracing(tracing =>
+                {
+                    tracing.AddSource(CloudstrapActivitySources.Business);
+
+                    if (observabilityOptions.ApplySampler)
+                    {
+                        tracing.SetSampler(BuildSampler(telemetry));
+                    }
+                });
             }
         }
 

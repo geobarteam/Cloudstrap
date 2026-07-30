@@ -6,6 +6,16 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Description>Serilog logging, a vendor-neutral OpenTelemetry pipeline (traces, metrics, logs), correlation and business tracing for ASP.NET Core applications — one call, driven by the Cloudstrap: configuration section.</Description>
+    <PackageTags>$(PackageTags);observability;opentelemetry;serilog;tracing;correlation</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
