@@ -14,6 +14,15 @@ Gate placement: steps run back-to-back WITHOUT user intervention — the executo
 at a 🛑 HUMAN GATE block. Place one gate at the end of each vertical slice. Add an extra
 gate only where earlier user judgment is essential (stub-UI sign-off before backend work
 starts, or after a ⚠️ Risk Area step). Never attach a gate to every step.
+
+Demonstration slice (MANDATORY for extraction deliverables — planner rule 15): the LAST slice
+of the plan extends the WASM SUT (src/Test/WasmTestProject) to exercise the deliverable's
+headline behavior and adds ≥ 1 E2E test to
+src/Test/WasmTestProject/test/Cloudstrap.WasmTestProject.E2E.Tests/ proving it through the
+running app. Its RED failing-run command targets the E2E executable, e.g.:
+  src\Test\WasmTestProject\test\Cloudstrap.WasmTestProject.E2E.Tests\bin\Debug\net10.0\Cloudstrap.WasmTestProject.E2E.Tests.exe --filter "<TestMethod>"
+Also update the demo table in src/Test/WasmTestProject/README.md. The slice's 🛑 HUMAN GATE
+covers the demo. Reference: _plans/25-WasmTestProjectSut.md.
 -->
 
 ---

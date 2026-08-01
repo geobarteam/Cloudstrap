@@ -24,6 +24,13 @@
 > AC-ASP2); composability with Aspire ServiceDefaults is an explicit spec concern for
 > deliverables 2 (AC-ASP1) and 4 (AC-ASP3); `Cloudstrap.Aspire` is NOT a v1 deliverable
 > (post-v1 option, user-approved only).
+>
+> **Standing rule — SUT demonstration (user-directed 2026-08-01, deliverable #25)**: every
+> deliverable's definition of done implicitly includes **demonstrating its headline behavior
+> in the WASM SUT** (`src/Test/WasmTestProject`) **with ≥ 1 passing E2E test** in
+> `Cloudstrap.WasmTestProject.E2E.Tests`, planned as the final slice of its `_plans/` file
+> (planner rule 15). This applies to deliverables 3–24 even though their entries below do
+> not repeat it.
 
 ## Dependency analysis (actual `<ProjectReference>` graph, verified 2026-07-25)
 
@@ -119,6 +126,7 @@ Old-package edges extracted from the source `.csproj` files:
 | 22 | Analytics abstraction + Matomo | Cloudstrap.Analytics + Cloudstrap.Analytics.Matomo | 21 | ⬜ | — |
 | 23 | Google Analytics adapter | Cloudstrap.Analytics.GoogleAnalytics | 22 | ⬜ | — |
 | 24 | Localization setup | Cloudstrap.Localization | 1 | ⬜ | — |
+| 25 | WASM SUT + E2E demonstration harness | `src/Test/WasmTestProject` (SUT + E2E tests — not a shipped package) | 1, 2 | 🔨 | `_plans/25-WasmTestProjectSut.md` |
 
 **Reconciled with reality 2026-07-30** (globbed `src/**/*.csproj`, read every plan's gate
 checkboxes): four `.csproj` files exist — `src/Cloudstrap.Core/`, `src/Cloudstrap.Observability/`
@@ -287,14 +295,15 @@ schedulable deliverable (its only dependency, 2, is ✅).
 - **Migration decisions**: `Nihdi.AspNetCore.AccessTokenManagement` → Duende ATM (via deliverable 9); `BlazorHubSampler` stays in Observability.
 - **De-NIHDI items**: probe path `/probe.aspx` → `/healthz`; naming; neutral fixtures.
 - **Definition of done**: build/tests/format green; XML docs; TestProject SUT boots and E2E smoke test passes; zero `Nihdi` identifiers.
-- **Risks**: ⚠️ First E2E infrastructure (Playwright) lands here.
+- **Risks**: ~~⚠️ First E2E infrastructure (Playwright) lands here~~ — resolved: the Playwright E2E harness already exists (deliverable #25); this deliverable reuses its patterns for the Blazor Server SUT.
 - **Status**: ⬜
 
 ### 13. Blazor WASM helpers (+ WasmTestProject SUT)
 - **Goal**: A consumer bootstraps a WASM client with cookie auth (BFF pattern), XSRF, and Refit clients; repo gains the WASM SUT.
 - **Source material**: `Nihdi.Core.Configuration.BlazorWasm\` (standalone; Refit, Components.Authorization); SUT inspiration: `Test\WasmTestProject\src\*`.
 - **Depends on**: 11 (band choice; package itself is standalone)
-- **Migration decisions**: browser-auth pattern (cookie + XSRF + `BffAuthenticationStateProvider`) ports as-is per spec; `Microsoft.Extensions.Localization` usage is stock — keep.
+- **Scope note (2026-08-01)**: the WASM SUT already exists — built by deliverable #25 (`src/Test/WasmTestProject`: Contracts, Presentation, Host/Wasm, Host/**Bff**, E2E harness). #13 no longer scaffolds it; it adds the BlazorWasm helpers and demos them in the existing SUT (cookie/BFF auth, XSRF, Refit clients replacing the plain `HttpClient`).
+- **Migration decisions**: browser-auth pattern (cookie + XSRF + `BffAuthenticationStateProvider`) ports as-is per spec; `Microsoft.Extensions.Localization` usage is stock — keep. Source's committee-named `Cfe` host → industry-standard **`Bff`** (decided at #25 Gate 1).
 - **De-NIHDI items**: naming; neutral fixtures.
 - **Definition of done**: build/tests/format green; XML docs; WASM SUT boots and smoke test passes; zero `Nihdi` identifiers.
 - **Risks**: `Refit` (MIT).
@@ -410,6 +419,16 @@ schedulable deliverable (its only dependency, 2, is ✅).
 - **Risks**: ⚠️ No source reference — scope must be pinned from the spec sentence alone; keep minimal.
 - **Status**: ⬜
 
+### 25. WASM SUT + E2E demonstration harness
+- **Goal**: Every delivered Cloudstrap feature is demonstrable in a running Blazor WASM app (`src/Test/WasmTestProject`) and proven by an E2E test (NUnit 4 + Microsoft.Playwright) that boots the real Bff host and drives a real browser; the demonstration becomes a standing definition-of-done rule for all deliverables.
+- **Plan**: `_plans/25-WasmTestProjectSut.md` (user-directed 2026-07-30; no spec — test infrastructure + process change, not a package port).
+- **Source material**: source `Test\WasmTestProject` (layout inspiration — rebuilt neutral and trimmed; the committee-named `Cfe` host renamed to industry-standard `Bff`). Not a shipped package: no NuGet output, no XML-doc requirement (`src/Test` tree).
+- **Depends on**: 1, 2 (the features it demonstrates).
+- **Delivered so far**: 4 SUT projects (Contracts · Presentation/MudBlazor · Host.Wasm · Host.Bff) + `Cloudstrap.WasmTestProject.E2E.Tests` (11 tests): home page boot; Core demo (`/diagnostics` server binding, client-side WASM binding badge, fail-fast startup validation); Observability demo (tagged health probes, ambient correlation id, `AddDoctor` business span asserted in captured console telemetry); CI runs the E2E suite (Playwright install step in `ci.yml`); `.vscode` launch configs; `src/Test/Directory.Build.props` made SUT-aware (NUnit/MTP wiring only for `*.Tests`); test-only CPM pins MudBlazor 9.7.0 (MIT), Microsoft.Playwright 1.61.0 (Apache-2.0), Microsoft.AspNetCore.Components.* 10.0.10 (MIT).
+- **Process artefacts**: planner rule 15 + interview/self-check items, plan-template demonstration-slice block, project-manager DoD + ✅-flip verification, CLAUDE.md workflow rule 9 + commands, tests.md E2E section, this roadmap's standing rule.
+- **Risks**: ⚠️ CI change (Playwright browser install step) — CI-green proof pending the first push.
+- **Status**: 🔨 — steps 1–5 done and gates 1–3 approved; final gate (process docs + CI green) pending.
+
 ## Change log
 
 | Date | Change | Why |
@@ -427,4 +446,5 @@ schedulable deliverable (its only dependency, 2, is ✅).
 | 2026-07-26 | **Deliverable #0 (Repo scaffolding) → ✅.** Status went 📝 → 🔨 → ✅ within the day: the roadmap first recorded it as 🔨 because six operational boxes of the plan's final 🛑 gate were open (nuget.org prefix reservation · GitVersion probe review · PR `ci.yml` run · `dev` preview-publish no-op · `cleanup-previews.yml` dispatch · optional `v0.1.0` tag · workflow code review), which gated the first *publish* rather than local development. The user closed all of them the same day and approved the gate — `_plans/0-RepoScaffolding.md` is now 100% complete. **The `Cloudstrap.` package ID prefix is reserved on nuget.org**; together with the active Trusted Publishing policy and the `NUGET_USER` secret, the publish path is fully open and the prefix-reservation risk on §0 is resolved. | Roadmap rule: ✅ only when the plan's final gate is checked `[x]` — verified box-by-box on disk before flipping. The foundation band (0 + 1) is now closed and nothing operational stands between a finished package and a feed. |
 | 2026-07-26 | §2 source material re-verified file-by-file against the reference repo and expanded (DistributedTracing / Logging / Correlation / HealthChecks inventories, plus `Dynatrace\*` marked read-and-delete). Noted that `CorrelationHttpDelegatingHandler.cs` + `IHttpClientBuilderExtensions.cs` live in `Correlation\` — confirming the Observability-before-Extensions order — and that the Logging/OpenTelemetry/Correlation/HealthChecks **options types already ship in `Cloudstrap.Core`**, so #2 consumes rather than redefines them. §2 risks gain the explicit Aspire-overlap flag and a "do not regress Core's host-agnostic closure" note. | Pre-hand-off scope check for the next deliverable (ordering rule: verify against the source repo before scheduling). Two files the earlier entry omitted (`DeferredLoggerFactory.cs`, `NihdiConsoleFormatter.cs`) surfaced; the Core options boundary changed since the entry was written. |
 | 2026-07-30 | **Deliverable #2 (Cloudstrap.Observability) → ✅.** `_plans/2-ObservabilityBase.md` fully executed (12 steps, 6 🛑 gates, all boxes checked; user accepted 2026-07-30); AC-O2/O3/O4, AC-ASP1/ASP2, AC-B1…AC-B13 (+ amended AC-C6) signed off at the final gate. §2 gains a **Delivered** entry recording the shipped surface and six inherited seams/facts: the `MarkExporterContributed()` guard seam (#3), the correlation delegating-handler seam (#4), the `CloudstrapHealthCheckTags` `"live"`/`"ready"` contract (#4/5/7/12), the AC-C6 Core amendment (`OTEL_EXPORTER_OTLP_ENDPOINT` satisfies the Otlp endpoint rule on both validation paths), the suite's first `Microsoft.AspNetCore.App` framework reference (OQ-1, one-package posture), and the first non-Microsoft deps (Serilog 4.4.0 + OpenTelemetry 1.17.0 families, CPM-pinned, zero `Azure.*`/`Aspire.*`). Overview row #3 marked **next** (its only dependency, 2, is ✅); reconciliation note refreshed to 2026-07-30. | Roadmap rule: ✅ only when the plan's final gate is checked `[x]` — verified box-by-box on disk (52/52 + 91/91 tests, zero warnings, format clean, Release nupkg verified). |
+| 2026-08-01 | **Deliverable #25 added (user-directed) and executed to its final gate**: WASM SUT (`src/Test/WasmTestProject`, `Bff`+`Wasm` hosts) + Playwright E2E harness + **standing SUT-demonstration rule** added to the preamble (every deliverable's DoD includes a SUT demo + E2E test). §12 risk updated (E2E infra no longer lands there); §13 re-scoped (SUT exists; adds helpers/auth/Refit demos to it; `Cfe`→`Bff` naming). Roadmap edits applied by the main agent on user instruction (project-manager not invoked). | User directive: "every time you migrate a new feature, demonstrate how it works on this test project" — institutionalized via planner rule 15, CLAUDE.md workflow rule 9, project-manager DoD, plan-template block, tests.md E2E section. |
 | 2026-07-25 | Hosting posture adopted (user-directed): supported matrix is **Azure Web Apps + containers/Kubernetes** (cloud-native) — on-prem IIS/VM hosting added to the founding spec's Non-Goals + Decisions Made. `_specs/1-CoreSettingsModel.md` amended post-approval: `IsRunningInAks()` verdict Redesign → **Drop** (no `CloudstrapEnvironment` helper ships); later packages expose explicit options wherever the source branched on the environment. technical-analyst instructions gain the matching drop-heuristic for legacy-hosting accommodations. | The source's K8s check was a cloud-AKS-vs-on-prem proxy that mis-classifies Azure Web Apps (no `KUBERNETES_SERVICE_HOST`); explicit, overridable options beat un-overridable environment sniffing. |

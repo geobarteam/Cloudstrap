@@ -260,15 +260,15 @@ stays with deliverable 12.
 
 *Executor: STOP here. Present the results of all covered steps and WAIT for user approval — do not start the next step.*
 
-- [ ] Behavioral verification: all `HealthAndCorrelationTests` + `DoctorsTests` pass; user optionally runs the app, adds a doctor, and sees the `AddDoctor` activity + correlation ID in the console output.
-- [ ] Code review: Program.cs bootstrap order matches the Observability README pattern (bootstrap logger → `UseCloudstrapObservability` → correlation middleware before endpoints; ordered flush on shutdown); stdout-polling test is retry-based, not sleep-flaky.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: all `HealthAndCorrelationTests` + `DoctorsTests` pass; user optionally runs the app, adds a doctor, and sees the `AddDoctor` activity + correlation ID in the console output.
+- [x] Code review: Program.cs bootstrap order matches the Observability README pattern (bootstrap logger → `UseCloudstrapObservability` → correlation middleware before endpoints; ordered flush on shutdown); stdout-polling test is retry-based, not sleep-flaky. *(Gate accepted 2026-08-01. Post-gate fix folded in: `Cloudstrap:Logging:LevelOverrides` restores `Microsoft.Hosting.Lifetime` to Information so the F5 `serverReadyAction` browser-open works — consumer override beats the framework seeds, itself a feature demo.)*
+- [x] User approved — implementation may continue past this gate *(2026-08-01, "verified and accepted")*
 
 ---
 
 ## Step 6 — Process change: every future deliverable must demonstrate in the SUT with an E2E test
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 *(Docs-only step — no unit test is possible; verification is grep-based checks + the final gate review, per the manual-verification allowance for non-code steps.)*
 
