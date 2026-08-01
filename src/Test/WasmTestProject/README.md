@@ -61,5 +61,7 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 |---|---|---|
 | `/` Home | — (skeleton) | `HomePageTests` — app boots, WASM renders, no console errors |
 | `/diagnostics` + `GET api/diagnostics/options` | Cloudstrap.Core (#1) | `DiagnosticsTests` — server-side binding (`AddCloudstrapCore`/`GetCloudstrapOptions`), client-side WASM binding (header badge), fail-fast startup validation |
+| `/healthz` + `/ready` + `GET api/diagnostics/correlation` | Cloudstrap.Observability (#2) | `HealthAndCorrelationTests` — tagged health probes (`CloudstrapHealthCheckTags`), ambient correlation id (inbound header adopted, generated otherwise) |
+| `/doctors` + `GET/POST api/doctor` | Cloudstrap.Observability (#2) | `DoctorsTests` — client→API round-trip; `AddDoctor` business span (`IBusinessTrace`) asserted in the captured console telemetry |
 
 *(Extended by every deliverable — see `_plans/ROADMAP.md`.)*

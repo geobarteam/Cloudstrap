@@ -187,15 +187,15 @@ stays with deliverable 12.
 
 *Executor: STOP here. Present the results of all covered steps and WAIT for user approval — do not start the next step.*
 
-- [ ] Behavioral verification: the three `DiagnosticsTests` methods pass; user optionally browses `/diagnostics` and sees the bound values; breaking `SystemName` locally aborts startup with the validation message.
-- [ ] Code review: diagnostics endpoint exposes only a safe subset (no secrets pattern established for future demos); client vs server binding clearly distinguishable in the UI.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: the three `DiagnosticsTests` methods pass; user optionally browses `/diagnostics` and sees the bound values; breaking `SystemName` locally aborts startup with the validation message.
+- [x] Code review: diagnostics endpoint exposes only a safe subset (no secrets pattern established for future demos); client vs server binding clearly distinguishable in the UI. *(Gate accepted 2026-07-30; `.vscode/launch.json` + `tasks.json` added at this gate on user request — F5 debugs the Bff, `blazorwasm` config debugs the client.)*
+- [x] User approved — implementation may continue past this gate *(2026-07-30)*
 
 ---
 
 ## Step 4 — Health endpoints live; requests are correlated (observable over HTTP)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/WasmTestProject/src/Host/Bff/Cloudstrap.WasmTestProject.Host.Bff.csproj` *(modify — ProjectReference `Cloudstrap.Observability`)*
@@ -204,11 +204,13 @@ stays with deliverable 12.
 
 **RED**:
 - E2E test file: `src/Test/WasmTestProject/test/Cloudstrap.WasmTestProject.E2E.Tests/HealthAndCorrelationTests.cs`
-- E2E test methods:
+- E2E test methods *(amended during READ: the middleware establishes the **ambient** correlation id via
+  `ICorrelationContextAccessor` and deliberately writes no response header — so correlation is asserted
+  through a new `GET api/diagnostics/correlation` endpoint returning the ambient id)*:
   - `Healthz_Get_Returns200Healthy` · `Ready_Get_Returns200`
-  - `ApiRequest_WithCorrelationHeader_ResponseEchoesSameId` (send `X-Correlation-ID: <guid>` to `api/diagnostics/options`, assert response header equals it)
-  - `ApiRequest_WithoutCorrelationHeader_ResponseCarriesGeneratedId`
-- Failing-run command: `...\Cloudstrap.WasmTestProject.E2E.Tests.exe --filter "HealthAndCorrelation"` *(fails: 404 / missing headers)*
+  - `ApiRequest_WithCorrelationHeader_AmbientCorrelationEchoesIt` (send `X-Correlation-ID: <guid>`, assert the returned ambient id equals it)
+  - `ApiRequest_WithoutCorrelationHeader_AmbientCorrelationIsGenerated` (non-empty, and differs between two calls)
+- Failing-run command: `...\Cloudstrap.WasmTestProject.E2E.Tests.exe --filter "HealthAndCorrelation"` *(fails: 404s)*
 
 **GREEN**: items in Scope. Demonstrates deliverable #2's hosting side: observability pipeline boot (Console mode), bootstrap logger, correlation middleware with the de-NIHDI'd `X-Correlation-ID` default, health-tag contract on the stock `IHealthChecksBuilder` (Aspire-additive posture).
 
@@ -224,7 +226,7 @@ stays with deliverable 12.
 
 ## Step 5 — Doctors round-trip with a business trace visible in console telemetry
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/WasmTestProject/src/Contracts/.../DoctorDto.cs`, `AddDoctorDto.cs` *(create)*

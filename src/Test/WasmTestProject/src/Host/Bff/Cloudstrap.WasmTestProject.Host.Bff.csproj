@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <!-- Workaround for a .NET 10 SDK bug: ApplyCompressionNegotiation fails with
+         "An item with the same key has already been added" on fingerprinted RCL static assets. -->
+    <DisableBuildCompression>true</DisableBuildCompression>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\..\Cloudstrap.Observability\Cloudstrap.Observability.csproj" />
     <ProjectReference Include="..\..\Contracts\Cloudstrap.WasmTestProject.Contracts.csproj" />
     <ProjectReference Include="..\Wasm\Cloudstrap.WasmTestProject.Host.Wasm.csproj" />
   </ItemGroup>

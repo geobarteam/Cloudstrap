@@ -7,8 +7,9 @@
     <IsPackable>false</IsPackable>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <!-- CA1707: the <Method>_<Scenario>_<Expected> test naming convention requires underscores -->
-    <!-- CA1848: tests drive loggers under test with plain ILogger calls; LoggerMessage delegates add nothing here -->
-    <NoWarn>$(NoWarn);CS1591;CA1707;CA1848</NoWarn>
+    <!-- CA1848/CA1873: tests and SUT apps drive loggers with plain ILogger calls; LoggerMessage
+         delegates and IsEnabled guards add nothing here -->
+    <NoWarn>$(NoWarn);CS1591;CA1707;CA1848;CA1873</NoWarn>
   </PropertyGroup>
 
   <!-- MTP test-runner wiring applies only to *.Tests projects — SUT apps and libraries under
