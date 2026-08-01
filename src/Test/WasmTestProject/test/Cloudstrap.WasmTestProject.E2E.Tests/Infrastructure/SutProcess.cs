@@ -34,8 +34,30 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure
             }
         }
 
-        /// <summary>Starts the Bff host bound to <paramref name="baseUrl"/>.</summary>
-        public static SutProcess Start(string baseUrl)
+        /// <summary>The exit code of the terminated SUT process.</summary>
+        public int ExitCode => _process.ExitCode;
+
+        /// <summary>
+        /// Waits for the SUT process to exit, then drains the async output streams so
+        /// <see cref="CapturedOutput"/> is complete.
+        /// </summary>
+        public bool WaitForExit(TimeSpan timeout)
+        {
+            bool exited = _process.WaitForExit((int)timeout.TotalMilliseconds);
+            if (exited)
+            {
+                _process.WaitForExit();
+            }
+
+            return exited;
+        }
+
+        /// <summary>
+        /// Starts the Bff host bound to <paramref name="baseUrl"/>. Optional
+        /// <paramref name="applicationArguments"/> are forwarded to the application (after
+        /// <c>--</c>), e.g. configuration overrides such as <c>--Cloudstrap:Application:SystemName=</c>.
+        /// </summary>
+        public static SutProcess Start(string baseUrl, IReadOnlyList<string>? applicationArguments = null)
         {
             string projectPath = Path.Combine(
                 FindRepoRoot(), "src", "Test", "WasmTestProject", "src", "Host", "Bff",
@@ -64,6 +86,15 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure
             startInfo.ArgumentList.Add(configuration);
             startInfo.ArgumentList.Add("--project");
             startInfo.ArgumentList.Add(projectPath);
+            if (applicationArguments is { Count: > 0 })
+            {
+                startInfo.ArgumentList.Add("--");
+                foreach (string argument in applicationArguments)
+                {
+                    startInfo.ArgumentList.Add(argument);
+                }
+            }
+
             startInfo.Environment["ASPNETCORE_URLS"] = baseUrl;
             startInfo.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
             startInfo.Environment["DOTNET_ENVIRONMENT"] = "Development";

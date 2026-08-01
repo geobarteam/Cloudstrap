@@ -9,6 +9,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
+    <ProjectReference Include="..\..\Contracts\Cloudstrap.WasmTestProject.Contracts.csproj" />
     <ProjectReference Include="..\Wasm\Cloudstrap.WasmTestProject.Host.Wasm.csproj" />
   </ItemGroup>
 

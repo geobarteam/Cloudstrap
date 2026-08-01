@@ -9,6 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
     <ProjectReference Include="..\..\Presentation\Cloudstrap.WasmTestProject.Presentation.csproj" />
   </ItemGroup>
 

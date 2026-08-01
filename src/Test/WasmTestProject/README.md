@@ -60,5 +60,6 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 | Page / endpoint | Package | E2E coverage |
 |---|---|---|
 | `/` Home | — (skeleton) | `HomePageTests` — app boots, WASM renders, no console errors |
+| `/diagnostics` + `GET api/diagnostics/options` | Cloudstrap.Core (#1) | `DiagnosticsTests` — server-side binding (`AddCloudstrapCore`/`GetCloudstrapOptions`), client-side WASM binding (header badge), fail-fast startup validation |
 
 *(Extended by every deliverable — see `_plans/ROADMAP.md`.)*

@@ -13,4 +13,9 @@
     <PackageReference Include="MudBlazor" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
+    <ProjectReference Include="..\Contracts\Cloudstrap.WasmTestProject.Contracts.csproj" />
+  </ItemGroup>
+
 </Project>

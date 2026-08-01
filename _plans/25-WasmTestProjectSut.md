@@ -141,16 +141,16 @@ stays with deliverable 12.
 
 *Executor: STOP here. Present the results of all covered steps and WAIT for user approval — do not start the next step.*
 
-- [ ] Behavioral verification: `HomePage_Loads_ShowsWelcomeHeadingAndNoConsoleErrors` passes locally; `runTests` runs 3 suites (Core 52, Observability 91, E2E 1+); user optionally runs the app manually (`dotnet run --project src/Test/WasmTestProject/src/Host/Bff`, browse `https://localhost:7200`).
-- [ ] Code review: project layout vs decision 1; `src/Test/Directory.Build.props` conditioning doesn't regress the two unit-test projects; new CPM pins (rule-4 dependency review: MudBlazor MIT, Playwright Apache-2.0, test-only); harness design (fixed port, stdout capture, no silent skips).
-- [ ] User approves pushing the branch so the modified `ci.yml` (⚠️ Step 2) proves the E2E leg in CI; CI run is green including the E2E exe.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: `HomePage_Loads_ShowsWelcomeHeadingAndNoConsoleErrors` passes locally; `runTests` runs 3 suites (Core 52, Observability 91, E2E 1+); user optionally runs the app manually (`dotnet run --project src/Test/WasmTestProject/src/Host/Bff`, browse `https://localhost:7200`).
+- [x] Code review: project layout vs decision 1; `src/Test/Directory.Build.props` conditioning doesn't regress the two unit-test projects; new CPM pins (rule-4 dependency review: MudBlazor MIT, Playwright Apache-2.0, test-only); harness design (fixed port, stdout capture, no silent skips). *(Gate accepted 2026-07-30; host renamed `Cfe` → `Bff` at this gate — decision 10.)*
+- [x] User approves pushing the branch so the modified `ci.yml` (⚠️ Step 2) proves the E2E leg in CI; CI run is green including the E2E exe. *(Deferred: work not yet committed/pushed — user pushes when ready; CI-green to be re-verified at the final gate.)*
+- [x] User approved — implementation may continue past this gate *(2026-07-30)*
 
 ---
 
 ## Step 3 — Diagnostics page shows live Cloudstrap.Core options; broken config fails fast
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/WasmTestProject/src/Host/Bff/Cloudstrap.WasmTestProject.Host.Bff.csproj` *(modify — ProjectReference `Cloudstrap.Core`)*
