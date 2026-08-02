@@ -1,5 +1,6 @@
 using Cloudstrap.Core;
 using Cloudstrap.Observability;
+using Cloudstrap.Observability.AzureMonitor;
 using Cloudstrap.Observability.Correlation;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -17,8 +18,11 @@ string workloadName = cloudstrapOptions.Application.WorkloadName;
 startupLogger.LogInformation("Configuration loaded for {WorkloadName}", workloadName);
 
 // Owner-mode observability: Serilog host logging plus the OTel pipeline selected by
-// Cloudstrap:OpenTelemetry (Console mode here); correlation services and IBusinessTrace included.
-builder.UseCloudstrapObservability();
+// Cloudstrap:OpenTelemetry (AzureMonitor mode here); correlation services and IBusinessTrace included.
+// AddAzureMonitor is unconditional — the mode decides whether it contributes anything (deliverable #3 demo).
+// Offline storage is off so a test run leaves no telemetry spool behind.
+builder.UseCloudstrapObservability()
+    .AddAzureMonitor(exporter => exporter.DisableOfflineStorage = true);
 
 builder.Services.AddControllers();
 builder.Services.AddSingleton<Cloudstrap.WasmTestProject.Host.Bff.Services.InMemoryDoctorStore>();

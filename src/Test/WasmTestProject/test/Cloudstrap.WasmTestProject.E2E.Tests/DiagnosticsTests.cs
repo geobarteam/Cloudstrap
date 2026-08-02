@@ -20,7 +20,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
             // Assert — values must match the Bff host's appsettings.json 'Cloudstrap' section
             await Assertions.Expect(Page.GetByTestId("server-workload"))
                 .ToContainTextAsync("wasmtestproject-application-bff", new LocatorAssertionsToContainTextOptions { Timeout = 30_000 });
-            await Assertions.Expect(Page.GetByTestId("server-otel-mode")).ToContainTextAsync("Console");
+            await Assertions.Expect(Page.GetByTestId("server-otel-mode")).ToContainTextAsync("AzureMonitor");
             await Assertions.Expect(Page.GetByTestId("server-correlation-header")).ToContainTextAsync("X-Correlation-ID");
             Assert.That(ConsoleErrors, Is.Empty, "The browser console reported errors while loading the diagnostics page.");
         }

@@ -381,7 +381,7 @@ This package owns exactly one new configuration section, **`Cloudstrap:AzureMoni
 
 ## Step 7 — The SUT's Bff boots in `AzureMonitor` mode with one chained call; E2E tests prove the guard lift, fail-fast, and per-environment mode flipping through the real app
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/WasmTestProject/src/Host/Bff/Cloudstrap.WasmTestProject.Host.Bff.csproj` *(modify)* — `<ProjectReference>` to `Cloudstrap.Observability.AzureMonitor`.

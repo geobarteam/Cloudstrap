@@ -51,6 +51,11 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 - Set **`CLOUDSTRAP_E2E_BASEURL`** to attach to an already-running instance instead.
 - Captures the SUT's stdout/stderr (`E2eFixture.CapturedSutOutput`) so tests can assert on
   console telemetry (OpenTelemetry Console exporter output).
+- The Bff runs in **`AzureMonitor`** mode against a syntactically valid but unreachable connection
+  string, so the Azure Monitor exporters are live while nothing is ever transmitted — the exporter
+  retries in the background without disturbing the app. `EnableConsole` stays at its default, which
+  is why the console-telemetry assertions above still work; `SamplingRatio` is pinned to `1.0` so
+  no span is sampled away. Offline storage is disabled, so a run leaves no telemetry spool behind.
 - Browser tests inherit `PageTestBase` (headless Chromium, fresh context per test,
   console-error collection). API-level tests use plain `HttpClient` against `E2eFixture.BaseUrl`.
 - A missing Chromium fails loudly with the install command — tests never silently skip.
@@ -63,5 +68,6 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 | `/diagnostics` + `GET api/diagnostics/options` | Cloudstrap.Core (#1) | `DiagnosticsTests` — server-side binding (`AddCloudstrapCore`/`GetCloudstrapOptions`), client-side WASM binding (header badge), fail-fast startup validation |
 | `/healthz` + `/ready` + `GET api/diagnostics/correlation` | Cloudstrap.Observability (#2) | `HealthAndCorrelationTests` — tagged health probes (`CloudstrapHealthCheckTags`), ambient correlation id (inbound header adopted, generated otherwise) |
 | `/doctors` + `GET/POST api/doctor` | Cloudstrap.Observability (#2) | `DoctorsTests` — client→API round-trip; `AddDoctor` business span (`IBusinessTrace`) asserted in the captured console telemetry |
+| `/diagnostics` mode badge + startup scenarios | Cloudstrap.Observability.AzureMonitor (#3) | `AzureMonitorTests` — exporter-contribution guard lifted (the host boots in `AzureMonitor` mode at all), fail-fast naming both connection-string sources, per-environment mode flip on unchanged code |
 
 *(Extended by every deliverable — see `_plans/ROADMAP.md`.)*
