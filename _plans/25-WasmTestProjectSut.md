@@ -298,6 +298,6 @@ stays with deliverable 12.
 
 *Executor: STOP here. Present the results of all covered steps and WAIT for user approval — do not start the next step.*
 
-- [ ] Behavioral verification: full suite green end to end (`dotnet build` · `runTests` incl. E2E · `dotnet format --verify-no-changes`); CI green on the branch.
-- [ ] Docs review: user reads the six updated documents and confirms the demonstration rule is stated where future planning actually happens (planner agent + template + CLAUDE.md workflow rules) and the roadmap reflects #25 ✅ + amended #13.
-- [ ] User approved — deliverable #25 complete; project-manager flips the roadmap row to ✅.
+- [x] Behavioral verification: full suite green end to end (`dotnet build` · `runTests` incl. E2E · `dotnet format --verify-no-changes`); CI green on the branch.
+- [x] Docs review: user reads the six updated documents and confirms the demonstration rule is stated where future planning actually happens (planner agent + template + CLAUDE.md workflow rules) and the roadmap reflects #25 ✅ + amended #13.
+- [x] User approved — deliverable #25 complete; project-manager flips the roadmap row to ✅. *(Approved 2026-08-02.)*

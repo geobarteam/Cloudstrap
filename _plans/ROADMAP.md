@@ -104,8 +104,8 @@ Old-package edges extracted from the source `.csproj` files:
 | 0 | Repo scaffolding | `src/Cloudstrap.sln`, `Directory.Build.props` (SDK analyzers, no StyleCop), `Directory.Packages.props` (CPM), `.editorconfig`, `GitVersion.yml`, `global.json`, `nuget.config`, CI workflows | — | ✅ | `_plans/0-RepoScaffolding.md` |
 | 1 | Core settings model | Cloudstrap.Core | 0 | ✅ | `_plans/1-CoreSettingsModel.md` |
 | 2 | Observability base | Cloudstrap.Observability | 1 ✅ | ✅ | `_plans/2-ObservabilityBase.md` |
-| 3 | Azure Monitor exporter ← **next** | Cloudstrap.Observability.AzureMonitor | 2 ✅ | ⬜ | — |
-| 4 | Config/KeyVault/HTTP extensions | Cloudstrap.Extensions | 1, 2 | ⬜ | — |
+| 3 | Azure Monitor exporter | Cloudstrap.Observability.AzureMonitor | 2 ✅ | ✅ | `_plans/3-AzureMonitorExporter.md` |
+| 4 | Config/KeyVault/HTTP extensions ← **next** | Cloudstrap.Extensions | 1 ✅, 2 ✅ | 📝 | — |
 | 5 | WebApi bootstrap | Cloudstrap.WebApi | 4 | ⬜ | — |
 | 6 | MVC bootstrap | Cloudstrap.Mvc | 4 | ⬜ | — |
 | 7 | Worker bootstrap | Cloudstrap.Worker | 4 | ⬜ | — |
@@ -126,17 +126,18 @@ Old-package edges extracted from the source `.csproj` files:
 | 22 | Analytics abstraction + Matomo | Cloudstrap.Analytics + Cloudstrap.Analytics.Matomo | 21 | ⬜ | — |
 | 23 | Google Analytics adapter | Cloudstrap.Analytics.GoogleAnalytics | 22 | ⬜ | — |
 | 24 | Localization setup | Cloudstrap.Localization | 1 | ⬜ | — |
-| 25 | WASM SUT + E2E demonstration harness | `src/Test/WasmTestProject` (SUT + E2E tests — not a shipped package) | 1, 2 | 🔨 | `_plans/25-WasmTestProjectSut.md` |
+| 25 | WASM SUT + E2E demonstration harness | `src/Test/WasmTestProject` (SUT + E2E tests — not a shipped package) | 1, 2 | ✅ | `_plans/25-WasmTestProjectSut.md` |
 
-**Reconciled with reality 2026-07-30** (globbed `src/**/*.csproj`, read every plan's gate
-checkboxes): four `.csproj` files exist — `src/Cloudstrap.Core/`, `src/Cloudstrap.Observability/`
-and their two test projects under `src/Test/UnitTest/`. All three executed plans are 100%
-complete with every 🛑 gate box checked: `_plans/0-RepoScaffolding.md` (final gate closed
-2026-07-26, incl. the nuget.org prefix reservation) → #0 ✅; `_plans/1-CoreSettingsModel.md`
-(19/19 boxes) → #1 ✅; `_plans/2-ObservabilityBase.md` (12 steps, 6 gates — final gate
-accepted 2026-07-30) → #2 ✅. **The publish path remains open** — nothing operational blocks
-pushing a `Cloudstrap.*` package to a feed. Everything 3–24 is honestly ⬜; #3 is the next
-schedulable deliverable (its only dependency, 2, is ✅).
+**Reconciled with reality 2026-08-02, second pass (post-gate approvals)**: both in-flight
+plans verified box-by-box on disk — **zero unchecked boxes** in `_plans/3-AzureMonitorExporter.md`
+(final 🛑 gate user-approved 2026-08-02) and `_plans/25-WasmTestProjectSut.md`; the
+SUT-demonstration rule is met for #3 (`AzureMonitorTests.cs` exists in
+`Cloudstrap.WasmTestProject.E2E.Tests`). **#3 → ✅, #25 → ✅.** Tally: **5 ✅ (#0, #1, #2,
+#3, #25) · 0 in flight (🔨) · 21 remaining (#4–#24)**. #4 (`Cloudstrap.Extensions`) is 📝:
+`_specs/4-ConfigKeyVaultHttpExtensions.md` exists (technical-analyst) with **3 Open
+Questions pending user answers** — implementation is unblocked as soon as that spec is
+approved with zero Open Questions and the planner's `_plans/4-…md` is approved (no other
+deliverable is in flight).
 
 ## Deliverable details
 
@@ -200,23 +201,33 @@ schedulable deliverable (its only dependency, 2, is ✅).
 
 ### 3. Azure Monitor exporter
 - **Goal**: A consumer sets `Cloudstrap:OpenTelemetry:Mode = AzureMonitor` + a connection string and telemetry lands in Application Insights, correlated by operation ID.
+- **Spec**: `_specs/3-AzureMonitorExporter.md` (AC-AM1…AC-AM12).
+- **Plan**: `_plans/3-AzureMonitorExporter.md` — 7 steps / 4 gates; steps 1–7 all done, gates 1–3 approved.
 - **Source material**: new package (spec "Observability Migration" §1); mode plumbing from `Common\DistributedTracing\ServiceCollectionExtensions.cs`.
-- **Depends on**: 2
+- **Depends on**: 2 ✅
 - **Migration decisions**: `Azure.Monitor.OpenTelemetry.Exporter` (`AddAzureMonitorTraceExporter`/`MetricExporter`/`LogExporter`); connection string from setting or `APPLICATIONINSIGHTS_CONNECTION_STRING`; AAD credential support; expose fixed-rate sampling + `AlwaysOnSampler` dev flag.
 - **De-NIHDI items**: none beyond naming (new code).
-- **Definition of done**: build/tests/format green; XML docs; AC-O1 demonstrable against a real App Insights resource (manual verification documented — unit tests mock at boundary); base package (2) still loads zero Azure assemblies in Otlp mode (AC-O2 regression).
+- **Definition of done**: build/tests/format green; XML docs; AC-O1 demonstrable against a real App Insights resource (manual verification documented — unit tests mock at boundary); base package (2) still loads zero Azure assemblies in Otlp mode (AC-O2 regression); SUT demo (standing rule): Bff boots in `AzureMonitor` mode + `AzureMonitorTests` E2E green.
 - **Risks**: ⚠️ New dependency `Azure.Monitor.OpenTelemetry.Exporter` (MIT) — keep isolated so base stays exporter-agnostic.
-- **Status**: ⬜
+- **Delivered (2026-08-02)** — `src/Cloudstrap.Observability.AzureMonitor/` + `src/Test/UnitTest/Cloudstrap.Observability.AzureMonitor.Tests/`; all 7 steps / 4 🛑 gates closed; AC-O1, AC-O2, AC-ASP2 and AC-AM1…AC-AM12 signed off at the final gate. Shipped: chained `AddAzureMonitor()` entry point, safe (inert) in every mode; `AzureMonitorOptions` under `Cloudstrap:AzureMonitor` (validated, both connection-string sources — setting wins, `APPLICATIONINSIGHTS_CONNECTION_STRING` fallback); per-signal exporters with the #2 `MarkExporterContributed()` guard lifted; sampling policy (platform default · `SamplingRatio` · `TracesPerSecond` · `AlwaysOnSampler` dev flag); Entra ID ingestion auth (`UseDefaultAzureCredential` flag, hook-supplied credential wins); base-package amendment for Blazor hub-span parity (AC-AM9, `EnableBlazorHubTracing` override) with AC-O2/loaded-assembly tripwires re-proven; AC-O1 manual verification procedure documented in the package README. SUT demo: Bff boots in `AzureMonitor` mode; `AzureMonitorTests` E2E green. New deps (CPM-pinned, MIT): `Azure.Monitor.OpenTelemetry.Exporter`, `Azure.Identity` — first `Azure.*` deps in the suite, quarantined in this leaf; base package closure unchanged.
+- **Status**: ✅ — done 2026-08-02 (final 🛑 gate checked `[x]`; definition of done incl. the SUT demonstration verified on disk).
 
-### 4. Config/KeyVault/HTTP extensions
+### 4. Config/KeyVault/HTTP extensions ← **next (in technical analysis)**
 - **Goal**: A consumer bootstraps KeyVault-backed configuration, Azure Blob DataProtection, typed `HttpClient` registration (`AddCloudstrapHttpServiceClient<TI,TImpl>`), and hosting helpers with one call each.
-- **Source material**: `Nihdi.Core.Configuration.Common\` — `KeyVault\*` (`AddAzureKeyvaultForNihdi.cs`, `PrefixKeyVaultSecretManager.cs`), `BlobStorage\*`, `HttpClient\*`, `Extensions\*` (incl. `IHostApplicationBuilderExtensions.cs`, `ProbeHealthCheckExtensions.cs`), `Host\HostRunner.cs`, `Options\*`, `Serialization\*`.
-- **Depends on**: 1, 2 (correlation delegating handler + bootstrap logger)
+- **Spec**: `_specs/4-ConfigKeyVaultHttpExtensions.md` — in analysis (technical-analyst, hand-off 2026-08-02); **3 Open Questions pending user answers**. Planner starts only once the spec is approved with zero Open Questions.
+- **Source material** *(file inventory re-verified against the reference repo 2026-08-02)*: `Nihdi.Core.Configuration.Common\` —
+  - `KeyVault\` — `AddAzureKeyvaultForNihdi.cs`, `PrefixKeyVaultSecretManager.cs`;
+  - `BlobStorage\` — `IHostApplicationBuilderExtension.cs`, `ServiceCollectionExtensions.cs`;
+  - `HttpClient\` — `ConfigurationExtension.cs`, `ServiceCollectionExtensions.cs`;
+  - `Extensions\` — `IHostApplicationBuilderExtensions.cs` (⚠️ hard-coded KeyVault naming lives here), `IHostBuilderExtensions.cs`, `WebApplicationBuilderExtensions.cs`, `ApplicationBuilderExtensions.cs`, `EndpointRouteBuilderExtension.cs`, `LoggingBuilderExtensions.cs`, `ProbeHealthCheckExtensions.cs`;
+  - `Host\HostRunner.cs`; `Options\` — `AddWebOptions.cs`, `UseWebOptions.cs`; `Serialization\DictionaryTKeyEnumTValueConverter.cs`; `Services\ServiceCollectionExtensions.cs`; `AssemblyVisibility.cs` (`InternalsVisibleTo` — Worker consumes Common internals; decide public seam vs re-established `InternalsVisibleTo` here, see §7).
+  - **Read-and-route, not this deliverable**: `Correlation\`, `DistributedTracing\`, `Logging\`, `HealthChecks\`, `Dynatrace\` already handled/deleted by #2; `Scalar\*` moves to #5 (WebApi).
+- **Depends on**: 1 ✅, 2 ✅ (correlation delegating handler + bootstrap logger)
 - **Migration decisions**: `Scalar\*` moves to deliverable 5 (WebApi); drop `Nihdi.AspNetCore.Localization` dependency entirely; auth-token attachment for typed clients becomes an integration seam filled by deliverable 9 (no dependency from 4 to 9); `Nihdi.Core.Health` → stock health checks. **Aspire coexistence**: `AddCloudstrapHttpServiceClient<TI,TImpl>` tolerates resilience handlers already applied via `ConfigureHttpClientDefaults` — no stacked resilience (AC-ASP3); KeyVault config documented "Cloudstrap's or Aspire's, not both" (secret-prefix filter is the differentiator); support standard `ConnectionStrings:` names where sensible.
 - **De-NIHDI items**: hard-coded KeyVault naming → `Cloudstrap:KeyVault:VaultUri` (+ optional secret-prefix defaulting to `Application:WorkloadName`); hard-coded storage naming → `Cloudstrap:Storage:BlobServiceUri` (container defaults to `Application:SystemName`); `AddAzureKeyvaultForNihdi` → `AddCloudstrapKeyVault`.
 - **Definition of done**: build/tests/format green; XML docs; no reference to any auth package; ⚠️-flagged deps reviewed (`Microsoft.AspNet.WebApi.Client`, `NWebsec.AspNetCore.Middleware` — drop or justify); AC-ASP3 (no stacked resilience) covered by test; zero `Nihdi` identifiers.
-- **Risks**: ⚠️ New external deps: `Azure.Identity`, `Azure.Extensions.AspNetCore.Configuration.Secrets`, `Azure.Extensions.AspNetCore.DataProtection.{Blobs,Keys}` (all MIT); ⚠️ NWebsec appears unmaintained — decide replace/drop here.
-- **Status**: ⬜
+- **Risks**: ⚠️ New external deps: `Azure.Identity` (already CPM-pinned by #3), `Azure.Extensions.AspNetCore.Configuration.Secrets`, `Azure.Extensions.AspNetCore.DataProtection.{Blobs,Keys}` (all MIT); ⚠️ NWebsec appears unmaintained — decide replace/drop here.
+- **Status**: 📝 — spec in analysis; implementation unblocked (no deliverable in flight) once the spec (zero Open Questions) and `_plans/4-ConfigKeyVaultHttpExtensions.md` are approved.
 
 ### 5. WebApi bootstrap
 - **Goal**: A consumer calls `AddCloudstrapWebApi` to get API versioning, OpenAPI (NSwag/Scalar UI), hardened middleware, health endpoints, and `AddCloudstrapJwtBearer`.
@@ -426,8 +437,8 @@ schedulable deliverable (its only dependency, 2, is ✅).
 - **Depends on**: 1, 2 (the features it demonstrates).
 - **Delivered so far**: 4 SUT projects (Contracts · Presentation/MudBlazor · Host.Wasm · Host.Bff) + `Cloudstrap.WasmTestProject.E2E.Tests` (11 tests): home page boot; Core demo (`/diagnostics` server binding, client-side WASM binding badge, fail-fast startup validation); Observability demo (tagged health probes, ambient correlation id, `AddDoctor` business span asserted in captured console telemetry); CI runs the E2E suite (Playwright install step in `ci.yml`); `.vscode` launch configs; `src/Test/Directory.Build.props` made SUT-aware (NUnit/MTP wiring only for `*.Tests`); test-only CPM pins MudBlazor 9.7.0 (MIT), Microsoft.Playwright 1.61.0 (Apache-2.0), Microsoft.AspNetCore.Components.* 10.0.10 (MIT).
 - **Process artefacts**: planner rule 15 + interview/self-check items, plan-template demonstration-slice block, project-manager DoD + ✅-flip verification, CLAUDE.md workflow rule 9 + commands, tests.md E2E section, this roadmap's standing rule.
-- **Risks**: ⚠️ CI change (Playwright browser install step) — CI-green proof pending the first push.
-- **Status**: 🔨 — steps 1–5 done and gates 1–3 approved; final gate (process docs + CI green) pending.
+- **Risks**: ~~⚠️ CI change (Playwright browser install step) — CI-green proof pending the first push~~ — resolved at the final gate (CI green verified).
+- **Status**: ✅ — done 2026-08-02 (final 🛑 gate checked `[x]`: full suite + CI green, process docs reviewed). The standing SUT-demonstration rule is now institutionalized for every remaining deliverable.
 
 ## Change log
 
@@ -447,4 +458,6 @@ schedulable deliverable (its only dependency, 2, is ✅).
 | 2026-07-26 | §2 source material re-verified file-by-file against the reference repo and expanded (DistributedTracing / Logging / Correlation / HealthChecks inventories, plus `Dynatrace\*` marked read-and-delete). Noted that `CorrelationHttpDelegatingHandler.cs` + `IHttpClientBuilderExtensions.cs` live in `Correlation\` — confirming the Observability-before-Extensions order — and that the Logging/OpenTelemetry/Correlation/HealthChecks **options types already ship in `Cloudstrap.Core`**, so #2 consumes rather than redefines them. §2 risks gain the explicit Aspire-overlap flag and a "do not regress Core's host-agnostic closure" note. | Pre-hand-off scope check for the next deliverable (ordering rule: verify against the source repo before scheduling). Two files the earlier entry omitted (`DeferredLoggerFactory.cs`, `NihdiConsoleFormatter.cs`) surfaced; the Core options boundary changed since the entry was written. |
 | 2026-07-30 | **Deliverable #2 (Cloudstrap.Observability) → ✅.** `_plans/2-ObservabilityBase.md` fully executed (12 steps, 6 🛑 gates, all boxes checked; user accepted 2026-07-30); AC-O2/O3/O4, AC-ASP1/ASP2, AC-B1…AC-B13 (+ amended AC-C6) signed off at the final gate. §2 gains a **Delivered** entry recording the shipped surface and six inherited seams/facts: the `MarkExporterContributed()` guard seam (#3), the correlation delegating-handler seam (#4), the `CloudstrapHealthCheckTags` `"live"`/`"ready"` contract (#4/5/7/12), the AC-C6 Core amendment (`OTEL_EXPORTER_OTLP_ENDPOINT` satisfies the Otlp endpoint rule on both validation paths), the suite's first `Microsoft.AspNetCore.App` framework reference (OQ-1, one-package posture), and the first non-Microsoft deps (Serilog 4.4.0 + OpenTelemetry 1.17.0 families, CPM-pinned, zero `Azure.*`/`Aspire.*`). Overview row #3 marked **next** (its only dependency, 2, is ✅); reconciliation note refreshed to 2026-07-30. | Roadmap rule: ✅ only when the plan's final gate is checked `[x]` — verified box-by-box on disk (52/52 + 91/91 tests, zero warnings, format clean, Release nupkg verified). |
 | 2026-08-01 | **Deliverable #25 added (user-directed) and executed to its final gate**: WASM SUT (`src/Test/WasmTestProject`, `Bff`+`Wasm` hosts) + Playwright E2E harness + **standing SUT-demonstration rule** added to the preamble (every deliverable's DoD includes a SUT demo + E2E test). §12 risk updated (E2E infra no longer lands there); §13 re-scoped (SUT exists; adds helpers/auth/Refit demos to it; `Cfe`→`Bff` naming). Roadmap edits applied by the main agent on user instruction (project-manager not invoked). | User directive: "every time you migrate a new feature, demonstrate how it works on this test project" — institutionalized via planner rule 15, CLAUDE.md workflow rule 9, project-manager DoD, plan-template block, tests.md E2E section. |
+| 2026-08-02 | **Deliverables #3 (Cloudstrap.Observability.AzureMonitor) and #25 (WASM SUT + E2E harness) → ✅.** Both final 🛑 gates user-approved 2026-08-02; verified box-by-box on disk (zero unchecked boxes in either plan) and the SUT-demonstration rule confirmed for #3 (`AzureMonitorTests.cs` in the E2E suite). §3 gains a **Delivered** entry (chained `AddAzureMonitor()`, `Cloudstrap:AzureMonitor` options, per-signal exporters + guard lift, sampling policy, Entra ID auth, AC-AM9 base amendment, AC-O1 manual procedure; first `Azure.*` deps quarantined in the leaf); §25's CI risk resolved. Tally: 5 ✅ · 0 🔨 · 21 ⬜. **#4 set to 📝** — `_specs/4-ConfigKeyVaultHttpExtensions.md` in analysis with 3 Open Questions pending user answers; #4 implementation is unblocked (one-in-flight rule satisfied) as soon as its spec and plan are approved. | Roadmap rule: ✅ only when the plan's final gate is checked `[x]` and the DoD (incl. SUT demo + E2E) holds — verified before flipping; 📝 when the technical-analyst is engaged. |
+| 2026-08-02 | **Reconciliation + next-deliverable decision.** #3 (Azure Monitor exporter) corrected ⬜ → **🔨**: `_plans/3-AzureMonitorExporter.md` + `_specs/3-AzureMonitorExporter.md` exist, all 7 steps `[x]`, gates 1–3 approved — only the final 🛑 gate (behavioral verification, AC-O1 procedure review, AC walk, docs review, user approval) is open; Slice-4 SUT work (`AzureMonitorTests.cs`, Bff `AzureMonitor` wiring) is uncommitted on `0-RepoScaffold`. #25 stays 🔨 (final gate: CI-green + docs review). **#4 (Cloudstrap.Extensions) marked next — entering technical analysis**: its deps (1, 2) are ✅, #3 is not among them, and no other deliverable has unfinished *steps* (both in-flight plans await only final-gate approval, so analysis of #4 can proceed without a second implementation in flight; implementation of #4 must not start before #3's final gate closes). §4 source material re-verified file-by-file: inventory expanded (`Options\AddWebOptions/UseWebOptions`, `Serialization\DictionaryTKeyEnumTValueConverter`, `Services\ServiceCollectionExtensions`, `AssemblyVisibility.cs` InternalsVisibleTo seam) + explicit read-and-route boundary (Correlation/Tracing/Logging/HealthChecks/Dynatrace → #2 done; `Scalar\*` → #5). | Deciding-next rules: reconcile before deciding; first ⬜ deliverable with all deps ✅; verify scope against the source repo pre-hand-off. |
 | 2026-07-25 | Hosting posture adopted (user-directed): supported matrix is **Azure Web Apps + containers/Kubernetes** (cloud-native) — on-prem IIS/VM hosting added to the founding spec's Non-Goals + Decisions Made. `_specs/1-CoreSettingsModel.md` amended post-approval: `IsRunningInAks()` verdict Redesign → **Drop** (no `CloudstrapEnvironment` helper ships); later packages expose explicit options wherever the source branched on the environment. technical-analyst instructions gain the matching drop-heuristic for legacy-hosting accommodations. | The source's K8s check was a cloud-AKS-vs-on-prem proxy that mis-classifies Azure Web Apps (no `KUBERNETES_SERVICE_HOST`); explicit, overridable options beat un-overridable environment sniffing. |
