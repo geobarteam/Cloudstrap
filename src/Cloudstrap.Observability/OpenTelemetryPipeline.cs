@@ -48,9 +48,20 @@ namespace Cloudstrap.Observability
             {
                 openTelemetry.WithTracing(tracing =>
                 {
-                    if (observabilityOptions.ApplySampler)
+                    // An Azure Monitor exporter installs its own sampler after this point and wins, so a
+                    // sampler set here would be silently discarded. Hub suppression moves to an export-time
+                    // scrub instead — deliberately not subject to ApplySampler, which governs sampler
+                    // installation, and in this mode Cloudstrap installs no sampler at all.
+                    bool exporterOwnsSampler = telemetry.Mode == OpenTelemetryMode.AzureMonitor;
+
+                    if (observabilityOptions.ApplySampler && !exporterOwnsSampler)
                     {
                         tracing.SetSampler(BuildSampler(telemetry));
+                    }
+
+                    if (exporterOwnsSampler && !telemetry.EnableBlazorHubTracing)
+                    {
+                        tracing.AddProcessor(new BlazorHubScrubProcessor());
                     }
 
                     tracing.AddSource(CloudstrapActivitySources.Business);

@@ -9,9 +9,6 @@ namespace Cloudstrap.Observability
     /// </summary>
     internal sealed class BlazorHubSampler : Sampler
     {
-        private const string _rpcServiceTagKey = "rpc.service";
-        private const string _componentHubServiceName = "ComponentHub";
-
         private readonly Sampler _innerSampler;
 
         public BlazorHubSampler(Sampler innerSampler)
@@ -25,7 +22,8 @@ namespace Cloudstrap.Observability
             {
                 foreach (KeyValuePair<string, object?> tag in samplingParameters.Tags)
                 {
-                    if (tag.Key == _rpcServiceTagKey && Equals(tag.Value, _componentHubServiceName))
+                    if (tag.Key == BlazorHubActivity.RpcServiceTagKey
+                        && Equals(tag.Value, BlazorHubActivity.ComponentHubServiceName))
                     {
                         return new SamplingResult(SamplingDecision.Drop);
                     }

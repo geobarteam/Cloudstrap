@@ -2,6 +2,8 @@ namespace Cloudstrap.Observability.Tests
 {
     using System.Reflection;
     using System.Text.RegularExpressions;
+    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.Hosting;
     using NUnit.Framework;
 
     /// <summary>
@@ -44,6 +46,41 @@ namespace Cloudstrap.Observability.Tests
                 Assert.That(unexpected, Is.Empty, $"Unexpected references: {string.Join(", ", unexpected)}");
                 Assert.That(forbidden, Is.Empty, $"Forbidden references: {string.Join(", ", forbidden)}");
             });
+        }
+
+        [Test]
+        public async Task OtlpMode_HostLifecycle_LoadsNoAzureAssemblies()
+        {
+            // Arrange — the runtime half of AC-O2, now that Azure packages exist in the solution: the base
+            // package must not drag the Azure SDK into a process that never asked for Application Insights
+            HostApplicationBuilder builder = Host.CreateApplicationBuilder(
+                new HostApplicationBuilderSettings { DisableDefaults = true });
+            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Cloudstrap:Application:SystemName"] = "Contoso",
+                ["Cloudstrap:Application:SubsystemName"] = "Orders",
+                ["Cloudstrap:Application:SubsystemType"] = "Api",
+                ["Cloudstrap:OpenTelemetry:Mode"] = "Otlp",
+                ["Cloudstrap:OpenTelemetry:Endpoint"] = "https://collector.example.com",
+            });
+            builder.UseCloudstrapObservability();
+
+            // Act
+            using (IHost host = builder.Build())
+            {
+                await host.StartAsync();
+                await host.StopAsync();
+            }
+
+            // Assert
+            string[] azureAssemblies = [.. AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Select(assembly => assembly.GetName().Name ?? string.Empty)
+                .Where(name => name.StartsWith("Azure", StringComparison.Ordinal))];
+            Assert.That(
+                azureAssemblies,
+                Is.Empty,
+                $"Otlp mode loaded Azure assemblies: {string.Join(", ", azureAssemblies)}");
         }
 
         [Test]

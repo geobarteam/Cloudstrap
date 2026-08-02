@@ -201,6 +201,54 @@ namespace Cloudstrap.Observability.Tests
         }
 
         [Test]
+        public void ContributeMode_InAzureMonitorMode_AddsNoExportTimeScrub()
+        {
+            // Arrange — the owner-mode hub scrub must not leak into contribute mode, where suppression and
+            // exporter selection are the host's. ApplySampler is off so Cloudstrap contributes no sampler
+            // either, and the second exporter is registered AFTER Cloudstrap: a scrub processor would sit
+            // ahead of it and the hub span would be missing there
+            List<Activity> hostExported = [];
+            List<Activity> afterCloudstrap = [];
+            Dictionary<string, string?> values = MinimalValid();
+            values["Cloudstrap:OpenTelemetry:Mode"] = "AzureMonitor";
+
+            HostApplicationBuilder builder = Host.CreateApplicationBuilder(
+                new HostApplicationBuilderSettings { DisableDefaults = true });
+            builder.Configuration.AddInMemoryCollection(values);
+            builder.Services.AddOpenTelemetry()
+                .WithTracing(tracing => tracing.AddSource("Contoso.Test").AddInMemoryExporter(hostExported));
+            builder.UseCloudstrapObservability(options =>
+            {
+                options.PipelineMode = ObservabilityPipelineMode.Contribute;
+                options.ApplySampler = false;
+            });
+            builder.Services.AddOpenTelemetry()
+                .WithTracing(tracing => tracing.AddInMemoryExporter(afterCloudstrap));
+
+            using IHost host = builder.Build();
+            using (ActivitySource source = new("Contoso.Test"))
+            {
+                _ = host.Services.GetRequiredService<TracerProvider>();
+
+                // Act
+                using (source.StartActivity(
+                    "HubSpan", ActivityKind.Server, parentContext: default,
+                    tags: [new("rpc.service", "ComponentHub")]))
+                {
+                }
+
+                host.Services.GetRequiredService<TracerProvider>().ForceFlush();
+            }
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(hostExported.Select(activity => activity.DisplayName), Does.Contain("HubSpan"));
+                Assert.That(afterCloudstrap.Select(activity => activity.DisplayName), Does.Contain("HubSpan"));
+            });
+        }
+
+        [Test]
         public void ContributeMode_StillAddsSerilogAndLevels()
         {
             // Arrange

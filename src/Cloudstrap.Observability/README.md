@@ -50,7 +50,28 @@ listing every violation — never at first use.
 | `Disabled` | No tracer/meter/log providers are registered. `IBusinessTrace` and correlation still resolve and work as safe no-ops. The default. |
 | `Console` | Traces, metrics and logs export to the console — local development without a collector. |
 | `Otlp` | Exports over OTLP. See endpoint resolution below. |
-| `AzureMonitor` | Requires the `Cloudstrap.Observability.AzureMonitor` package to contribute the exporter. Without it, **host startup fails** with an actionable message — telemetry is never silently dropped. |
+| `AzureMonitor` | Requires the `Cloudstrap.Observability.AzureMonitor` package to contribute the exporter. Without it, **host startup fails** with an actionable message — telemetry is never silently dropped. Sampler ownership moves to that exporter (see below). |
+
+#### Sampler ownership in `AzureMonitor` mode
+
+The Azure Monitor exporter installs its own sampler, and OpenTelemetry's `SetSampler` is last-wins, so
+Cloudstrap installs none in this mode — the Application Insights sampler stamps the sample rate that lets
+the portal renormalize counts, which a replacement sampler would lose.
+
+`EnableBlazorHubTracing = false` is still honored: hub spans are suppressed at export time instead of at
+sampling time, ahead of every exporter Cloudstrap and its exporter packages register, so no `ComponentHub`
+span is exported. Two consequences are worth knowing:
+
+- Under the exporter's rate-limited default, hub spans are sampled in and consume traces-per-second budget
+  before they are scrubbed, so Blazor Server applications should prefer a fixed percentage
+  (`Cloudstrap:AzureMonitor:SamplingRatio`) over a rate limit.
+- Only the hub span itself is suppressed. Work started inside a hub invocation — a downstream HTTP call, for
+  example — is still exported, parented to the span that was scrubbed; in `Console` and `Otlp` mode the
+  parent-based sampler drops those descendants along with the hub span.
+
+In **contribute** mode Cloudstrap adds no scrub: it contributes its sampler chain as usual (subject to
+`ApplySampler`), and an Azure Monitor exporter registered afterwards replaces that sampler — so hub
+suppression is the host's to arrange there.
 
 ### OTLP endpoint resolution
 
