@@ -49,7 +49,7 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 ## Step 1 — A consumer registers `AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")` and gets an injectable client with config-driven base address/timeout, the correlation handler exactly once, and no Cloudstrap resilience (AC-E6, AC-E7, AC-ASP3)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Extensions/Cloudstrap.Extensions.csproj` *(create)* — Sdk project, `TargetFramework=net10.0`, `GeneratePackageOnBuild=true`, `GenerateDocumentationFile=true`; `<FrameworkReference Include="Microsoft.AspNetCore.App" />` (spec framework-reference decision); `<ProjectReference>` to `..\Cloudstrap.Core\Cloudstrap.Core.csproj` and `..\Cloudstrap.Observability\Cloudstrap.Observability.csproj`; `<InternalsVisibleTo Include="Cloudstrap.Extensions.Tests" />` (planner mechanic (h)). Description/tags/README metadata land in Step 9.
@@ -101,7 +101,7 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 ## Step 2 — Token flags come alive through the `IAccessTokenHandlerProvider` seam: flagged clients get the provider's handler in their chain; a missing provider fails fast with an actionable error ⚠️ *(Risk Area: auth-adjacent + public API one-way door — AC-E8, AC-E9, Decision Log OQ-1)*
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Extensions/IAccessTokenHandlerProvider.cs` *(create)* — the spec Public API Sketch verbatim: `public interface IAccessTokenHandlerProvider` with `CreateUserTokenHandler(string clientName, TokenRequestOptions? tokenRequest) : DelegatingHandler` and `CreateClientTokenHandler(string clientName, TokenRequestOptions? tokenRequest) : DelegatingHandler`. XML docs name the implementing packages (#9/#10) and the fail-fast contract.
@@ -147,9 +147,9 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 ⚠️ **Risk areas at this gate**: **public API one-way door** — `AddCloudstrapHttpServiceClient<TI,TImpl>` (signature, naming convention, hook ordering) and `IAccessTokenHandlerProvider` (the exact seam #9/#10/#5/#6/#7/#12/#17 build against) are permanent surface; review both against the spec's Public API Sketch verbatim **before** anything is built on them · **auth-adjacent** (Decision Log OQ-1) — the token-attachment path end to end, the fail-fast message wording, and confirmation that no credential material and no auth package appear anywhere · the **second `Microsoft.AspNetCore.App` framework reference** (csproj created in Step 1) · test-only `Microsoft.Extensions.Http.Resilience` pin (planner mechanic (g)) · planner mechanic (b)'s AC-E7 interpretation (fail at `ValidateOnStart`/first resolution rather than literally at the registration call) — confirm or direct a change.
 
-- [ ] Behavioral verification: test exe output shows — config-driven registration incl. name defaulting, exactly-one correlation header incl. the defaults-level pairing, missing-section and relative-BaseAddress failures naming their keys, hooks-run-last, double-registration safety (Step 1); the single-resilience-layer AC-ASP3 proof and the no-resilience-alone proof (Step 1); provider-attached user/client/both handlers with recorded client name + `TokenRequestOptions`, unflagged-client isolation, missing-provider fail-fast naming flag + packages, order-independence, token-before-correlation ordering (Step 2).
-- [ ] Code review: entry-point + seam signatures vs the spec sketch, verbatim; planner mechanics (b) and (c) as built; no `UseProxy`, no primary-handler replacement, no resilience anywhere in the package; `internal` default + sealed types + XML docs; `dotnet list src/Cloudstrap.Extensions/Cloudstrap.Extensions.csproj package` → only the two project references (zero `Azure.*` yet, zero auth, zero `Aspire.*`).
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: test exe output shows — config-driven registration incl. name defaulting, exactly-one correlation header incl. the defaults-level pairing, missing-section and relative-BaseAddress failures naming their keys, hooks-run-last, double-registration safety (Step 1); the single-resilience-layer AC-ASP3 proof and the no-resilience-alone proof (Step 1); provider-attached user/client/both handlers with recorded client name + `TokenRequestOptions`, unflagged-client isolation, missing-provider fail-fast naming flag + packages, order-independence, token-before-correlation ordering (Step 2).
+- [x] Code review: entry-point + seam signatures vs the spec sketch, verbatim; planner mechanics (b) and (c) as built; no `UseProxy`, no primary-handler replacement, no resilience anywhere in the package; `internal` default + sealed types + XML docs; `dotnet list src/Cloudstrap.Extensions/Cloudstrap.Extensions.csproj package` → only the two project references (zero `Azure.*` yet, zero auth, zero `Aspire.*`).
+- [x] User approved — implementation may continue past this gate *(approved 2026-08-02; AC-E7 timing interpretation per mechanic (b) confirmed, entry point calls `AddCloudstrapCorrelation` for self-sufficiency, token handlers inserted at the head of the chain, internal `HttpServiceClientRegistry` accepted)*
 
 ---
 
@@ -159,7 +159,7 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 ## Step 3 — `MapCloudstrapHealthChecks()` serves tag-filtered `/healthz` and `/ready` — anonymous, short-circuited, config-pathed, idempotent, disable-able (AC-E11)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Extensions/EndpointRouteBuilderExtensions.cs` *(create)* — `public static`, spec sketch verbatim: `MapCloudstrapHealthChecks(this IEndpointRouteBuilder endpoints) : IEndpointRouteBuilder`.
@@ -199,7 +199,7 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 ## Step 4 — A client with `EnableHealthCheck = true` probes its peer's `/healthz`: the `{prefix|name}-liveness` URI check appears on the stock builder, ready-tagged, idempotent, statics-free ⚠️ *(Risk Area: shared-contract Core amendment + new Apache-2.0 dependency — AC-E10, Decision Log OQ-2)*
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Core/HttpClientServiceOptions.cs` *(modify)* — the committed additive amendment (Decision Log OQ-2): `public string HealthCheckPath { get; set; } = "/healthz";` with XML docs (the relative path the dependency health check probes on the peer; pairs with `MapCloudstrapHealthChecks`' default). **No other Core change; Core stays Azure-free.**
@@ -251,10 +251,10 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 ⚠️ **Risk areas at this gate**: the **shared-contract amendment** to shipped `Cloudstrap.Core` (`HealthCheckPath`, Decision Log OQ-2) — additive, but it is permanent configuration surface on a package other deliverables already consume: review name, default and XML docs · the suite's **first Apache-2.0 / first Xabaril dependency** (`AspNetCore.HealthChecks.Uris` 9.0.0) — rule-4 review; note the license family in the package README (Step 9) · test-only `Microsoft.AspNetCore.TestHost` pin (planner mechanic (g)) · planner mechanic (d)/(e) mechanics decided by the executor during RED (Uris-package API shape; `DataSources`-based idempotence) — report any deviation.
 
-- [ ] Behavioral verification: test exe output shows — tag-filtered probes over real HTTP (unhealthy ready check flips `/ready` to 503 while `/healthz` stays 200), configured paths, disabled mode, double-map safety, empty-set behavior (Step 3); registration naming/tag/prefix/dedupe incl. the fresh-collection statics proof, and the executed peer probes — healthy on the default path, unhealthy on a 404 path (Step 4); Core's new property binding + default (Step 4).
-- [ ] Code review: `MapCloudstrapHealthChecks` vs the spec row (stock writer, anonymous + short-circuit, nothing from the dropped `/health`/`LOC`/port-9000 behavior); `DependencyHealthCheckSetup` vs planner mechanic (d) — no static state anywhere (`grep -i static` sweep over the new files finds only the extension-class declarations); the Core diff is exactly one property + docs.
-- [ ] ⚠️ Dependency review (risk area): `dotnet list src/Cloudstrap.Extensions/Cloudstrap.Extensions.csproj package` → `AspNetCore.HealthChecks.Uris` 9.0.0 added, nothing else new; Apache-2.0 acknowledged.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: test exe output shows — tag-filtered probes over real HTTP (unhealthy ready check flips `/ready` to 503 while `/healthz` stays 200), configured paths, disabled mode, double-map safety, empty-set behavior (Step 3); registration naming/tag/prefix/dedupe incl. the fresh-collection statics proof, and the executed peer probes — healthy on the default path, unhealthy on a 404 path (Step 4); Core's new property binding + default (Step 4).
+- [x] Code review: `MapCloudstrapHealthChecks` vs the spec row (stock writer, anonymous + short-circuit, nothing from the dropped `/health`/`LOC`/port-9000 behavior); `DependencyHealthCheckSetup` vs planner mechanic (d) — no static state anywhere (`grep -i static` sweep over the new files finds only the extension-class declarations); the Core diff is exactly one property + docs.
+- [x] ⚠️ Dependency review (risk area): `dotnet list src/Cloudstrap.Extensions/Cloudstrap.Extensions.csproj package` → `AspNetCore.HealthChecks.Uris` 9.0.0 added, nothing else new; Apache-2.0 acknowledged.
+- [x] User approved — implementation may continue past this gate *(approved 2026-08-02; two executor deviations accepted: (d) register-then-reconcile via `AddUrlGroup` because `UriHealthCheck` is internal in 9.0.0, with the probe `HttpClient` always named `{client}-liveness`; (e) marker data source instead of scanning `DataSources[].Endpoints`; plus the unconditional `services.AddHealthChecks()` in the entry point)*
 
 ---
 
@@ -264,7 +264,7 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 ## Step 5 — A secret named `{prefix}-Foo--Bar` surfaces as configuration key `Foo:Bar`: the ported prefix manager and the validated `Cloudstrap:KeyVault` options (AC-E1 mechanics, AC-E4 prefix rules)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Extensions/PrefixKeyVaultSecretManager.cs` *(create)* — the deliverable's one **Port**: `internal sealed : KeyVaultSecretManager`; `Load` filters on `{prefix}-` with `StringComparison.Ordinal` (the spec's fix — the source used culture-sensitive `StartsWith`), empty prefix loads everything; `GetKey` strips the prefix and maps `--` → `ConfigurationPath.KeyDelimiter`.
@@ -309,7 +309,7 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 ## Step 6 — `Program.cs` calls `AddCloudstrapKeyVault()` unconditionally: no-op when disabled, loud failure when enabled-but-broken, `DefaultAzureCredential`/hook-credential wiring when enabled (AC-E2, AC-E3, AC-E4 credential rule)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Extensions/HostApplicationBuilderExtensions.cs` *(create)* — `public static`, spec sketch verbatim: `AddCloudstrapKeyVault(this IHostApplicationBuilder builder, Action<KeyVaultConnectionSettings>? configure = null) : IHostApplicationBuilder` (the file later gains the Step 7/8 entry points).
@@ -353,7 +353,7 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 ## Step 7 — `AddCloudstrapBlobStorage()` registers the conventional `BlobContainerClient`: explicit URI or connection string, container defaulting to `{SystemName}` lowercase, creation only on the explicit flag (AC-E13)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Extensions/StorageOptions.cs` *(create)* — sketch verbatim: `SectionName = "Cloudstrap:Storage"`, `BlobServiceUri : Uri?`, `ContainerName : string?`, `ConnectionString : string?`, `CreateContainerIfNotExists : bool = false`.
@@ -397,7 +397,7 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 ## Step 8 — `AddCloudstrapDataProtection()` persists the key ring to the configured blob and protects it with the configured KeyVault key — enabled-but-incomplete fails startup, never the source's silent skip (AC-E12, Decision Log OQ-3)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Extensions/DataProtectionOptions.cs` *(create)* — sketch verbatim: `SectionName = "Cloudstrap:DataProtection"`, `Enabled` (default `false`), `KeysBlobUri : Uri?`, `KeyVaultKeyId : Uri?` (both required when enabled — OQ-3), `ApplicationName : string?` (null → `WorkloadName`). Planner mechanic (i): the simple-name collision with the framework type is accepted per the spec sketch and documented.
@@ -442,10 +442,10 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 ⚠️ **Risk areas at this gate**: **five new `Azure.*` dependencies** (`Configuration.Secrets`, `Identity` reference, `Storage.Blobs`, `DataProtection.Blobs`, `DataProtection.Keys` — all MIT, Microsoft, CPM-pinned with executor-verified versions) — rule-4 review · the **credential posture** (founding hosting decision): plain `DefaultAzureCredential` everywhere, constructed never invoked in tests, hook-supplied `TokenCredential` always wins, zero environment sniffing / credential exclusion lists / client-secret paths — confirm the De-NIHDI flagship rows are dead (`kv-Riziv-IT-{ENV}-App-001`, `CLOUD_PIPELINE`, `AZURE_DPAPI_*`, `IsRunningInAks`) · the repo's **first `InternalsVisibleTo`** (planner mechanic (h) — own tests only) · planner mechanic (f)'s testability boundary — the real `AddAzureKeyVault` source addition is proven only by the Step 9 manual procedure; confirm that trade-off.
 
-- [ ] Behavioral verification: test exe output shows — the ported manager's five filtering/mapping proofs incl. the Ordinal pin, the four options-rule proofs (Step 5); no-op/no-op/fail-fast/composition/idempotence for `AddCloudstrapKeyVault` incl. prefix precedence and hook-credential-wins (Step 6); the eight storage proofs incl. connection-string precedence, platform `ConnectionStrings:` convention and the no-network default (Step 7); the DataProtection wiring, discriminator, both fail-fast keys and the disabled no-op (Step 8).
-- [ ] Code review: the three new option types + validators vs the spec sketch verbatim (they live **here**, Core untouched since Step 4); `KeyVaultRegistration`/`BlobStorageRegistration` seams contain every Azure-touching decision (nothing Azure-touching on any disabled path); exception types on the eager vs DI paths (`ConfigurationValidationException` vs `OptionsValidationException`) consistent with Core precedent; XML docs on all public surface.
-- [ ] ⚠️ Dependency review (risk area): `dotnet list src/Cloudstrap.Extensions/Cloudstrap.Extensions.csproj package` → exactly the six runtime packages (five Azure + Uris) + two project references; `dotnet list src/Cloudstrap.Core/Cloudstrap.Core.csproj package` → **unchanged, zero Azure** (Core stays Azure-free).
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: test exe output shows — the ported manager's five filtering/mapping proofs incl. the Ordinal pin, the four options-rule proofs (Step 5); no-op/no-op/fail-fast/composition/idempotence for `AddCloudstrapKeyVault` incl. prefix precedence and hook-credential-wins (Step 6); the eight storage proofs incl. connection-string precedence, platform `ConnectionStrings:` convention and the no-network default (Step 7); the DataProtection wiring, discriminator, both fail-fast keys and the disabled no-op (Step 8).
+- [x] Code review: the three new option types + validators vs the spec sketch verbatim (they live **here**, Core untouched since Step 4); `KeyVaultRegistration`/`BlobStorageRegistration` seams contain every Azure-touching decision (nothing Azure-touching on any disabled path); exception types on the eager vs DI paths (`ConfigurationValidationException` vs `OptionsValidationException`) consistent with Core precedent; XML docs on all public surface.
+- [x] ⚠️ Dependency review (risk area): `dotnet list src/Cloudstrap.Extensions/Cloudstrap.Extensions.csproj package` → exactly the six runtime packages (five Azure + Uris) + two project references; `dotnet list src/Cloudstrap.Core/Cloudstrap.Core.csproj package` → **unchanged, zero Azure** (Core stays Azure-free).
+- [x] User approved — implementation may continue past this gate *(approved 2026-08-02; incl. the transitive-pinning security fix raising System.Security.Cryptography.Xml to the patched 10.0.10, and the accepted trade-off that the real AddAzureKeyVault source addition is covered by code review + the Step 9 manual procedure rather than a unit test)*
 
 ---
 
@@ -455,7 +455,7 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 ## Step 9 — The package is publishable and permanently guarded: metadata, README (one-owner Aspire rule + manual KeyVault verification), surface/closure/identifier guards (AC-E5, AC-E14, AC-ASP2)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Extensions/Cloudstrap.Extensions.csproj` *(modify)* — `<Description>` (KeyVault-backed configuration, Azure Blob DataProtection, conventional blob storage, config-driven typed HTTP clients with correlation and token seams, and standard health probe endpoints — one call and one `Cloudstrap:` subsection each), `<PackageTags>$(PackageTags);keyvault;configuration;httpclient;dataprotection;healthchecks;azure</PackageTags>`, `<PackageReadmeFile>README.md</PackageReadmeFile>` + `<None Include="README.md" Pack="true" PackagePath="/" />`.
@@ -498,7 +498,7 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 ## Step 10 — The WASM SUT runs on this package: `MapCloudstrapHealthChecks` replaces the hand-mapped probes, a typed client with a self-probe health check makes a real outbound hop — proven through the running app (AC-E15)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/WasmTestProject/src/Host/Bff/Cloudstrap.WasmTestProject.Host.Bff.csproj` *(modify)* — `<ProjectReference>` to `Cloudstrap.Extensions`.
@@ -540,8 +540,8 @@ This package owns three new configuration sections — `Cloudstrap:KeyVault`, `C
 
 *Executor: STOP here. Present the results and WAIT for user approval. Any Git push afterwards requires the user's explicit go-ahead (CLAUDE.md: no push without confirmation).*
 
-- [ ] Behavioral verification: the three `ExtensionsTests` methods pass; the full E2E suite passes with the SUT's probes served by `MapCloudstrapHealthChecks` and a live typed-client hop; the three `PackageSurfaceTests` guards green; the expanded Release `.nupkg` contents reviewed; the identifier sweep empty; user optionally runs the SUT manually (`dotnet run --project src/Test/WasmTestProject/src/Host/Bff`) and hits `/ready` + `api/diagnostics/outbound`.
-- [ ] AC-E5 / manual KeyVault procedure (headline documentation artifact): user reviews the README — the one-owner Aspire rule, the secret-prefix differentiator, and the step-by-step live-vault walk; optionally executes the procedure against a real Key Vault (secrets load filtered and mapped, the fail-fast fires on a broken URI). The deliverable is demonstrable either way — the procedure is the documented artifact, per the spec's test strategy.
-- [ ] Spec acceptance sign-off: walk AC-ASP2, AC-ASP3 and AC-E1…AC-E15 against the step evidence using the Overview's AC coverage map — all met; confirm nothing from the spec's Move-out/Drop/Out-of-Scope lists was resurrected (no `IApplicationBuilder` extension, no middleware/TLS/XFF/path-base, no `/probe.aspx`, no `HostRunner`, no serializer converter, no Scalar, no NWebsec, no auth implementation, no `Microsoft.Extensions.Azure`) and both De-NIHDI rows are closed (KeyVault name, Storage account).
-- [ ] Docs review: `src/Test/WasmTestProject/README.md` demo-table row accurate; the package README consistent with as-built behavior (incl. every planner-mechanic deviation the executor reported at Gates 1–3).
-- [ ] User approved — deliverable #4 done; project-manager flips the ROADMAP row to ✅.
+- [x] Behavioral verification: the three `ExtensionsTests` methods pass; the full E2E suite passes with the SUT's probes served by `MapCloudstrapHealthChecks` and a live typed-client hop; the three `PackageSurfaceTests` guards green; the expanded Release `.nupkg` contents reviewed; the identifier sweep empty; user optionally runs the SUT manually (`dotnet run --project src/Test/WasmTestProject/src/Host/Bff`) and hits `/ready` + `api/diagnostics/outbound`.
+- [x] AC-E5 / manual KeyVault procedure (headline documentation artifact): user reviews the README — the one-owner Aspire rule, the secret-prefix differentiator, and the step-by-step live-vault walk; optionally executes the procedure against a real Key Vault (secrets load filtered and mapped, the fail-fast fires on a broken URI). The deliverable is demonstrable either way — the procedure is the documented artifact, per the spec's test strategy.
+- [x] Spec acceptance sign-off: walk AC-ASP2, AC-ASP3 and AC-E1…AC-E15 against the step evidence using the Overview's AC coverage map — all met; confirm nothing from the spec's Move-out/Drop/Out-of-Scope lists was resurrected (no `IApplicationBuilder` extension, no middleware/TLS/XFF/path-base, no `/probe.aspx`, no `HostRunner`, no serializer converter, no Scalar, no NWebsec, no auth implementation, no `Microsoft.Extensions.Azure`) and both De-NIHDI rows are closed (KeyVault name, Storage account).
+- [x] Docs review: `src/Test/WasmTestProject/README.md` demo-table row accurate; the package README consistent with as-built behavior (incl. every planner-mechanic deviation the executor reported at Gates 1–3).
+- [x] User approved — deliverable #4 done; project-manager flips the ROADMAP row to ✅. *(Approved 2026-08-02. Accepted with the Gate-3 security pin retained: transitive pinning raises System.Security.Cryptography.Xml to the patched 10.0.10; a direct PackageReference is not usable because the SDK prunes framework-provided packages (NU1510). Consequence accepted: the Extensions nuspec lists the OpenTelemetry/Serilog versions Cloudstrap.Observability already requires.)*

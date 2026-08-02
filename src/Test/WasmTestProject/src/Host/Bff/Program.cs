@@ -1,8 +1,9 @@
 using Cloudstrap.Core;
+using Cloudstrap.Extensions;
 using Cloudstrap.Observability;
 using Cloudstrap.Observability.AzureMonitor;
 using Cloudstrap.Observability.Correlation;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Cloudstrap.WasmTestProject.Host.Bff.Services;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -25,7 +26,12 @@ builder.UseCloudstrapObservability()
     .AddAzureMonitor(exporter => exporter.DisableOfflineStorage = true);
 
 builder.Services.AddControllers();
-builder.Services.AddSingleton<Cloudstrap.WasmTestProject.Host.Bff.Services.InMemoryDoctorStore>();
+builder.Services.AddSingleton<InMemoryDoctorStore>();
+
+// A typed client driven by Cloudstrap:HttpClients:SelfApi — config-bound base address and timeout, the
+// correlation handler in its pipeline, and a readiness check probing the peer's /healthz. It calls back
+// into this same app, so one process demonstrates a real outbound hop (deliverable #4 demo).
+builder.Services.AddCloudstrapHttpServiceClient<ISelfApiClient, SelfApiClient>("SelfApi");
 builder.Services.AddHealthChecks()
     .AddCheck(
         "self",
@@ -42,14 +48,8 @@ app.UseRouting();
 app.UseCloudstrapCorrelation();
 
 app.MapControllers();
-app.MapHealthChecks(cloudstrapOptions.HealthChecks.LivenessPath, new HealthCheckOptions
-{
-    Predicate = registration => registration.Tags.Contains(CloudstrapHealthCheckTags.Liveness),
-});
-app.MapHealthChecks(cloudstrapOptions.HealthChecks.ReadinessPath, new HealthCheckOptions
-{
-    Predicate = registration => registration.Tags.Contains(CloudstrapHealthCheckTags.Readiness),
-});
+// One call replaces the hand-mapped, tag-filtered probe endpoints (deliverable #4 demo).
+app.MapCloudstrapHealthChecks();
 app.MapFallbackToFile("index.html");
 
 await app.RunAsync();

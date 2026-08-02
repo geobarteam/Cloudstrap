@@ -56,6 +56,11 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
   retries in the background without disturbing the app. `EnableConsole` stays at its default, which
   is why the console-telemetry assertions above still work; `SamplingRatio` is pinned to `1.0` so
   no span is sampled away. Offline storage is disabled, so a run leaves no telemetry spool behind.
+- The Bff calls **itself** through the `SelfApi` typed client (`Cloudstrap:HttpClients:SelfApi`,
+  pointed at `http://127.0.0.1:5300/`), so a genuine outbound HTTP hop — correlation propagation and
+  a dependency health check against a live peer — is demonstrable in one process. Readiness therefore
+  depends on the app being able to reach itself; startup-scenario instances on other ports must either
+  override that base address or expect `/ready` to report unhealthy.
 - Browser tests inherit `PageTestBase` (headless Chromium, fresh context per test,
   console-error collection). API-level tests use plain `HttpClient` against `E2eFixture.BaseUrl`.
 - A missing Chromium fails loudly with the install command — tests never silently skip.
@@ -69,5 +74,6 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 | `/healthz` + `/ready` + `GET api/diagnostics/correlation` | Cloudstrap.Observability (#2) | `HealthAndCorrelationTests` — tagged health probes (`CloudstrapHealthCheckTags`), ambient correlation id (inbound header adopted, generated otherwise) |
 | `/doctors` + `GET/POST api/doctor` | Cloudstrap.Observability (#2) | `DoctorsTests` — client→API round-trip; `AddDoctor` business span (`IBusinessTrace`) asserted in the captured console telemetry |
 | `/diagnostics` mode badge + startup scenarios | Cloudstrap.Observability.AzureMonitor (#3) | `AzureMonitorTests` — exporter-contribution guard lifted (the host boots in `AzureMonitor` mode at all), fail-fast naming both connection-string sources, per-environment mode flip on unchanged code |
+| `/healthz` + `/ready` (Cloudstrap-mapped) + `GET api/diagnostics/outbound` | Cloudstrap.Extensions (#4) | `ExtensionsTests` — typed-client outbound hop propagating the caller's correlation id, the `SelfApi-liveness` dependency check feeding readiness, and a second instance whose unreachable peer flips `/ready` to 503 while `/healthz` stays 200 |
 
 *(Extended by every deliverable — see `_plans/ROADMAP.md`.)*

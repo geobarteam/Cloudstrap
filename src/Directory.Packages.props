@@ -1,4 +1,17 @@
 <Project>
+  <!-- Transitive pinning raises dependencies no Cloudstrap code references directly. It is enabled for the
+       security floor below; a direct PackageReference is not usable here, because the SDK prunes
+       framework-provided packages and rejects referencing them (NU1510).
+       System.Security.Cryptography.Xml — Azure.Extensions.AspNetCore.DataProtection.* resolve
+       Microsoft.AspNetCore.DataProtection 10.0.7, whose 10.0.7 XML dependency carries five high-severity
+       advisories (GHSA-cvvh-rhrc-wg4q, GHSA-g8r8-53c2-pm3f, GHSA-23rf-6693-g89p, GHSA-8q5v-6pqq-x66h,
+       GHSA-mmjf-rqrv-855v). 10.0.10 is the patched build. -->
+  <PropertyGroup>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.10" />
+  </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.10" />
@@ -11,9 +24,21 @@
     <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.10" />
   </ItemGroup>
+  <!-- Test-only: AC-ASP3 (a Cloudstrap typed client tolerates consumer resilience handlers) and real-HTTP
+       probe-endpoint tests — never referenced by a shipped package -->
   <ItemGroup>
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Apache-2.0 (Xabaril) — the canonical URI health check; replaces a bespoke liveness probe -->
+    <PackageVersion Include="AspNetCore.HealthChecks.Uris" Version="9.0.0" />
+    <PackageVersion Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.5.1" />
+    <PackageVersion Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" Version="1.5.3" />
+    <PackageVersion Include="Azure.Extensions.AspNetCore.DataProtection.Keys" Version="1.6.3" />
     <PackageVersion Include="Azure.Identity" Version="1.21.0" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.8.3" />
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.29.1" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.17.0" />

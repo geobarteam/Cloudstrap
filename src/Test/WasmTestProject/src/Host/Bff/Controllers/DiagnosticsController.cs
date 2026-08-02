@@ -3,6 +3,7 @@ namespace Cloudstrap.WasmTestProject.Host.Bff.Controllers
     using Cloudstrap.Core;
     using Cloudstrap.Observability.Correlation;
     using Cloudstrap.WasmTestProject.Contracts;
+    using Cloudstrap.WasmTestProject.Host.Bff.Services;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Options;
 
@@ -18,22 +19,26 @@ namespace Cloudstrap.WasmTestProject.Host.Bff.Controllers
         private readonly OpenTelemetryOptions _openTelemetry;
         private readonly CorrelationOptions _correlation;
         private readonly ICorrelationContextAccessor _correlationAccessor;
+        private readonly ISelfApiClient _selfApiClient;
 
         public DiagnosticsController(
             IOptions<ApplicationOptions> application,
             IOptions<OpenTelemetryOptions> openTelemetry,
             IOptions<CorrelationOptions> correlation,
-            ICorrelationContextAccessor correlationAccessor)
+            ICorrelationContextAccessor correlationAccessor,
+            ISelfApiClient selfApiClient)
         {
             ArgumentNullException.ThrowIfNull(application);
             ArgumentNullException.ThrowIfNull(openTelemetry);
             ArgumentNullException.ThrowIfNull(correlation);
             ArgumentNullException.ThrowIfNull(correlationAccessor);
+            ArgumentNullException.ThrowIfNull(selfApiClient);
 
             _application = application.Value;
             _openTelemetry = openTelemetry.Value;
             _correlation = correlation.Value;
             _correlationAccessor = correlationAccessor;
+            _selfApiClient = selfApiClient;
         }
 
         [HttpGet("options")]
@@ -53,6 +58,21 @@ namespace Cloudstrap.WasmTestProject.Host.Bff.Controllers
         public ActionResult<CorrelationDto> GetCorrelation()
         {
             return new CorrelationDto(_correlationAccessor.CorrelationId ?? string.Empty);
+        }
+
+        /// <summary>
+        /// Makes one outbound hop through the Cloudstrap-registered typed client and reports the
+        /// correlation identifier the peer saw — which is this request's, propagated by the handler
+        /// Cloudstrap put in that client's pipeline.
+        /// </summary>
+        /// <param name="cancellationToken">Cancels the outbound request.</param>
+        /// <returns>The peer-reported correlation identifier.</returns>
+        [HttpGet("outbound")]
+        public async Task<ActionResult<OutboundCallDto>> GetOutbound(CancellationToken cancellationToken)
+        {
+            string peerCorrelationId = await _selfApiClient.GetPeerCorrelationIdAsync(cancellationToken);
+
+            return new OutboundCallDto(peerCorrelationId);
         }
     }
 }

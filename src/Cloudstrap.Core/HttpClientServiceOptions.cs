@@ -60,6 +60,15 @@ namespace Cloudstrap.Core
         }
 
         /// <summary>
+        /// Gets or sets the path, relative to <see cref="BaseAddress"/>, this client's health check probes on
+        /// the service it calls. Only consulted when <see cref="EnableHealthCheck"/> is set.
+        /// </summary>
+        /// <value>
+        /// The probe path. Defaults to <c>/healthz</c> — the liveness path a Cloudstrap service serves.
+        /// </value>
+        public string HealthCheckPath { get; set; } = "/healthz";
+
+        /// <summary>
         /// Gets or sets the parameters used when requesting access tokens for this client.
         /// </summary>
         /// <value>The token request parameters, or <see langword="null"/> when the defaults apply.</value>
