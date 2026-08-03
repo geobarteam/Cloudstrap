@@ -6,7 +6,7 @@
 |---|---|
 | **Subject** | `Nihdi.Core.Configuration` (private enterprise suite), current release line **4.0.0** |
 | **Verified against** | HEAD `2d38c712` at `D:\source\Nihdi-Core-Configuration\Nihdi-Core-Configuration\src` — see the staleness note below |
-| **Origin** | Findings surfaced while extracting the suite into the open-source Cloudstrap library |
+| **Origin** | Independent design review of the suite against current .NET conventions |
 | **Date** | 2026-08-03 |
 | **Scope** | Non-breaking, low-risk, urgent. No public API signature changes. Everything here targets 4.0.1. |
 
@@ -29,7 +29,7 @@ One finding below (**B4**) is worth reading even if you read nothing else, becau
 
 Two small items. Neither touches product code.
 
-> **Settled, not findings.** Two build-configuration observations from the extraction were reviewed by the team and closed as working-as-intended. They are recorded here so nobody re-raises them:
+> **Settled, not findings.** Two build-configuration observations from this review were raised with the team and closed as working-as-intended. They are recorded here so nobody re-raises them:
 >
 > - **`NU1901`–`NU1904` in `WarningsNotAsErrors` is deliberate policy.** Some private-feed dependencies have no alternative package, so the build must survive a published advisory against them. The blanket carve-out is the accepted trade-off. *(If you ever want the narrower version, `<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-…" />` suppresses named advisories individually, so new ones against packages that **do** have alternatives still surface. Entirely optional.)*
 > - **The hard-coded `<Version>` elements are inert.** Versioning is applied by the CI/CD pipeline outside the local build; a command-line `-p:Version=` overrides the csproj property, so the checked-in values never reach a published package. No `GitVersion.yml` is needed in the repo, and the July review's P2-26 is a cosmetic cleanup at most.
@@ -38,7 +38,9 @@ Two small items. Neither touches product code.
 
 `Directory.Build.props` enables ~200 StyleCop rules via `EnabledCodeStyleAnalysisRuleIds`, then lists that same variable inside `WarningsNotAsErrors` — so every style rule is advisory. The remainder are suppressed through `NoWarn`. Meanwhile a separate 20 KB `src/.editorconfig` assigns severities to ~110 SA rules, several of which contradict the props file (`SA1600` is `warning` in `.editorconfig` and `NoWarn`'d in the props; the props win).
 
-The net effect is "compiler warnings are errors, style is decoration" — which is a legitimate choice, but it is not the choice the configuration appears to make, and two files disagree about it. Pick one mechanism and let the other go. Cloudstrap dropped StyleCop entirely in favour of `AnalysisLevel=latest-recommended` + `EnforceCodeStyleInBuild` + `.editorconfig` — ~200 lines of build configuration replaced by three properties, with naming still build-breaking via `dotnet_diagnostic.IDE1006.severity = warning`.
+The net effect is "compiler warnings are errors, style is decoration" — which is a legitimate choice, but it is not the choice the configuration appears to make, and two files disagree about it. Pick one mechanism and let the other go.
+
+The modern alternative is to retire StyleCop in favour of `AnalysisLevel=latest-recommended` + `EnforceCodeStyleInBuild` + `.editorconfig`, which replaces roughly 200 lines of build configuration with three properties. Style stays build-breaking where you want it — escalating a rule such as `dotnet_diagnostic.IDE1006.severity = warning` makes naming violations errors again under `TreatWarningsAsErrors`, per rule rather than wholesale.
 
 **Risk.** None to ship; this is a decision to record, not a code change.
 
@@ -93,7 +95,7 @@ The OpenTelemetry SDK ships `IServiceCollection.AddOpenTelemetry()` in `OpenTele
 
 Any provider registered before `AddNihdiCommonServices` is silently discarded. Today that mostly bites consumers who add their own sink; it becomes a hard blocker the moment any team adopts Aspire ServiceDefaults, which registers providers during `AddServiceDefaults()`.
 
-**Fix (non-breaking).** Delete the `ClearProviders()` call and add Nihdi's provider additively. If clearing is genuinely wanted in some topology, make it an opt-in flag rather than the unconditional default. Cloudstrap registers Serilog "as one provider among the host's — never through Serilog's factory replacement" and has not needed a clear.
+**Fix (non-breaking).** Delete the `ClearProviders()` call and add Nihdi's provider additively — registering Serilog as one provider among the host's, rather than through Serilog's factory replacement, which sidelines anything registered earlier. If clearing is genuinely wanted in some topology, make it an opt-in flag rather than the unconditional default.
 
 ### B4 · The configuration validation graph is never invoked by the library — which neutralizes most of the July review's validation batch
 

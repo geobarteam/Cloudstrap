@@ -6,7 +6,7 @@
 |---|---|
 | **Subject** | `Nihdi.Core.Configuration`, current release line **4.0.0** |
 | **Verified against** | HEAD `2d38c712`, which predates the 4.0.0 line — re-check each item against `main` before scheduling (see report 1's staleness note) |
-| **Origin** | Design deltas identified while extracting the suite into the open-source Cloudstrap library |
+| **Origin** | Independent design review of the suite against current .NET conventions |
 | **Date** | 2026-08-03 |
 | **Scope** | Everything that changes a public signature, a package boundary, or a runtime default. Ordered by dependency, mapped to proposed releases. |
 
@@ -77,7 +77,7 @@ Three changes, all additive:
 - Add `Action<TracerProviderBuilder>` / `Action<MeterProviderBuilder>` escape hatches. Today `AddOpenTelemetry(services, config, logger)` builds the entire pipeline internally with no way for a consumer to add an `ActivitySource`, a processor, or a second exporter.
 - Make the noise filter configurable. `ShouldTracePath` hard-codes eight paths and fourteen file extensions; consumers with different probe paths have no recourse.
 
-Cloudstrap's implementation composes rather than assigns, which is the pattern to copy:
+The pattern is to compose rather than assign, so the host's own configuration survives:
 
 ```csharp
 instrumentation.Filter = context =>
@@ -157,7 +157,7 @@ Pick `AddNihdi<Feature>` / `UseNihdi<Feature>`, always return the receiver. Ship
 | `https://matomo.bosa.be/` | `Analytics.Matomo/MatomoConfiguration.cs:15` |
 | `D:\logsint` log root | `Settings/Logging/FileConfiguration.cs` — breaks on Linux |
 
-The rule Cloudstrap adopted: *every convention has an override; the enterprise value becomes the configured default, not code*. Nearly all of these are non-breaking when done that way. Two exceptions worth breaking deliberately: the trusted-network CIDR list and the CORS default (report 1, C/P2-1) should require explicit configuration rather than falling back to a permissive built-in.
+The rule to adopt: *every convention has an override; the enterprise value becomes the configured default, not code*. Nearly all of these are non-breaking when done that way. Two exceptions worth breaking deliberately: the trusted-network CIDR list and the CORS default (report 1, C/P2-1) should require explicit configuration rather than falling back to a permissive built-in.
 
 ### 8 · `CancellationToken` on the async contracts
 **Depends on:** item 5. **Breaks:** implementers of the affected interfaces, at 5.0.0.
@@ -176,10 +176,10 @@ Library usage is two `Preconditions.NotNull` calls plus one public signature in 
 Three options, in order of preference:
 
 1. **Keep the shape, fix the type** — add `Map`/`Bind`/`Match` and a typed error (which also resolves the review's P2-20, where `MessagingEntityNotFound` maps to HTTP 500 through fragile error-*string* matching). Cheapest, no consumer break beyond the error type.
-2. **Adopt LanguageExt.Core** — what Cloudstrap chose. Right answer for a greenfield OSS library; for an enterprise suite with existing handlers it buys a large dependency and a migration for a type you barely use.
+2. **Adopt an established functional library** such as LanguageExt.Core (MIT). The right answer for a greenfield project; for an existing suite with handlers already written against `Result<T>`, it buys a large dependency plus a migration in exchange for a type you barely use.
 3. **Drop it** — exceptions at the boundary, no result type. Largest break.
 
-I would take option 1 here. Cloudstrap's choice of LanguageExt was driven by not wanting to *ship and maintain* a functional package in an OSS suite, which is not a constraint you have.
+I would take option 1 here. Reaching for an external library makes sense when you would rather not ship and maintain a functional package of your own — but this one is four small types you already own, and the gap is `Map`/`Bind`/`Match` plus a typed error, not the whole abstraction.
 
 ---
 
@@ -192,7 +192,7 @@ I would take option 1 here. Cloudstrap's choice of LanguageExt was driven by not
 
 `Common` carries **39 mandatory `PackageReference`s** across eight unrelated concerns — Serilog (9), OpenTelemetry (7), Azure Identity/KeyVault/DataProtection/Blobs (4), Scalar, NWebsec, the internal auth suite, `Nihdi.Core.Health`, and more. Its 56 source files span blob storage, correlation, distributed tracing, Dynatrace, health checks, hosting, HTTP clients, KeyVault, logging, and serialization. A consumer who wants only the YARP proxy still pulls all of it; a headless worker pulls Scalar and `Microsoft.AspNetCore.OpenApi`.
 
-Target split, mirroring what the extraction produced:
+Target split, one package per concern:
 
 | New package | Contents |
 |---|---|
@@ -209,7 +209,7 @@ Do this **after** the options migration, not before. Per-feature options are wha
 
 The suite is ~81% public — roughly 310 public types against 72 internal — and `internal` where it is used is immediately punched through with `InternalsVisibleTo` to four or five sibling packages. Types that are public today but are plainly implementation detail: the entire Dynatrace Serilog sink (five types), NServiceBus transport wiring, the 393-line static `BootstrapLoggerFactory`, `NamingConventionsExtensions`, `HostRunner` (a `public class` with a `protected` constructor and one static method), and sixteen unsealed public settings classes.
 
-Every one of those is an accidental compatibility contract you are obliged to keep. Add a surface test so it cannot regress — Cloudstrap asserts sealed-ness, namespace, and the dependency closure in a single fixture, which costs ~40 lines and catches the drift permanently.
+Every one of those is an accidental compatibility contract you are obliged to keep. Add a public-surface test so it cannot regress: one fixture asserting sealed-ness, namespace placement, and the dependency closure costs roughly 40 lines and catches the drift permanently, which matters because this is exactly the kind of discipline that erodes one merge at a time.
 
 ### 12 · Remove the deprecated surface
 **Depends on:** 4.2.0 having shipped. **Breaks:** anyone who ignored the warnings.
@@ -224,7 +224,7 @@ Delete: the `(NihdiConfiguration, ILogger)` overloads, the old DI names, the tok
 
 Not speculative — the first team that adopts Aspire ServiceDefaults will hit this, and today the collision is unresolvable: `ClearProviders()` destroys ServiceDefaults' logging providers, and both sides register a full OTel pipeline, producing duplicate exporters and double-counted spans.
 
-The posture Cloudstrap adopted, all of which applies here:
+The posture to adopt:
 
 - **Zero `Aspire.*` references** in shipped packages. Build on the shared substrate — `Microsoft.Extensions.*`, OpenTelemetry .NET, the Azure SDK — which both stacks already depend on.
 - **Owner and contribute modes** for observability. Owner (default) wires the full pipeline as today. Contribute adds only the differentiated pieces — samplers, noise filters, enrichment, business tracing — to a pipeline someone else owns, registering no exporter and leaving `service.name` alone.
@@ -237,13 +237,13 @@ Item 2 does most of the work; this release is mainly the contribute-mode split a
 
 # What I would not do
 
-Three of Cloudstrap's decisions were forced by open-source constraints rather than design quality, and back-porting them would be expensive for no gain:
+Three changes look attractive when you are already opening the packages up, and none of them earn their cost here. Each has a smaller change hiding inside it that does.
 
-**NServiceBus → Wolverine.** Cloudstrap switched because NServiceBus is commercially licensed and an MIT library cannot depend on it. You have licenses and running endpoints; the migration cost dwarfs the benefit. The parts worth taking are structural and transport-agnostic: `EndpointConfigurationBuilder.BuildEndpointConfiguration` is a 107-line god-method that hard-wires serializers, DLQ naming, retries, monitoring, licensing, persistence, and encryption with `UseNServiceBusForNihdiOptions` as the only seam — and that seam leaks NServiceBus types (`RoutingSettings`, `PipelineSettings`, `IMessageConvention`) straight into your public API.
+**Replacing NServiceBus with an alternative broker abstraction.** Worth it only if licensing or vendor lock-in is a live constraint — it is not: you hold licenses and run production endpoints, and the migration cost dwarfs the benefit. The part that *is* worth doing is structural and works with NServiceBus exactly as it is. `EndpointConfigurationBuilder.BuildEndpointConfiguration` is a 107-line god-method that hard-wires serializers, DLQ naming, retries, monitoring, licensing, persistence, and encryption, with `UseNServiceBusForNihdiOptions` as the only seam — and that seam leaks NServiceBus types (`RoutingSettings`, `PipelineSettings`, `IMessageConvention`) straight into your public API. Decompose the method and narrow the seam; keep the broker.
 
-**Dynatrace → Application Insights.** An organizational tooling decision, not a library one. What *is* worth taking: the Dynatrace sink is a bespoke Serilog implementation shipped as public API, with an unbounded in-memory queue, three dead options properties, and unescaped JSON output. If Dynatrace stays, that sink should become internal and get its correctness issues fixed (the review's P2-13 and P2-14).
+**Replacing Dynatrace with another telemetry backend.** An organizational tooling decision, not a library one, and out of scope for this roadmap. What *is* in scope: the Dynatrace sink is a bespoke Serilog implementation shipped as public API, with an unbounded in-memory queue, three dead options properties, and unescaped JSON output that malforms a batch whenever a logged value contains a quote or backslash. If Dynatrace stays — and it should, on its own merits — make that sink `internal` and fix its correctness issues (the review's P2-13 and P2-14).
 
-**Dropping property-level message encryption.** Cloudstrap dropped it; you presumably still need it. The fix is a seam, not removal — today `EncryptionOrchestrator` branches on the static `NihdiConfiguration.IsRunningInAks()` to choose between Azure Managed HSM and the Windows certificate store, with no `IKeyProvider` abstraction. That makes encryption untestable without a real cert store or HSM, and gives non-Windows development no path at all. One interface fixes both.
+**Dropping property-level message encryption.** You need it; removing it is not on the table. But the current implementation is barely testable: `EncryptionOrchestrator` branches on the static `NihdiConfiguration.IsRunningInAks()` to choose between Azure Managed HSM and the Windows certificate store, with no `IKeyProvider` abstraction between the two. That means no unit test can exercise the encryption path without a real cert store or HSM, and non-Windows development has no path at all. One interface fixes both, and it is a strictly additive change.
 
 ---
 
