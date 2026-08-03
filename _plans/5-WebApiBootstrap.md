@@ -230,7 +230,7 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 - [x] Behavioral verification: test exe output shows — versioned routing over both stock readers, the assumed default version for unattributed controllers incl. the configured-default proof, `api-supported-versions` reported and suppressible, the stock 400 for an unsupported version, invalid-default fail-fast naming the key, and the JSON/lowercase-URL defaults with their overrides (Step 1); probes served through #4 with the tag contract live and idempotent, correlation flow + `[CorrelationRequired]` 400 through #2, no correlation type of our own, path base on/off, the four hooks in documented order, the `MapControllers` switch, the double-call throw, and the static-files-plus-SPA-fallback composition (Step 2). *(32 tests in `Cloudstrap.WebApi.Tests`, 311 solution-wide, all green.)*
 - [x] Code review: entry-point/configurator/pipeline-options signatures vs the spec sketch, verbatim; the ported `DefaultApiVersionConvention` and versioning defaults vs the source (neutral, no company header, no `NormalizedQueryStringApiVersionReader`, no `UrlHelper`); `internal` by default + sealed + full XML docs; `dotnet list src/Cloudstrap.WebApi/Cloudstrap.WebApi.csproj package` → the two `Asp.Versioning.*` packages and the three project references only (no OpenAPI/Scalar/auth package yet, zero `Aspire.*`, zero `NSwag.*`).
-- [ ] User approved — implementation may continue past this gate *(the four Gate 1 decisions above were taken 2026-08-03; explicit go-ahead still outstanding)*
+- [x] User approved — implementation may continue past this gate *(2026-08-03, together with the four Gate 1 decisions recorded in the Overview)*
 
 ---
 
@@ -240,7 +240,7 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 ## Step 3 — An endpoint throws and the caller gets RFC 9457 problem details: generic in production, fully diagnosable when details are switched on, logged exactly once either way (AC-W6, AC-W7)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.WebApi/ExceptionHandlingSettings.cs` *(create)* — `IncludeDetails : bool? = null` (null → details in `Development` only).
@@ -285,7 +285,7 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 ## Step 4 — Every response is hardened: constant security headers always, HSTS outside Development, and CORS only for origins you actually configured (AC-W13)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.WebApi/CorsSettings.cs` *(create)* — `AllowedOrigins : IList<string>` (get-only initialized, empty default; mechanic (k) documented).
@@ -334,9 +334,23 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 ⚠️ **Risk areas at this gate**: **the error-response contract is public behavior** — the problem-details shape (both modes), the depth bound and the `correlationId` extension of mechanic (f) become what every consumer's clients parse; confirm or direct changes now · **security defaults** — HSTS without preload (Deliberate Behavior Change 7), two constant headers instead of a security-headers library (rule 4: minimize dependencies — #6 re-evaluates for HTML surfaces), and "no configured origins ⇒ no CORS policy at all" replacing the source's `AllowAnyOrigin` · mechanic (b)'s single environment-default helper (the same rule now governs `IncludeDetails`, and will govern Scalar exposure and HTTPS metadata) · confirm `ApplicationOptions.ExceptionHandlerPath` stays unconsumed here (re-execution is #6's MVC pattern).
 
-- [ ] Behavioral verification: test exe output shows — the generic production payload with nothing leaked and exactly one log entry, the Development detail payload with the bounded inner chain, both explicit-override directions, the correlation extension, the consumer-handler-first proof and the never-re-executed `/error` proof (Step 3); both constant headers on API and probe responses incl. the no-overwrite rule, HSTS emitted/withheld per environment and flag with no preload by default, the fail-fast on a zero max age, and the three CORS proofs incl. wildcard subdomains (Step 4).
-- [ ] Code review: `CloudstrapWebApiExceptionHandler` against the two collapsed source handlers (one handler, explicit switch, problem details, no bespoke `{StatusCode, Message}` JSON, no environment structural switch); `SecurityHeadersMiddleware` is ~15 lines with no new dependency; the CORS registration has no `AllowAnyOrigin` path anywhere; `dotnet list src/Cloudstrap.WebApi/Cloudstrap.WebApi.csproj package` → unchanged since Gate 1.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: test exe output shows — the generic production payload with nothing leaked and exactly one log entry, the Development detail payload with the bounded inner chain, both explicit-override directions, the correlation extension, the consumer-handler-first proof and the never-re-executed `/error` proof (Step 3); both constant headers on API and probe responses incl. the no-overwrite rule, HSTS emitted/withheld per environment and flag with no preload by default, the fail-fast on a zero max age, and the three CORS proofs incl. wildcard subdomains (Step 4). *(56 tests in `Cloudstrap.WebApi.Tests`, 336 solution-wide, all green.)*
+- [x] Code review: `CloudstrapWebApiExceptionHandler` against the two collapsed source handlers (one handler, explicit switch, problem details, no bespoke `{StatusCode, Message}` JSON, no environment structural switch); `SecurityHeadersMiddleware` is ~15 lines with no new dependency; the CORS registration has no `AllowAnyOrigin` path anywhere; `dotnet list src/Cloudstrap.WebApi/Cloudstrap.WebApi.csproj package` → unchanged since Gate 1.
+- [x] User approved — implementation may continue past this gate *(2026-08-03)*
+
+### Gate 2 finding — fixed in `Cloudstrap.Observability` (#2), under the standing pre-release permission
+
+**The defect.** `ICorrelationContextAccessor` (#2) is backed by `AsyncLocal<string?>`. The exception handler runs in `UseExceptionHandler`, the **first** middleware, so by the time an exception has unwound past `UseCloudstrapCorrelation` the async-local write is no longer visible — async-local values flow down a call chain, never back up. Measured, not assumed: the first implementation of mechanic (f) returned no `correlationId` at all, and the fallback to reading the inbound header still could not recover a *generated* identifier.
+
+**The decision.** The user confirmed on 2026-08-03 that no Cloudstrap package is published yet, so breaking or extending an already-"shipped" package is allowed until they say otherwise. The gap was therefore fixed at its source rather than worked around downstream.
+
+**The fix** (additive, not breaking):
+- `Cloudstrap.Observability/Correlation/CloudstrapCorrelationMiddleware.cs` — also stores the established identifier in `HttpContext.Items`, which is request-scoped and survives the unwind.
+- `Cloudstrap.Observability/Correlation/HttpContextExtensions.cs` *(new, public)* — `HttpContext.GetCloudstrapCorrelationId()`. Its XML docs steer ordinary application code to `ICorrelationContextAccessor` (which also works in message handlers and background work) and reserve this seam for code holding the `HttpContext` outside the middleware's async scope.
+- `Cloudstrap.WebApi/CloudstrapWebApiExceptionHandler.cs` — `ResolveCorrelationId` now tries the stored identifier, then the async-local accessor, then the inbound header.
+- Four new tests in `Cloudstrap.Observability.Tests` (stash for inbound and generated ids, null before the middleware runs, guard clause); `Throwing_WithNoInboundCorrelationHeader_EchoesTheGeneratedIdentifier` in the WebApi suite replaces the test that pinned the limitation.
+
+`Cloudstrap.Observability.Correlation` was already an approved public namespace in that package's `PackageSurfaceTests`, so no guard needed relaxing. **Not** taken, and still open for the roadmap: echoing the identifier in a *response header*, which would additionally let a caller learn a generated id on a successful response — a broader behavior change than this finding requires.
 
 ---
 
@@ -346,7 +360,7 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 ## Step 5 — Controllers spanning versions 1.0 and 2.0 produce `/openapi/v1.json` and `/openapi/v2.json` with neutral, overridable metadata (AC-W3)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.WebApi/CloudstrapOpenApiOptions.cs` *(create)* — `const string SectionName = "Cloudstrap:OpenApi"`; `Enabled : bool = true`, `Title : string?`, `Description : string?`, `OAuth : OpenApiOAuthSettings`.
@@ -390,7 +404,7 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 ## Step 6 — A developer opens `/scalar` in Development and browses the API; production stays dark unless explicitly opened, and a client secret is unrepresentable (AC-W4)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.WebApi/CloudstrapScalarOptions.cs` *(create)* — `const string SectionName = "Cloudstrap:Scalar"`; `Enabled : bool? = null` (null → Development only), `Path : string = "/scalar"`, `OAuth : ScalarOAuthSettings`.
@@ -438,10 +452,22 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 ⚠️ **Risk areas at this gate**: **three new dependencies** — `Microsoft.AspNetCore.OpenApi`, `Asp.Versioning.OpenApi`, `Scalar.AspNetCore` (all MIT; two Microsoft/dotnet-org) — rule-4 review, and confirm the closure still contains **zero `NSwag.*`** (D-1, AC-W14) · **public API** — `CloudstrapOpenApiOptions`/`CloudstrapScalarOptions` and their two `Cloudstrap:` sections are permanent surface (D-1's residual risk); check them against the spec sketch verbatim, including the deliberate absence of a client-secret property and of any `Cloudstrap:Swagger` section · **mechanic (e)** — the documents and the UI are mapped anonymously so the Step 8 fallback policy cannot lock the reference UI out of the description it renders; confirm or direct protected documents · **mechanic (i.1)/(i.3) deviations** — the executor reports exactly how `Asp.Versioning.OpenApi` produced the per-version documents and which `Scalar.AspNetCore` members were used, and confirms **no hand-written version-filter transformer** was needed.
 
-- [ ] Behavioral verification: test exe output shows — two version-correct documents with neutral derived metadata, configured overrides, the disabled 404 and a working consumer transformer (Step 5); the UI served in Development, dark in Production, openable by explicit option, path-configurable, the both-keys startup failure, the structural no-secret guard and the Scalar hook (Step 6).
-- [ ] Code review: options types vs the spec sketch verbatim; the security-scheme work is **not** here (it lands in Step 9 with auth); no NIHDI title/description/license text anywhere; no Keycloak token-URL convention anywhere.
-- [ ] ⚠️ Dependency review (risk area): `dotnet list src/Cloudstrap.WebApi/Cloudstrap.WebApi.csproj package` → exactly the five runtime packages (`Asp.Versioning.Mvc`, `.Mvc.ApiExplorer`, `.OpenApi`, `Microsoft.AspNetCore.OpenApi`, `Scalar.AspNetCore`) plus the three project references; every version CPM-pinned and OSI-licensed.
+- [x] Behavioral verification: test exe output shows — two version-correct documents with neutral derived metadata, configured overrides, the disabled 404 and a working consumer transformer (Step 5); the UI served in Development, dark in Production, openable by explicit option, path-configurable, the both-keys startup failure, the structural no-secret guard and the Scalar hook (Step 6). *(75 tests in `Cloudstrap.WebApi.Tests`, 359 solution-wide, all green.)*
+- [x] Code review: options types vs the spec sketch verbatim; the security-scheme work is **not** here (it lands in Step 9 with auth); no NIHDI title/description/license text anywhere; no Keycloak token-URL convention anywhere.
+- [x] ⚠️ Dependency review (risk area): `dotnet list src/Cloudstrap.WebApi/Cloudstrap.WebApi.csproj package` → exactly the five runtime packages (`Asp.Versioning.Mvc`, `.Mvc.ApiExplorer`, `.OpenApi`, `Microsoft.AspNetCore.OpenApi`, `Scalar.AspNetCore`) plus the three project references; every version CPM-pinned and OSI-licensed.
 - [ ] User approved — implementation may continue past this gate
+
+### Gate 3 executor report — mechanics (i.1), (i.3) and (j) resolved
+
+**(i.1) `Asp.Versioning.OpenApi` 10.0.1 — confirmed, no bespoke filter needed.** The API was verified by loading the shipped assembly and enumerating its public surface before any code was written. The wiring is `services.AddApiVersioning(…).AddMvc(…).AddApiExplorer(…).AddOpenApi(Action<VersionedOpenApiOptions>)` on the service side, where `VersionedOpenApiOptions.Document` is the Microsoft `OpenApiOptions` for that version's document, plus `app.MapOpenApi().WithDocumentPerVersion()` on the endpoint side. `/openapi/v1.json` and `/openapi/v2.json` each carry only their own version's operations. **`Cloudstrap.WebApi` contains no hand-written version-filter transformer** — finding 8 closed as specced. All eight Step 5 tests passed on the first run against this wiring.
+
+**(i.3) `Scalar.AspNetCore` 2.16.17 — members used.** `MapScalarApiReference(IEndpointRouteBuilder, string endpointPrefix, Action<ScalarOptions>)` for the configurable path; `ScalarOptions.Title`; `AddDocuments(IEnumerable<string>)` fed from `IApiVersionDescriptionProvider.ApiVersionDescriptions`, so every discovered version is listed; `AddAuthorizationCodeFlow(scheme, Action<AuthorizationCodeFlow>)` for the sign-in. **Deviation from the plan's wording:** `ClientId` is a member of the *flow* (`OAuthFlow.ClientId`), not of the security scheme, and there is no scheme-level client id — so `AddOAuth2Authentication`/`AddDefaultScopes` were not the right pair. Cloudstrap wires the **authorization code flow with PKCE** (`flow.Pkce = Pkce.Sha256`), the only flow a browser client completes without a secret; `SelectedScopes` carries the pre-selected scopes and the flow's URLs come from `Cloudstrap:OpenApi:OAuth`. Scalar's own `AuthorizationCodeFlow` type *does* expose a `ClientSecret`, which Cloudstrap never sets and which no `Cloudstrap:` key can reach — a consumer can only set it by reaching for the `configurator.Scalar` hook deliberately.
+
+**Two test-shape corrections, behavior unchanged:**
+1. The reference UI answers the configured prefix with a **302** to the page for a specific document. Tests follow that single redirect, which is what a browser does.
+2. The shell does not inline document URLs as absolute paths; it carries them in its initializer payload as relative URLs (`{"title":"v1","url":"openapi/v1.json"}`). Assertions match that exact form. Mechanic (j)'s E2E assertion in Step 11 must use the same shape.
+
+**Validator scope.** `CloudstrapScalarOptionsValidator` fails startup only when `Cloudstrap:Scalar:Enabled` is *explicitly* `true` while the documents are disabled — the spec's edge case verbatim. When exposure was merely implied by `Development`, the UI is quietly left unmapped instead of failing the build, so switching documents off during local work does not stop the application starting.
 
 ---
 

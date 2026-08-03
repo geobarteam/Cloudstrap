@@ -5,6 +5,7 @@ namespace Cloudstrap.WebApi
     using Cloudstrap.Observability.Correlation;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Options;
 
     /// <summary>
@@ -92,6 +93,24 @@ namespace Cloudstrap.WebApi
             ApplicationOptions application = app.Services
                 .GetRequiredService<IOptions<ApplicationOptions>>()
                 .Value;
+            WebApiOptions webApi = app.Services
+                .GetRequiredService<IOptions<WebApiOptions>>()
+                .Value;
+
+            // First, in every environment: an unhandled exception must never escape as a stack-trace page.
+            // The handler terminates rather than re-executing, so ApplicationOptions.ExceptionHandlerPath is
+            // deliberately not consumed here.
+            app.UseExceptionHandler();
+
+            // Browsers only honour HSTS over HTTPS, and pinning a developer's localhost would be a nuisance
+            // they have to clear by hand.
+            if (webApi.Hsts.Enabled && !app.Environment.IsDevelopment())
+            {
+                app.UseHsts();
+            }
+
+            // Before the path base and before routing, so a short-circuited probe response carries them too.
+            app.UseMiddleware<SecurityHeadersMiddleware>();
 
             if (!string.IsNullOrEmpty(application.PathBase))
             {
@@ -101,6 +120,13 @@ namespace Cloudstrap.WebApi
             hooks.BeforeRouting?.Invoke(app);
 
             app.UseRouting();
+
+            // Before correlation, so a preflight is answered by the CORS middleware and can never be
+            // rejected for carrying no correlation identifier.
+            if (webApi.Cors.AllowedOrigins.Count > 0)
+            {
+                app.UseCors();
+            }
 
             // After routing, so endpoint metadata is visible; before authentication, so a request rejected by
             // an authorization policy is still correlated in the logs and in its problem-details response.
@@ -116,6 +142,27 @@ namespace Cloudstrap.WebApi
             }
 
             app.MapCloudstrapHealthChecks();
+
+            CloudstrapOpenApiOptions openApi = app.Services
+                .GetRequiredService<IOptions<CloudstrapOpenApiOptions>>()
+                .Value;
+
+            if (openApi.Enabled)
+            {
+                // Anonymous by design: a require-authenticated fallback policy must not lock the API
+                // description out of the reference UI that exists to render it. Consumers who want the
+                // description protected switch it off in configuration or map it themselves.
+                app.MapOpenApi().WithDocumentPerVersion().AllowAnonymous();
+
+                CloudstrapScalarOptions scalar = app.Services
+                    .GetRequiredService<IOptions<CloudstrapScalarOptions>>()
+                    .Value;
+
+                if (EnvironmentDefault.Resolve(scalar.Enabled, app.Environment.IsDevelopment()))
+                {
+                    ScalarRegistration.Map(app, scalar, openApi, application);
+                }
+            }
 
             hooks.ConfigureEndpoints?.Invoke(app);
 

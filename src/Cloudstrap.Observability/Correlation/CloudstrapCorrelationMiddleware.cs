@@ -55,6 +55,10 @@ namespace Cloudstrap.Observability.Correlation
 
             _accessor.CorrelationId = correlationId;
 
+            // Also request-scoped, so code holding the HttpContext outside this middleware's async scope —
+            // an exception handler placed ahead of it, for instance — can still read the identifier.
+            context.Items[HttpContextExtensions.CorrelationIdItemKey] = correlationId;
+
             await _next(context);
         }
 

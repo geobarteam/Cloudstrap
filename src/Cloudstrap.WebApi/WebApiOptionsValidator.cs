@@ -28,6 +28,13 @@ namespace Cloudstrap.WebApi
                     + $"version such as '1.0'; '{options.ApiVersioning.DefaultVersion}' is not.");
             }
 
+            if (options.Hsts.Enabled && options.Hsts.MaxAgeDays <= 0)
+            {
+                failures.Add(
+                    $"'{WebApiOptions.SectionName}:Hsts:MaxAgeDays' must be greater than zero when "
+                    + $"'{WebApiOptions.SectionName}:Hsts:Enabled' is true.");
+            }
+
             return failures.Count == 0
                 ? ValidateOptionsResult.Success
                 : ValidateOptionsResult.Fail(failures);

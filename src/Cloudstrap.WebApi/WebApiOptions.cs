@@ -23,6 +23,24 @@ namespace Cloudstrap.WebApi
         public JsonSettings Json { get; set; } = new();
 
         /// <summary>
+        /// Gets or sets the cross-origin settings.
+        /// </summary>
+        /// <value>The CORS settings. Never <see langword="null"/>.</value>
+        public CorsSettings Cors { get; set; } = new();
+
+        /// <summary>
+        /// Gets or sets the HTTP Strict Transport Security settings.
+        /// </summary>
+        /// <value>The HSTS settings. Never <see langword="null"/>.</value>
+        public HstsSettings Hsts { get; set; } = new();
+
+        /// <summary>
+        /// Gets or sets the error-response settings.
+        /// </summary>
+        /// <value>The exception-handling settings. Never <see langword="null"/>.</value>
+        public ExceptionHandlingSettings ExceptionHandling { get; set; } = new();
+
+        /// <summary>
         /// Gets or sets a value indicating whether generated URLs and query strings are lowercased.
         /// </summary>
         /// <value>

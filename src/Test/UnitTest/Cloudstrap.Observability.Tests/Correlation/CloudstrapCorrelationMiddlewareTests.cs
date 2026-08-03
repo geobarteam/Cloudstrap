@@ -64,6 +64,56 @@ namespace Cloudstrap.Observability.Tests.Correlation
         }
 
         [Test]
+        public async Task Invoke_WithInboundHeader_AlsoStoresTheIdOnTheHttpContext()
+        {
+            // Arrange & Act
+            (DefaultHttpContext context, _) = await RunRequest(
+                MinimalValid(),
+                context => context.Request.Headers["X-Correlation-ID"] = "abc-123");
+
+            // Assert — request-scoped, so it survives an exception unwinding past this middleware
+            Assert.That(context.GetCloudstrapCorrelationId(), Is.EqualTo("abc-123"));
+        }
+
+        [Test]
+        public async Task Invoke_WithoutHeader_StoresTheGeneratedIdOnTheHttpContext()
+        {
+            // Arrange
+            using Activity activity = new("Contoso.Test.Request");
+            activity.Start();
+
+            // Act
+            (DefaultHttpContext context, string? observed) = await RunRequest(MinimalValid());
+
+            // Assert — the generated identifier is readable by an outer middleware too
+            Assert.Multiple(() =>
+            {
+                Assert.That(context.GetCloudstrapCorrelationId(), Is.EqualTo(activity.TraceId.ToString()));
+                Assert.That(context.GetCloudstrapCorrelationId(), Is.EqualTo(observed));
+            });
+        }
+
+        [Test]
+        public void GetCloudstrapCorrelationId_BeforeTheMiddlewareRan_ReturnsNull()
+        {
+            // Arrange
+            DefaultHttpContext context = new();
+
+            // Act + Assert
+            Assert.That(context.GetCloudstrapCorrelationId(), Is.Null);
+        }
+
+        [Test]
+        public void GetCloudstrapCorrelationId_OnNullContext_ThrowsArgumentNullException()
+        {
+            // Arrange
+            HttpContext context = null!;
+
+            // Act + Assert
+            Assert.That(() => context.GetCloudstrapCorrelationId(), Throws.ArgumentNullException);
+        }
+
+        [Test]
         public async Task Invoke_WithoutHeaderAndRequireForAllEndpoints_Returns400ProblemJsonNamingHeader()
         {
             // Arrange

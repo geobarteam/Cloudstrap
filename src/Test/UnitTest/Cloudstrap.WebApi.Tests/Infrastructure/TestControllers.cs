@@ -70,6 +70,57 @@ namespace Cloudstrap.WebApi.Tests.Infrastructure
     }
 
     /// <summary>
+    /// A controller reachable on version 1.0 only, so "one document per version" is not vacuous.
+    /// </summary>
+    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/ledger")]
+    public sealed class LedgerController : ControllerBase
+    {
+        /// <summary>Serves the version 1.0 ledger.</summary>
+        /// <returns>The widget standing in for a ledger entry.</returns>
+        [HttpGet]
+        public ActionResult<WidgetDto> Get()
+        {
+            return Ok(new WidgetDto("ledger", "1.0"));
+        }
+    }
+
+    /// <summary>
+    /// A controller reachable on version 2.0 only, the counterpart to <see cref="LedgerController"/>.
+    /// </summary>
+    [ApiController]
+    [ApiVersion("2.0")]
+    [Route("api/v{version:apiVersion}/gadgets")]
+    public sealed class GadgetsController : ControllerBase
+    {
+        /// <summary>Serves the version 2.0 gadget.</summary>
+        /// <returns>The gadget.</returns>
+        [HttpGet]
+        public ActionResult<WidgetDto> Get()
+        {
+            return Ok(new WidgetDto("gadget", "2.0"));
+        }
+    }
+
+    /// <summary>
+    /// A controller on a deprecated version, so the deprecation metadata is observable in the document.
+    /// </summary>
+    [ApiController]
+    [ApiVersion("1.0", Deprecated = true)]
+    [Route("api/v{version:apiVersion}/retired")]
+    public sealed class RetiredController : ControllerBase
+    {
+        /// <summary>Serves the deprecated payload.</summary>
+        /// <returns>The widget.</returns>
+        [HttpGet]
+        public ActionResult<WidgetDto> Get()
+        {
+            return Ok(new WidgetDto("retired", "1.0"));
+        }
+    }
+
+    /// <summary>
     /// A controller carrying no version metadata at all — the ported convention's subject.
     /// </summary>
     [ApiController]
@@ -128,6 +179,82 @@ namespace Cloudstrap.WebApi.Tests.Infrastructure
         public IActionResult Target()
         {
             return Ok();
+        }
+    }
+
+    /// <summary>
+    /// A controller whose action fails with a deeply nested exception chain, so both error-response modes
+    /// and the depth bound are observable.
+    /// </summary>
+    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/boom")]
+    public sealed class BoomController : ControllerBase
+    {
+        /// <summary>The text carried by the innermost exception of the fixture chain.</summary>
+        public const string RootCauseMessage = "contoso root cause";
+
+        /// <summary>Throws an eight-deep exception chain.</summary>
+        /// <returns>Never returns.</returns>
+        [HttpGet]
+        public IActionResult Get()
+        {
+            Exception failure = BuildNestedFailure(depth: 8);
+            failure.Data["path"] = Request.Path.Value;
+
+            throw failure;
+        }
+
+        private static Exception BuildNestedFailure(int depth)
+        {
+            Exception current = new InvalidOperationException(RootCauseMessage);
+
+            for (int level = 1; level <= depth; level++)
+            {
+                current = new InvalidOperationException($"failure level {level}", current);
+            }
+
+            return current;
+        }
+    }
+
+    /// <summary>
+    /// A controller setting a security header itself, so the middleware's no-overwrite rule is observable.
+    /// </summary>
+    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/headers")]
+    public sealed class HeadersController : ControllerBase
+    {
+        /// <summary>Sets its own referrer policy and returns.</summary>
+        /// <returns>An empty successful response.</returns>
+        [HttpGet]
+        public IActionResult Get()
+        {
+            Response.Headers["Referrer-Policy"] = "same-origin";
+
+            return Ok();
+        }
+    }
+
+    /// <summary>
+    /// The endpoint <c>Cloudstrap:Application:ExceptionHandlerPath</c> names. The Web API handler terminates
+    /// rather than re-executing, so this action must never run for an unhandled exception.
+    /// </summary>
+    [ApiController]
+    [ApiVersionNeutral]
+    [Route("error")]
+    public sealed class ErrorController : ControllerBase
+    {
+        /// <summary>The marker proving this action ran.</summary>
+        public const string Marker = "re-executed-error-endpoint";
+
+        /// <summary>Serves the marker.</summary>
+        /// <returns>The marker text.</returns>
+        [HttpGet]
+        public IActionResult Get()
+        {
+            return Ok(Marker);
         }
     }
 

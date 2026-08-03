@@ -1,6 +1,7 @@
 namespace Cloudstrap.WebApi
 {
     using System.Text.Json.Serialization;
+    using Asp.Versioning;
     using Cloudstrap.Core;
     using Cloudstrap.Observability.Correlation;
     using Microsoft.AspNetCore.Builder;
@@ -97,11 +98,87 @@ namespace Cloudstrap.WebApi
                 mvc.AddJsonOptions(configurator.Json);
             }
 
-            ApiVersioningRegistration.Configure(services, options, configurator.ApiVersioning);
+            services.AddHsts(hsts =>
+            {
+                hsts.MaxAge = TimeSpan.FromDays(options.Hsts.MaxAgeDays);
+                hsts.IncludeSubDomains = options.Hsts.IncludeSubDomains;
+                hsts.Preload = options.Hsts.Preload;
+            });
+
+            ConfigureCors(services, options.Cors);
+
+            services.AddProblemDetails();
+
+            // Registered last, so any handler the consumer added before this call gets the first attempt.
+            services.AddExceptionHandler<CloudstrapWebApiExceptionHandler>();
+
+            IApiVersioningBuilder versioning = ApiVersioningRegistration.Configure(
+                services,
+                options,
+                configurator.ApiVersioning);
+
+            services.AddOptions<CloudstrapOpenApiOptions>()
+                .BindConfiguration(CloudstrapOpenApiOptions.SectionName)
+                .ValidateOnStart();
+
+            CloudstrapOpenApiOptions openApi = builder.Configuration
+                .GetSection(CloudstrapOpenApiOptions.SectionName)
+                .Get<CloudstrapOpenApiOptions>() ?? new CloudstrapOpenApiOptions();
+
+            if (openApi.Enabled)
+            {
+                ApplicationOptions application = builder.Configuration
+                    .GetSection(ApplicationOptions.SectionName)
+                    .Get<ApplicationOptions>() ?? new ApplicationOptions();
+
+                OpenApiRegistration.Configure(versioning, openApi, application, configurator.OpenApi);
+            }
+
+            services.AddOptions<CloudstrapScalarOptions>()
+                .BindConfiguration(CloudstrapScalarOptions.SectionName)
+                .ValidateOnStart();
+            services.TryAddEnumerable(
+                ServiceDescriptor.Singleton<IValidateOptions<CloudstrapScalarOptions>,
+                    CloudstrapScalarOptionsValidator>());
+            services.AddSingleton(new ScalarConfigurator(configurator.Scalar));
 
             configurator.Mvc?.Invoke(mvc);
 
             return builder;
+        }
+
+        /// <summary>
+        /// Registers the default CORS policy — but only once at least one origin is configured.
+        /// </summary>
+        /// <param name="services">The service collection to register into.</param>
+        /// <param name="cors">The configured cross-origin settings.</param>
+        /// <remarks>
+        /// With no origins configured nothing at all is registered, so no <c>Access-Control-Allow-Origin</c>
+        /// header can be emitted and browsers keep their same-origin default. There is deliberately no
+        /// allow-any-origin fallback.
+        /// </remarks>
+        private static void ConfigureCors(IServiceCollection services, CorsSettings cors)
+        {
+            if (cors.AllowedOrigins.Count == 0)
+            {
+                return;
+            }
+
+            string[] origins = [.. cors.AllowedOrigins];
+            bool hasWildcardSubdomain = origins.Any(origin => origin.Contains('*', StringComparison.Ordinal));
+
+            services.AddCors(options => options.AddDefaultPolicy(policy =>
+            {
+                policy.WithOrigins(origins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+
+                if (hasWildcardSubdomain)
+                {
+                    policy.SetIsOriginAllowedToAllowWildcardSubdomains();
+                }
+            }));
         }
     }
 }

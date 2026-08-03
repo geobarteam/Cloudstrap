@@ -34,6 +34,11 @@
     <!-- MIT (dotnet org) — the .NET API versioning standard, one release train -->
     <PackageVersion Include="Asp.Versioning.Mvc" Version="10.0.1" />
     <PackageVersion Include="Asp.Versioning.Mvc.ApiExplorer" Version="10.0.1" />
+    <!-- The v10 bridge: one OpenAPI document per discovered API version, in the box -->
+    <PackageVersion Include="Asp.Versioning.OpenApi" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <!-- MIT (scalar/scalar) — the API reference UI rendered over the generated documents -->
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.17" />
   </ItemGroup>
   <ItemGroup>
     <!-- Apache-2.0 (Xabaril) — the canonical URI health check; replaces a bespoke liveness probe -->

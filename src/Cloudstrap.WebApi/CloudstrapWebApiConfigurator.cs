@@ -2,7 +2,9 @@ namespace Cloudstrap.WebApi
 {
     using Asp.Versioning;
     using Microsoft.AspNetCore.Mvc;
+    using Microsoft.AspNetCore.OpenApi;
     using Microsoft.Extensions.DependencyInjection;
+    using Scalar.AspNetCore;
 
     /// <summary>
     /// The code-level hooks carried by
@@ -29,6 +31,29 @@ namespace Cloudstrap.WebApi
         /// </summary>
         /// <value>The JSON hook, or <see langword="null"/> when the defaults are used as they are.</value>
         public Action<JsonOptions>? Json
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Gets or sets the hook applied to each generated OpenAPI document after the Cloudstrap defaults —
+        /// the place to add document, operation or schema transformers.
+        /// </summary>
+        /// <value>The document hook, or <see langword="null"/> when the defaults are used as they are.</value>
+        /// <remarks>
+        /// It runs once per discovered API version, against that version's own document options.
+        /// </remarks>
+        public Action<OpenApiOptions>? OpenApi
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Gets or sets the hook applied to the reference UI after the Cloudstrap defaults — a straight
+        /// passthrough to <c>Scalar.AspNetCore</c>'s own options.
+        /// </summary>
+        /// <value>The reference-UI hook, or <see langword="null"/> when the defaults are used as they are.</value>
+        public Action<ScalarOptions>? Scalar
         {
             get; set;
         }

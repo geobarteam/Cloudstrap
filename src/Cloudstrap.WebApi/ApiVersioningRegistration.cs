@@ -17,14 +17,15 @@ namespace Cloudstrap.WebApi
         /// <param name="services">The service collection to register into.</param>
         /// <param name="options">The bound Web API settings.</param>
         /// <param name="configure">The consumer hook, invoked after the Cloudstrap defaults.</param>
-        public static void Configure(
+        /// <returns>The versioning builder, so the document registration can extend it.</returns>
+        public static IApiVersioningBuilder Configure(
             IServiceCollection services,
             WebApiOptions options,
             Action<ApiVersioningOptions>? configure)
         {
             ApiVersion defaultVersion = ResolveDefaultVersion(options.ApiVersioning.DefaultVersion);
 
-            services.AddApiVersioning(versioning =>
+            return services.AddApiVersioning(versioning =>
                 {
                     versioning.DefaultApiVersion = defaultVersion;
                     versioning.AssumeDefaultVersionWhenUnspecified =
