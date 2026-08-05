@@ -167,6 +167,39 @@ namespace Cloudstrap.Core.Tests
             });
         }
 
+        [Test]
+        public void HttpClients_HealthCheckPath_DefaultsToHealthz()
+        {
+            // Arrange
+            var values = new Dictionary<string, string?>
+            {
+                ["Cloudstrap:HttpClients:CatalogApi:BaseAddress"] = "https://catalog.example.com/",
+            };
+
+            // Act
+            CloudstrapOptions options = Bind(values);
+
+            // Assert — the default matches what a Cloudstrap peer serves its liveness probe on
+            Assert.That(options.HttpClients["CatalogApi"].HealthCheckPath, Is.EqualTo("/healthz"));
+        }
+
+        [Test]
+        public void HttpClients_HealthCheckPath_BindsConfiguredValue()
+        {
+            // Arrange
+            var values = new Dictionary<string, string?>
+            {
+                ["Cloudstrap:HttpClients:CatalogApi:BaseAddress"] = "https://catalog.example.com/",
+                ["Cloudstrap:HttpClients:CatalogApi:HealthCheckPath"] = "/live-probe",
+            };
+
+            // Act
+            CloudstrapOptions options = Bind(values);
+
+            // Assert
+            Assert.That(options.HttpClients["CatalogApi"].HealthCheckPath, Is.EqualTo("/live-probe"));
+        }
+
         private static CloudstrapOptions Bind(Dictionary<string, string?> values)
         {
             IConfigurationRoot configuration = new ConfigurationBuilder()

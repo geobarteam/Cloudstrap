@@ -29,5 +29,16 @@ namespace Cloudstrap.Core
         /// </summary>
         /// <value>The exempt paths. Empty by default.</value>
         public List<string> ExcludeEndpoints { get; } = [];
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the correlation identifier is echoed back to the caller in
+        /// a response header of the same name.
+        /// </summary>
+        /// <value><see langword="true"/> to echo it. Defaults to <see langword="true"/>.</value>
+        /// <remarks>
+        /// This is how a caller who sent no identifier learns the generated one, which is what makes it
+        /// quotable in a support request. A value the application set itself is never overwritten.
+        /// </remarks>
+        public bool EchoInResponse { get; set; } = true;
     }
 }

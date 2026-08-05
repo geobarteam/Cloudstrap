@@ -1,0 +1,29 @@
+@inherits LayoutComponentBase
+@using Cloudstrap.Core
+@using Microsoft.Extensions.Options
+@inject IOptions<ApplicationOptions> ClientApplicationOptions
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudText Typo="Typo.h6">Cloudstrap WASM Test Project</MudText>
+        <MudSpacer />
+        @* Rendered from options bound INSIDE the WASM client (wwwroot/appsettings.json) —
+           proves Cloudstrap.Core is WASM-loadable. *@
+        <MudText Typo="Typo.subtitle2" data-testid="client-workload">client: @ClientApplicationOptions.Value.WorkloadName</MudText>
+    </MudAppBar>
+    <MudDrawer Open="true" Elevation="1">
+        <MudNavMenu>
+            <MudNavLink Href="" Match="NavLinkMatch.All">Home</MudNavLink>
+            <MudNavLink Href="doctors">Doctors</MudNavLink>
+            <MudNavLink Href="diagnostics">Diagnostics</MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+    <MudMainContent Class="pa-6">
+        @Body
+    </MudMainContent>
+</MudLayout>

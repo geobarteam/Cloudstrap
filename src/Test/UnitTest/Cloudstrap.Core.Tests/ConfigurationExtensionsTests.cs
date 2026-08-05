@@ -72,11 +72,53 @@ namespace Cloudstrap.Core.Tests
         }
 
         [Test]
-        public void GetCloudstrapOptions_WithOtlpModeAndNoEndpoint_ThrowsNamingEndpoint()
+        public void GetCloudstrapOptions_WithOtlpModeAndNeitherEndpointSource_ThrowsNamingEndpointAndVariable()
         {
             // Arrange
             Dictionary<string, string?> values = MinimalValid();
             values["Cloudstrap:OpenTelemetry:Mode"] = "Otlp";
+            IConfiguration configuration = Build(values);
+
+            // Act
+            ConfigurationValidationException exception =
+                Assert.Throws<ConfigurationValidationException>(() => configuration.GetCloudstrapOptions())!;
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(exception.Failures, Has.Some.Contains("OpenTelemetry:Endpoint"));
+                Assert.That(exception.Failures, Has.Some.Contains("OTEL_EXPORTER_OTLP_ENDPOINT"));
+            });
+        }
+
+        [Test]
+        public void GetCloudstrapOptions_WithOtlpModeNoEndpointAndStandardVariable_ReturnsOptions()
+        {
+            // Arrange
+            Dictionary<string, string?> values = MinimalValid();
+            values["Cloudstrap:OpenTelemetry:Mode"] = "Otlp";
+            values["OTEL_EXPORTER_OTLP_ENDPOINT"] = "https://collector.example.com";
+            IConfiguration configuration = Build(values);
+
+            // Act
+            CloudstrapOptions options = configuration.GetCloudstrapOptions();
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(options.OpenTelemetry.Mode, Is.EqualTo(OpenTelemetryMode.Otlp));
+                Assert.That(options.OpenTelemetry.Endpoint, Is.Null);
+            });
+        }
+
+        [Test]
+        public void GetCloudstrapOptions_WithNonHttpEndpointAndStandardVariable_StillThrows()
+        {
+            // Arrange
+            Dictionary<string, string?> values = MinimalValid();
+            values["Cloudstrap:OpenTelemetry:Mode"] = "Otlp";
+            values["Cloudstrap:OpenTelemetry:Endpoint"] = "ftp://collector.example.com";
+            values["OTEL_EXPORTER_OTLP_ENDPOINT"] = "https://collector.example.com";
             IConfiguration configuration = Build(values);
 
             // Act

@@ -9,8 +9,6 @@ namespace Cloudstrap.Core
     /// </summary>
     public static class ConfigurationExtensions
     {
-        private static readonly CloudstrapOptionsValidator _validator = new();
-
         /// <summary>
         /// Binds and validates the <c>Cloudstrap</c> configuration section eagerly.
         /// </summary>
@@ -41,7 +39,8 @@ namespace Cloudstrap.Core
 
             CloudstrapOptions options = section.Get<CloudstrapOptions>() ?? new CloudstrapOptions();
 
-            ValidateOptionsResult result = _validator.Validate(Options.DefaultName, options);
+            CloudstrapOptionsValidator validator = new(configuration);
+            ValidateOptionsResult result = validator.Validate(Options.DefaultName, options);
 
             if (result.Failed)
             {

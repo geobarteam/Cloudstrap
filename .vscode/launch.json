@@ -1,0 +1,38 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // F5: run the WASM Test Project — debugs the Bff (server) process and opens the browser.
+      "name": "WASM Test Project (Bff server)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-wasmtestproject",
+      "program": "${workspaceFolder}/src/Test/WasmTestProject/src/Host/Bff/bin/Debug/net10.0/Cloudstrap.WasmTestProject.Host.Bff.dll",
+      "cwd": "${workspaceFolder}/src/Test/WasmTestProject/src/Host/Bff",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "https://localhost:7200;http://127.0.0.1:5300"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      }
+    },
+    {
+      // Debug the C# running INSIDE the browser (breakpoints in Presentation / Host.Wasm).
+      // Launches the Bff as the host and attaches the WASM debugger to Chrome/Edge.
+      "name": "WASM Test Project (client debug)",
+      "type": "blazorwasm",
+      "request": "launch",
+      "hosted": true,
+      "preLaunchTask": "build-wasmtestproject",
+      "program": "${workspaceFolder}/src/Test/WasmTestProject/src/Host/Bff/bin/Debug/net10.0/Cloudstrap.WasmTestProject.Host.Bff.dll",
+      "cwd": "${workspaceFolder}/src/Test/WasmTestProject/src/Host/Bff",
+      "url": "https://localhost:7200",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "https://localhost:7200;http://127.0.0.1:5300"
+      }
+    }
+  ]
+}
