@@ -60,9 +60,11 @@ namespace Cloudstrap.Extensions
         /// </para>
         /// <para>
         /// When the section sets <c>AddUserAccessToken</c> or <c>AddClientAccessToken</c>, the registered
-        /// <see cref="IAccessTokenHandlerProvider"/> supplies the token handler, which runs ahead of the
-        /// correlation handler. The provider ships with the Cloudstrap.Authentication packages; its absence
-        /// while a flag is set fails client creation rather than sending an unauthenticated request.
+        /// <see cref="IUserAccessTokenHandlerProvider"/> or <see cref="IClientAccessTokenHandlerProvider"/>
+        /// supplies the token handler, which runs ahead of the correlation handler; with both flags set both
+        /// handlers are added, user first. The providers ship with the Cloudstrap.Authentication packages; a
+        /// missing provider while its flag is set fails client creation rather than sending an
+        /// unauthenticated — or partially authenticated — request.
         /// </para>
         /// <para>
         /// When the section sets <c>EnableHealthCheck</c>, a health check named

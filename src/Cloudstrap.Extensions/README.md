@@ -151,19 +151,20 @@ applies resilience at the defaults level.
 
 ### Access tokens: the seam
 
-Setting `AddUserAccessToken` or `AddClientAccessToken` activates `IAccessTokenHandlerProvider`. This package
-declares that interface and never implements it, so nothing here depends on an authentication stack. The
-implementations ship separately:
+Setting `AddUserAccessToken` or `AddClientAccessToken` activates the corresponding token handler seam. This
+package declares the two interfaces and never implements them, so nothing here depends on an authentication
+stack. The implementations ship separately:
 
-| Flag | Implementing package |
-|---|---|
-| `AddUserAccessToken` | `Cloudstrap.Authentication.OpenIdConnect` |
-| `AddClientAccessToken` | `Cloudstrap.Authentication.ClientCredentials` |
+| Flag | Seam interface | Implementing package |
+|---|---|---|
+| `AddUserAccessToken` | `IUserAccessTokenHandlerProvider` | `Cloudstrap.Authentication.OpenIdConnect` |
+| `AddClientAccessToken` | `IClientAccessTokenHandlerProvider` | `Cloudstrap.Authentication.ClientCredentials` |
 
-The provider is resolved from the container when the client's pipeline is first built, never at registration
-time, so the order of your `AddCloudstrap…` calls does not matter. Until an implementation is registered,
-setting a flag fails client creation with a message naming the flag and the package that satisfies it —
-Cloudstrap will not quietly send an unauthenticated request in its place.
+Each provider is resolved from the container when the client's pipeline is first built, never at registration
+time, so the order of your `AddCloudstrap…` calls does not matter. A client may set both flags: both handlers
+are then added, user first. Until an implementation is registered, setting a flag fails client creation with
+a message naming exactly the missing flag(s) and package(s) — Cloudstrap will not quietly send an
+unauthenticated, or partially authenticated, request in its place.
 
 ## Health probes
 

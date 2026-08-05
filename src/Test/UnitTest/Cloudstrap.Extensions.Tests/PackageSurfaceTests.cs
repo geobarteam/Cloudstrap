@@ -89,9 +89,13 @@ namespace Cloudstrap.Extensions.Tests
                     Is.Empty,
                     "Public classes must be sealed or static.");
                 Assert.That(
-                    publicTypes.Where(type => type.IsInterface).Select(type => type.Name),
-                    Is.EqualTo(new[] { nameof(IAccessTokenHandlerProvider) }),
-                    "The access token handler provider is the only interface this package publishes.");
+                    publicTypes.Where(type => type.IsInterface).Select(type => type.Name).Order(StringComparer.Ordinal),
+                    Is.EqualTo(new[]
+                    {
+                        nameof(IClientAccessTokenHandlerProvider),
+                        nameof(IUserAccessTokenHandlerProvider),
+                    }),
+                    "The two access token handler seams are the only interfaces this package publishes.");
             });
         }
     }

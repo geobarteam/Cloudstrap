@@ -1,4 +1,4 @@
-﻿namespace Cloudstrap.Extensions.Tests
+namespace Cloudstrap.Extensions.Tests
 {
     using Cloudstrap.Core;
     using Cloudstrap.Observability.Correlation;
@@ -7,9 +7,10 @@
     using NUnit.Framework;
 
     /// <summary>
-    /// The seam Cloudstrap.Authentication.* fills (AC-E8, AC-E9): configuration flags decide which clients
-    /// get a token handler, the provider supplies it, and a flag without a provider is a loud failure rather
-    /// than a silently unauthenticated request.
+    /// The seam Cloudstrap.Authentication.* fills (AC-E8, AC-E9, AC-CC13): configuration flags decide which
+    /// clients get a token handler, the independently registered providers supply them, and a flag without
+    /// its provider is a loud failure naming exactly the missing piece rather than a silently
+    /// unauthenticated — or partially authenticated — request.
     /// </summary>
     [TestFixture]
     public sealed class AccessTokenHandlerSeamTests
@@ -27,9 +28,9 @@
             config["Cloudstrap:HttpClients:Catalog:TokenRequestParameters:Scope"] = "catalog.read";
 
             HostApplicationBuilder builder = TestHostBuilder.Create(config);
-            RecordingTokenHandlerProvider provider = new();
+            RecordingUserTokenHandlerProvider provider = new();
             CapturingPrimaryHandler capturing = new();
-            builder.Services.AddSingleton<IAccessTokenHandlerProvider>(provider);
+            builder.Services.AddSingleton<IUserAccessTokenHandlerProvider>(provider);
             builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
                 .ConfigurePrimaryHttpMessageHandler(() => capturing);
 
@@ -57,9 +58,9 @@
             config["Cloudstrap:HttpClients:Catalog:AddClientAccessToken"] = "true";
 
             HostApplicationBuilder builder = TestHostBuilder.Create(config);
-            RecordingTokenHandlerProvider provider = new();
+            RecordingClientTokenHandlerProvider provider = new();
             CapturingPrimaryHandler capturing = new();
-            builder.Services.AddSingleton<IAccessTokenHandlerProvider>(provider);
+            builder.Services.AddSingleton<IClientAccessTokenHandlerProvider>(provider);
             builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
                 .ConfigurePrimaryHttpMessageHandler(() => capturing);
 
@@ -82,9 +83,9 @@
             config["Cloudstrap:HttpClients:Orders:BaseAddress"] = "https://orders.contoso.example/";
 
             HostApplicationBuilder builder = TestHostBuilder.Create(config);
-            RecordingTokenHandlerProvider provider = new();
+            RecordingUserTokenHandlerProvider provider = new();
             CapturingPrimaryHandler ordersCapturing = new();
-            builder.Services.AddSingleton<IAccessTokenHandlerProvider>(provider);
+            builder.Services.AddSingleton<IUserAccessTokenHandlerProvider>(provider);
             builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog");
             builder.Services.AddCloudstrapHttpServiceClient<IOrdersClient, OrdersClient>("Orders")
                 .ConfigurePrimaryHttpMessageHandler(() => ordersCapturing);
@@ -105,17 +106,20 @@
         }
 
         [Test]
-        public async Task BothFlagsTrue_ForwardsBothToTheProvider()
+        public async Task BothFlagsTrue_WithTwoSeparateProviders_AddsBothHandlersUserFirst()
         {
-            // Arrange
+            // Arrange — two independently shipped packages, each registering only its own seam (D-4)
             Dictionary<string, string?> config = TestHostBuilder.CatalogSection();
             config["Cloudstrap:HttpClients:Catalog:AddUserAccessToken"] = "true";
             config["Cloudstrap:HttpClients:Catalog:AddClientAccessToken"] = "true";
+            config["Cloudstrap:HttpClients:Catalog:TokenRequestParameters:Scope"] = "catalog.read";
 
             HostApplicationBuilder builder = TestHostBuilder.Create(config);
-            RecordingTokenHandlerProvider provider = new();
+            RecordingUserTokenHandlerProvider userProvider = new();
+            RecordingClientTokenHandlerProvider clientProvider = new();
             CapturingPrimaryHandler capturing = new();
-            builder.Services.AddSingleton<IAccessTokenHandlerProvider>(provider);
+            builder.Services.AddSingleton<IUserAccessTokenHandlerProvider>(userProvider);
+            builder.Services.AddSingleton<IClientAccessTokenHandlerProvider>(clientProvider);
             builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
                 .ConfigurePrimaryHttpMessageHandler(() => capturing);
 
@@ -125,13 +129,19 @@
             // Act
             using HttpResponseMessage response = await client.Client.GetAsync(new Uri("orders", UriKind.Relative));
 
-            // Assert — both forwarded verbatim, user before client; supporting the pair is the provider's contract
+            // Assert — both handlers attached, user first, each provider consulted exactly once with the
+            // right client name and parameters (AC-CC13)
             Assert.Multiple(() =>
             {
                 Assert.That(
                     capturing.LastRequest!.Headers.GetValues("X-Token-Kind"),
                     Is.EqualTo(_userThenClientTokenKinds));
-                Assert.That(provider.Calls.Select(call => call.Kind), Is.EqualTo(_userThenClientTokenKinds));
+                Assert.That(userProvider.Calls, Has.Count.EqualTo(1));
+                Assert.That(userProvider.Calls[0].ClientName, Is.EqualTo("Catalog"));
+                Assert.That(userProvider.Calls[0].TokenRequest?.Scope, Is.EqualTo("catalog.read"));
+                Assert.That(clientProvider.Calls, Has.Count.EqualTo(1));
+                Assert.That(clientProvider.Calls[0].ClientName, Is.EqualTo("Catalog"));
+                Assert.That(clientProvider.Calls[0].TokenRequest?.Scope, Is.EqualTo("catalog.read"));
             });
         }
 
@@ -150,14 +160,103 @@
             InvalidOperationException? exception = Assert.Throws<InvalidOperationException>(
                 () => host.Services.GetRequiredService<ICatalogClient>());
 
-            // Assert — the message names the flag, the seam and the packages that fill it
+            // Assert — the message names the flag, the seam and the package that fills it
             Assert.Multiple(() =>
             {
                 Assert.That(
                     exception!.Message,
                     Does.Contain("Cloudstrap:HttpClients:Catalog:AddUserAccessToken"));
-                Assert.That(exception!.Message, Does.Contain("IAccessTokenHandlerProvider"));
-                Assert.That(exception!.Message, Does.Contain("Cloudstrap.Authentication"));
+                Assert.That(exception!.Message, Does.Contain(nameof(IUserAccessTokenHandlerProvider)));
+                Assert.That(exception!.Message, Does.Contain("Cloudstrap.Authentication.OpenIdConnect"));
+            });
+        }
+
+        [Test]
+        public void BothFlagsTrue_WithOnlyClientProviderRegistered_FailsNamingOnlyTheUserFlagAndItsPackage()
+        {
+            // Arrange — the client-credentials package is present, the OpenID Connect one is not
+            Dictionary<string, string?> config = TestHostBuilder.CatalogSection();
+            config["Cloudstrap:HttpClients:Catalog:AddUserAccessToken"] = "true";
+            config["Cloudstrap:HttpClients:Catalog:AddClientAccessToken"] = "true";
+
+            HostApplicationBuilder builder = TestHostBuilder.Create(config);
+            builder.Services.AddSingleton<IClientAccessTokenHandlerProvider>(
+                new RecordingClientTokenHandlerProvider());
+            builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog");
+            using IHost host = builder.Build();
+
+            // Act
+            InvalidOperationException? exception = Assert.Throws<InvalidOperationException>(
+                () => host.Services.GetRequiredService<ICatalogClient>());
+
+            // Assert — only the missing half is named; the message must not suggest the satisfied client
+            // flag has anything to do with the failure (AC-CC7's mechanism)
+            Assert.Multiple(() =>
+            {
+                Assert.That(
+                    exception!.Message,
+                    Does.Contain("Cloudstrap:HttpClients:Catalog:AddUserAccessToken"));
+                Assert.That(exception!.Message, Does.Contain("Cloudstrap.Authentication.OpenIdConnect"));
+                Assert.That(exception!.Message, Does.Not.Contain("AddClientAccessToken"));
+            });
+        }
+
+        [Test]
+        public void BothFlagsTrue_WithOnlyUserProviderRegistered_FailsNamingOnlyTheClientFlagAndItsPackage()
+        {
+            // Arrange — the OpenID Connect package is present, the client-credentials one is not
+            Dictionary<string, string?> config = TestHostBuilder.CatalogSection();
+            config["Cloudstrap:HttpClients:Catalog:AddUserAccessToken"] = "true";
+            config["Cloudstrap:HttpClients:Catalog:AddClientAccessToken"] = "true";
+
+            HostApplicationBuilder builder = TestHostBuilder.Create(config);
+            builder.Services.AddSingleton<IUserAccessTokenHandlerProvider>(
+                new RecordingUserTokenHandlerProvider());
+            builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog");
+            using IHost host = builder.Build();
+
+            // Act
+            InvalidOperationException? exception = Assert.Throws<InvalidOperationException>(
+                () => host.Services.GetRequiredService<ICatalogClient>());
+
+            // Assert — the mirror case: only the missing client half is named
+            Assert.Multiple(() =>
+            {
+                Assert.That(
+                    exception!.Message,
+                    Does.Contain("Cloudstrap:HttpClients:Catalog:AddClientAccessToken"));
+                Assert.That(exception!.Message, Does.Contain("Cloudstrap.Authentication.ClientCredentials"));
+                Assert.That(exception!.Message, Does.Not.Contain("AddUserAccessToken"));
+            });
+        }
+
+        [Test]
+        public void BothFlagsTrue_WithNoProviderRegistered_FailsListingBothFlagsAndBothPackages()
+        {
+            // Arrange — both flags on, nothing implements either seam
+            Dictionary<string, string?> config = TestHostBuilder.CatalogSection();
+            config["Cloudstrap:HttpClients:Catalog:AddUserAccessToken"] = "true";
+            config["Cloudstrap:HttpClients:Catalog:AddClientAccessToken"] = "true";
+
+            HostApplicationBuilder builder = TestHostBuilder.Create(config);
+            builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog");
+            using IHost host = builder.Build();
+
+            // Act
+            InvalidOperationException? exception = Assert.Throws<InvalidOperationException>(
+                () => host.Services.GetRequiredService<ICatalogClient>());
+
+            // Assert — one exception, aggregating both flags and both packages
+            Assert.Multiple(() =>
+            {
+                Assert.That(
+                    exception!.Message,
+                    Does.Contain("Cloudstrap:HttpClients:Catalog:AddUserAccessToken"));
+                Assert.That(exception!.Message, Does.Contain("Cloudstrap.Authentication.OpenIdConnect"));
+                Assert.That(
+                    exception!.Message,
+                    Does.Contain("Cloudstrap:HttpClients:Catalog:AddClientAccessToken"));
+                Assert.That(exception!.Message, Does.Contain("Cloudstrap.Authentication.ClientCredentials"));
             });
         }
 
@@ -169,11 +268,11 @@
             config["Cloudstrap:HttpClients:Catalog:AddUserAccessToken"] = "true";
 
             HostApplicationBuilder builder = TestHostBuilder.Create(config);
-            RecordingTokenHandlerProvider provider = new();
+            RecordingUserTokenHandlerProvider provider = new();
             CapturingPrimaryHandler capturing = new();
             builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
                 .ConfigurePrimaryHttpMessageHandler(() => capturing);
-            builder.Services.AddSingleton<IAccessTokenHandlerProvider>(provider);
+            builder.Services.AddSingleton<IUserAccessTokenHandlerProvider>(provider);
 
             using IHost host = builder.Build();
             ICatalogClient client = host.Services.GetRequiredService<ICatalogClient>();
@@ -193,9 +292,9 @@
             config["Cloudstrap:HttpClients:Catalog:AddUserAccessToken"] = "true";
 
             HostApplicationBuilder builder = TestHostBuilder.Create(config);
-            RecordingTokenHandlerProvider provider = new();
+            RecordingUserTokenHandlerProvider provider = new();
             CapturingPrimaryHandler capturing = new();
-            builder.Services.AddSingleton<IAccessTokenHandlerProvider>(provider);
+            builder.Services.AddSingleton<IUserAccessTokenHandlerProvider>(provider);
             builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
                 .ConfigurePrimaryHttpMessageHandler(() => capturing);
 
@@ -217,25 +316,39 @@
     }
 
     /// <summary>
-    /// Stands in for the Cloudstrap.Authentication.* implementations: records every request the wiring makes
-    /// and returns handlers that mark the outgoing request.
+    /// Stands in for the Cloudstrap.Authentication.OpenIdConnect implementation of the user-token seam:
+    /// records every request the wiring makes and returns handlers that mark the outgoing request.
     /// </summary>
-    internal sealed class RecordingTokenHandlerProvider : IAccessTokenHandlerProvider
+    internal sealed class RecordingUserTokenHandlerProvider : IUserAccessTokenHandlerProvider
     {
-        public List<(string Kind, string ClientName, TokenRequestOptions? TokenRequest)> Calls { get; } = [];
+        public List<(string ClientName, TokenRequestOptions? TokenRequest)> Calls { get; } = [];
 
         public List<MarkerHandler> CreatedHandlers { get; } = [];
 
-        public DelegatingHandler CreateUserTokenHandler(string clientName, TokenRequestOptions? tokenRequest) =>
-            Record("user", clientName, tokenRequest);
-
-        public DelegatingHandler CreateClientTokenHandler(string clientName, TokenRequestOptions? tokenRequest) =>
-            Record("client", clientName, tokenRequest);
-
-        private MarkerHandler Record(string kind, string clientName, TokenRequestOptions? tokenRequest)
+        public DelegatingHandler CreateUserTokenHandler(string clientName, TokenRequestOptions? tokenRequest)
         {
-            Calls.Add((kind, clientName, tokenRequest));
-            MarkerHandler handler = new(kind);
+            Calls.Add((clientName, tokenRequest));
+            MarkerHandler handler = new("user");
+            CreatedHandlers.Add(handler);
+
+            return handler;
+        }
+    }
+
+    /// <summary>
+    /// Stands in for the Cloudstrap.Authentication.ClientCredentials implementation of the client-token
+    /// seam: records every request the wiring makes and returns handlers that mark the outgoing request.
+    /// </summary>
+    internal sealed class RecordingClientTokenHandlerProvider : IClientAccessTokenHandlerProvider
+    {
+        public List<(string ClientName, TokenRequestOptions? TokenRequest)> Calls { get; } = [];
+
+        public List<MarkerHandler> CreatedHandlers { get; } = [];
+
+        public DelegatingHandler CreateClientTokenHandler(string clientName, TokenRequestOptions? tokenRequest)
+        {
+            Calls.Add((clientName, tokenRequest));
+            MarkerHandler handler = new("client");
             CreatedHandlers.Add(handler);
 
             return handler;
