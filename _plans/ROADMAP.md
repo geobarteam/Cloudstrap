@@ -343,7 +343,7 @@ start while it is open (one-deliverable-in-flight rule).
 #### Hand-off brief for the `technical-analyst`
 - **Suggested spec file**: `_specs/9-ClientCredentialsAuth.md`
 - **Precedent for shape**: the #5 brief in this file and the resulting `_specs/5-WebApiBootstrap.md` (verdict table with Port / Redesign / Replace / Drop per source artefact, Open Questions the user answers before the planner starts).
-- **Source material to read** — reference repo root **`D:\source\Nihdi-Core-Configuration\Nihdi-Core-Configuration\src\`** ⚠️ **not** the `D:\Data\gv10141\…` path CLAUDE.md still gives (stale; corrected in this roadmap's preamble on 2026-07-25):
+- **Source material to read** — reference repo root **`D:\source\Nihdi-Core-Configuration\Nihdi-Core-Configuration\src\`** (the stale `D:\Data\gv10141\…` path was corrected in CLAUDE.md, `_specs/Cloudstrap.md` and the `project-manager` agent on 2026-08-05):
   1. `Nihdi.Core.Configuration.OAuth\Extensions\WebApplicationBuilderExtensions.cs` + `README.md` + `.csproj` — the whole package.
   2. Call sites that define the observable contract (the internal packages themselves are unreadable): `Nihdi.Core.Configuration.Common\HttpClient\ServiceCollectionExtensions.cs`, `Nihdi.Core.Configuration.Proxy\ServiceCollectionExtensions.cs`, `Nihdi.Core.Configuration.WebApi\WebApi\WebApplicationBuilderExtensions.cs` (~lines 377, 405), `Nihdi.Core.Configuration.OpenIdConnect\Extensions\WebApplicationBuilderExtensions.cs` (~line 67).
   3. Old Core `Settings\Security\` — `ClientCredentialsConfiguration.cs`, `OAuthConfiguration.cs`, `AuthenticationConfiguration.cs`, `SecurityConfiguration.cs` — plus `AuthenticationFlow.cs`.

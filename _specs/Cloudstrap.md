@@ -21,7 +21,7 @@
 | Auth / token management | Stock `Microsoft.AspNetCore.Authentication.*` + **Duende.AccessTokenManagement** (Apache-2.0) replaces the internal `Nihdi.AspNetCore.*` suite. |
 | Analytics | Provider abstraction with **Matomo** (open-source, self-hostable — the privacy-friendly default) and **Google Analytics 4** adapters. No default endpoint URL. |
 | v1 scope | Full surface: core bootstrap + observability + WebApi/Worker + Blazor suite + Messaging + Hangfire/YARP proxy + Dashboard + CookieConsent + Analytics + Localization. |
-| Repository | **github.com/geobarteam/Cloudstrap** (public, MIT). Local working folder: `D:\Data\gv10141\Private\Cloudstrap`. Fresh history — no NIHDI commits. |
+| Repository | **github.com/geobarteam/Cloudstrap** (public, MIT). Local working folder: `D:\source\Cloudstrap`. Fresh history — no NIHDI commits. |
 | Message encryption | **Dropped permanently.** Transport-level security (TLS + ASB encryption at rest) is the documented baseline. The Dashboard's message-decryption feature is dropped with it. |
 | Dashboard scope | **Full port** (ASB queue peek/purge/retry, diagnostics, claims viewer) minus the decryption feature; internal design system replaced by plain MudBlazor. |
 | Localization | **Ported** as `Cloudstrap.Localization` — thin setup layer over stock ASP.NET Core localization (culture negotiation defaults, one-call registration), no custom localization engine. |
@@ -201,7 +201,7 @@ The OTel pipeline in `Common/DistributedTracing/ServiceCollectionExtensions.cs` 
 
 ## Repository & Delivery
 
-- Public GitHub repository: `https://github.com/geobarteam/Cloudstrap.git`; local working folder `D:\Data\gv10141\Private\Cloudstrap`. Fresh history (no NIHDI commit history leaks).
+- Public GitHub repository: `https://github.com/geobarteam/Cloudstrap.git`; local working folder `D:\source\Cloudstrap`. Fresh history (no NIHDI commit history leaks).
 - GitVersion + tags on `main` for SemVer, `-preview.N` on `dev` — same model as today.
 - GitHub Actions: build, test (MSTest v4 / Microsoft.Testing.Platform), format check, pack, publish to nuget.org on tag. SourceLink + symbol packages.
 - Reserve the `Cloudstrap.` ID prefix on nuget.org before first publish.

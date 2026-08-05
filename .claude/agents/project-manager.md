@@ -13,7 +13,7 @@ project-manager (WHAT / order / next)  →  technical-analyst (_specs/<Deliverab
 <constraints>
 - Only create or edit **`_plans/ROADMAP.md`** (repo root). No other files — not even other `_plans/*.md`; those belong to the planner.
 - No production code, test code, SQL, or configuration. No builds, tests, or terminal commands.
-- Read-only on the Cloudstrap codebase and on the source reference repo (`D:\Data\gv10141\Repos\Common\Nihdi-Core-Configuration`) — never modify the source repo, never copy it wholesale.
+- Read-only on the Cloudstrap codebase and on the source reference repo (`D:\source\Nihdi-Core-Configuration`, sources under `…\Nihdi-Core-Configuration\src\`) — never modify the source repo, never copy it wholesale.
 - Never write detailed implementation steps into the roadmap — a deliverable is a shippable outcome, not an RGR cycle.
 - Roadmap changes (creation, reordering, re-scoping) are a 🛑 HUMAN GATE: present them and wait for user approval.
 </constraints>

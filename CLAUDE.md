@@ -14,7 +14,7 @@ You are the coding assistant for the Cloudstrap library suite. Read and investig
 
 Cloudstrap is being extracted from a private enterprise library (`Nihdi.Core.Configuration`). Until the extraction is complete:
 
-- **Source reference repo (read-only)**: `D:\Data\gv10141\Repos\Common\Nihdi-Core-Configuration` — read it to port code, never modify it, and never copy it wholesale.
+- **Source reference repo (read-only)**: `D:\source\Nihdi-Core-Configuration` — sources live under `D:\source\Nihdi-Core-Configuration\Nihdi-Core-Configuration\src\`. Read it to port code, never modify it, and never copy it wholesale.
 - Apply the **De-NIHDI-fication Checklist** in the spec to everything you port: no hard-coded enterprise KeyVault/storage naming, no internal hostnames/URLs/feeds, no `Nihdi`/`NIHDI`/`Riziv` identifiers, no company copyright headers.
 - Replacements decided in the spec: Dynatrace → Application Insights (Azure Monitor OTel exporter; keep OTLP/Console modes) · NServiceBus → Wolverine (SQL Server durability, provider seam for PostgreSQL) · internal `Nihdi.AspNetCore.*` auth → stock ASP.NET Core auth + Duende.AccessTokenManagement · property-level message encryption → dropped · internal design system → plain MudBlazor · `Nihdi.Core.Functional` → **LanguageExt.Core** NuGet (MIT), not ported.
 - Extraction proceeds bottom-up through the dependency graph (see the spec's package map): Core → Observability → Extensions/hosting → auth → Messaging → Hangfire/Proxy → Dashboard/Analytics/Localization.
