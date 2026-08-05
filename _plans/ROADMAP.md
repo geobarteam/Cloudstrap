@@ -115,7 +115,7 @@ Old-package edges extracted from the source `.csproj` files:
 | 3 | Azure Monitor exporter | Cloudstrap.Observability.AzureMonitor | 2 ✅ | ✅ | `_plans/3-AzureMonitorExporter.md` |
 | 4 | Config/KeyVault/HTTP extensions | Cloudstrap.Extensions | 1 ✅, 2 ✅ | ✅ | `_plans/4-ConfigKeyVaultHttpExtensions.md` |
 | 5 | WebApi bootstrap | Cloudstrap.WebApi | 4 ✅ | ✅ | `_plans/5-WebApiBootstrap.md` |
-| 9 | Client-credentials auth ← **next** *(pulled forward 2026-08-05)* | Cloudstrap.Authentication.ClientCredentials | 1 ✅, 4 ✅ | ⬜ | — |
+| 9 | Client-credentials auth ← **next** *(pulled forward 2026-08-05)* | Cloudstrap.Authentication.ClientCredentials | 1 ✅, 4 ✅ | 📝 spec approved 2026-08-05 — awaiting plan | `_specs/9-ClientCredentialsAuth.md` |
 | 10 | OIDC login | Cloudstrap.Authentication.OpenIdConnect | 1 ✅ (Duende ATM patterns de-risked by 9) | ⬜ | — |
 | 6 | MVC bootstrap | Cloudstrap.Mvc | 4 ✅ | ⬜ | — |
 | 7 | Worker bootstrap | Cloudstrap.Worker | 4 ✅ | ⬜ | — |
