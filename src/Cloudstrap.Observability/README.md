@@ -136,6 +136,12 @@ The factory is independent of the host pipeline and never sets the global `Log.L
   request: the inbound header value, or a generated one (the current trace id, else a GUID — override by
   registering your own `ICorrelationSource`).
 - Read or set the id anywhere — with or without an `HttpContext` — through `ICorrelationContextAccessor`.
+- The id is echoed back in a response header of the same name, so a caller who sent none still learns the
+  generated one and can quote it. Turn it off with `Cloudstrap:Correlation:Request:EchoInResponse = false`;
+  a value the application set itself is never overwritten.
+- Code holding the `HttpContext` but running *outside* the middleware's async scope — an exception handler
+  placed ahead of it, for instance — reads the id with `HttpContext.GetCloudstrapCorrelationId()`. Ordinary
+  application code should prefer `ICorrelationContextAccessor`, which also works where there is no request.
 - Require correlation globally (`Cloudstrap:Correlation:Request:RequireForAllEndpoints`) or per endpoint
   (`[CorrelationRequired]`); a missing header then yields `400 application/problem+json` naming the header.
   Exemptions: configured `HealthEndpoints`/`ExcludeEndpoints` paths, health-check endpoint metadata, and

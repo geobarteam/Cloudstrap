@@ -350,7 +350,9 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 - `Cloudstrap.WebApi/CloudstrapWebApiExceptionHandler.cs` — `ResolveCorrelationId` now tries the stored identifier, then the async-local accessor, then the inbound header.
 - Four new tests in `Cloudstrap.Observability.Tests` (stash for inbound and generated ids, null before the middleware runs, guard clause); `Throwing_WithNoInboundCorrelationHeader_EchoesTheGeneratedIdentifier` in the WebApi suite replaces the test that pinned the limitation.
 
-`Cloudstrap.Observability.Correlation` was already an approved public namespace in that package's `PackageSurfaceTests`, so no guard needed relaxing. **Not** taken, and still open for the roadmap: echoing the identifier in a *response header*, which would additionally let a caller learn a generated id on a successful response — a broader behavior change than this finding requires.
+`Cloudstrap.Observability.Correlation` was already an approved public namespace in that package's `PackageSurfaceTests`, so no guard needed relaxing.
+
+**Follow-up taken at the final gate (user, 2026-08-03): the identifier is also echoed in a response header.** `CloudstrapCorrelationMiddleware` now writes the established identifier to a response header of the configured name, never overwriting a value the application set itself, governed by the new `Cloudstrap:Correlation:Request:EchoInResponse` (default `true`). This closes the remaining half of the gap: a caller who sent no identifier now learns the generated one, and can quote it. It is set directly rather than from a response callback, because the middleware runs before the endpoint and the response has not started; one deliberate consequence is that an exception handler which clears the response drops the header, and the identifier travels in the problem-details payload instead. Four unit tests in `Cloudstrap.Observability.Tests` (echo of an inbound id, of a generated id, under a configured header name, and the opt-out) plus `WebApiTests.Response_EchoesTheCorrelationIdBackToTheCaller` proving it through the running SUT, where a real response feature is involved.
 
 ---
 
@@ -455,7 +457,7 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 - [x] Behavioral verification: test exe output shows — two version-correct documents with neutral derived metadata, configured overrides, the disabled 404 and a working consumer transformer (Step 5); the UI served in Development, dark in Production, openable by explicit option, path-configurable, the both-keys startup failure, the structural no-secret guard and the Scalar hook (Step 6). *(75 tests in `Cloudstrap.WebApi.Tests`, 359 solution-wide, all green.)*
 - [x] Code review: options types vs the spec sketch verbatim; the security-scheme work is **not** here (it lands in Step 9 with auth); no NIHDI title/description/license text anywhere; no Keycloak token-URL convention anywhere.
 - [x] ⚠️ Dependency review (risk area): `dotnet list src/Cloudstrap.WebApi/Cloudstrap.WebApi.csproj package` → exactly the five runtime packages (`Asp.Versioning.Mvc`, `.Mvc.ApiExplorer`, `.OpenApi`, `Microsoft.AspNetCore.OpenApi`, `Scalar.AspNetCore`) plus the three project references; every version CPM-pinned and OSI-licensed.
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate *(2026-08-03)*
 
 ### Gate 3 executor report — mechanics (i.1), (i.3) and (j) resolved
 
@@ -477,7 +479,7 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 ## Step 7 — `AddCloudstrapJwtBearer` validates inbound tokens with the four hardened defaults: valid 200, wrong audience 401, expired past the 60-second skew 401 (AC-W8, AC-A3) ⚠️ *(Risk Area: the suite's first shipped authentication surface)*
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.WebApi/CloudstrapJwtBearerOptions.cs` *(create)* — `const string SectionName = "Cloudstrap:JwtBearer"`; `[Required] Authority : string`, `[Required] Audience : string`, `RequireHttpsMetadata : bool? = null`, `ClockSkewSeconds : int = 60`, `MapInboundClaims : bool = false`, `RequireAuthenticatedEndpoints : bool = true` (Step 8 consumes the last one). All four D-2 defaults are settable properties — the every-convention-has-an-override rule is satisfied per default, not merely by the escape hatch.
@@ -523,7 +525,7 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 ## Step 8 — Registering the bearer makes every endpoint authenticated by default — controllers and minimal APIs alike — with `[AllowAnonymous]` and one flag as the two documented opt-outs; not registering it changes nothing (AC-W9, AC-W10) ⚠️ *(Risk Area: auth)*
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.WebApi/WebApplicationBuilderExtensions.cs` *(modify)* — `AddCloudstrapJwtBearer` also calls `AddAuthorization(...)` installing a require-authenticated `FallbackPolicy` when `RequireAuthenticatedEndpoints` is true (D-2 d).
@@ -564,7 +566,7 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 ## Step 9 — The published document tells the truth about auth: a Bearer scheme with an explicit token URL, security requirements on secured operations and none on anonymous ones (AC-W5)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.WebApi/OpenApiSecurityTransformer.cs` *(create)* — `internal sealed` document + operation transformer on the built-in `Microsoft.AspNetCore.OpenApi` API (mechanic (i.2)): adds the Bearer/OAuth2 security scheme built **only** from `Cloudstrap:OpenApi:OAuth` (`TokenUrl`, `AuthorizationUrl`, `Scopes` — no IdP path convention, finding 7) and attaches a security requirement to every operation whose endpoint is not anonymous. Registered **only** when an authentication scheme provider exists (mechanic (d)) — zero lines carried over from the dropped NSwag `IOperationProcessor`.
@@ -605,10 +607,27 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 ⚠️ **Risk areas at this gate**: **auth code end to end** — token validation, the four hardened defaults and their overrides, the fallback policy's blast radius, and the fact that no credential material, no token *acquisition* and no auth package beyond `Microsoft.AspNetCore.Authentication.JwtBearer` exist anywhere in the package · **mechanic (d)** — auth middleware is wired whenever *any* scheme provider is registered (a deliberate superset of the spec's wording): confirm or direct the strict reading · **mechanic (e)** — documents and the Scalar UI are anonymous under the fallback policy: confirm or direct protected documents · **new dependency** `Microsoft.AspNetCore.Authentication.JwtBearer` (MIT, Microsoft, CPM-pinned) · **AC-A3** — confirm the whole solution contains zero `Nihdi.AspNetCore` references.
 
-- [ ] Behavioral verification: test exe output shows — valid/wrong-audience/expired-past-skew/expired-within-skew outcomes pinning the 60-second value, the skew override, raw (unmapped) claim types, HTTPS-metadata defaults per environment plus explicit override, both missing-key startup failures, and the hook-runs-last override (Step 7); 401 on a plain endpoint, 200 on `[AllowAnonymous]`, 200 with a token, the global opt-out, minimal-API coverage, anonymous probes and documentation, the no-bearer-registered anonymous baseline and the consumer-scheme case (Step 8); the scheme with an exact configured token URL, requirements on secured operations, none on anonymous ones, and nothing at all without auth (Step 9).
-- [ ] Code review (auth): `AddCloudstrapJwtBearer` line by line against the spec sketch and D-2 — the four defaults as settable properties, the `Action<JwtBearerOptions>` hook running last, and **none** of the dropped source machinery (`AddLegacyIssuer`, `UrlHelper`, `EnableDebug` events, `CircuitServicesAccessor`, `AddDistributedMemoryCache`, access-token management); no token acquisition, no secrets, no logging of token contents.
-- [ ] ⚠️ Dependency + identifier review (risk area): `dotnet list src/Cloudstrap.WebApi/Cloudstrap.WebApi.csproj package` → exactly six runtime packages + three project references; a solution-wide case-insensitive search for `Nihdi.AspNetCore` returns nothing (AC-A3).
+- [x] Behavioral verification: test exe output shows — valid/wrong-audience/expired-past-skew/expired-within-skew outcomes pinning the 60-second value, the skew override, raw (unmapped) claim types, HTTPS-metadata defaults per environment plus explicit override, both missing-key startup failures, and the hook-runs-last override (Step 7); 401 on a plain endpoint, 200 on `[AllowAnonymous]`, 200 with a token, the global opt-out, minimal-API coverage, anonymous probes and documentation, the no-bearer-registered anonymous baseline and the consumer-scheme case (Step 8); the scheme with an exact configured token URL, requirements on secured operations, none on anonymous ones, and nothing at all without auth (Step 9). *(105 tests in `Cloudstrap.WebApi.Tests`, 389 solution-wide, all green.)*
+- [x] Code review (auth): `AddCloudstrapJwtBearer` line by line against the spec sketch and D-2 — the four defaults as settable properties, the `Action<JwtBearerOptions>` hook running last, and **none** of the dropped source machinery (`AddLegacyIssuer`, `UrlHelper`, `EnableDebug` events, `CircuitServicesAccessor`, `AddDistributedMemoryCache`, access-token management); no token acquisition, no secrets, no logging of token contents.
+- [x] ⚠️ Dependency + identifier review (risk area): `dotnet list src/Cloudstrap.WebApi/Cloudstrap.WebApi.csproj package` → exactly six runtime packages + three project references; a solution-wide case-insensitive search for `Nihdi.AspNetCore` returns nothing (AC-A3).
 - [ ] User approved — implementation may continue past this gate
+
+### Gate 4 executor report — two discoveries that changed the implementation
+
+**1. Mechanic (d)'s stated trigger condition does not work; the predicate was corrected.** The plan says to wire the auth middleware "when the container has an `IAuthenticationSchemeProvider`". Measured: **MVC registers the authentication core services regardless**, so that provider exists in every application built by `AddCloudstrapWebApi` and the condition would always be true — the opposite of AC-W10. The shipped predicate is the registered *scheme map* instead:
+
+```csharp
+bool hasAuthentication = app.Services
+    .GetService<IOptions<AuthenticationOptions>>()?.Value.SchemeMap.Count > 0;
+```
+
+True only when someone actually called `AddAuthentication(...).AddXxx(...)` — Cloudstrap's bearer or a consumer's own scheme, which is the superset behavior mechanic (d) intended. Pinned by `WithoutBearerRegistered_EverythingIsAnonymousAndNothingFails` (asserts the scheme map is empty) and `WithConsumerRegisteredAuthenticationScheme_ThePipelineStillWiresTheMiddleware`.
+
+**2. Minimal hosting inserts auth middleware *ahead of routing*, which would silently break `[AllowAnonymous]`.** `WebApplicationBuilder` adds `UseAuthentication`/`UseAuthorization` itself when the corresponding services exist and its two marker keys are unset — into the outer pipeline, before routing, where no endpoint metadata is visible. Under the D-2 fallback policy that means `[AllowAnonymous]` is ignored and health probes and the reference UI are challenged. Confirmed by the RED run: five tests failed for exactly that reason before the fix. `UseCloudstrapWebApi` now claims both keys (`__AuthenticationMiddlewareSet`, `__AuthorizationMiddlewareSet`) before placing the middleware itself, after routing. The constants are framework-internal; `WithBearerRegistered_UnauthenticatedRequestToAnAllowAnonymousEndpoint_Returns200` is the tripwire that catches it if a future framework release changes them.
+
+**Step 7 test shape.** Token *validation* is proven through an action that calls `HttpContext.AuthenticateAsync(JwtBearerDefaults.AuthenticationScheme)` and maps the result to 200/401, rather than through `[Authorize]`. This keeps Step 7 about "was the token accepted, and why" and leaves authorization posture entirely to Step 8, where the middleware is wired — the two concerns fail independently and their tests say which one broke.
+
+**Scalar's client secret, revisited.** Step 9's document scheme is built only from `Cloudstrap:OpenApi:OAuth`. `ScalarOAuthSettings` still has no secret property, and no `Cloudstrap:` key reaches Scalar's own `AuthorizationCodeFlow.ClientSecret`.
 
 ---
 
@@ -618,7 +637,7 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 ## Step 10 — The package is publishable and guarded forever: metadata, README, and tripwires on the surface, the closure and the forbidden identifiers (AC-W14, AC-ASP2, AC-A3)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.WebApi/Cloudstrap.WebApi.csproj` *(modify)* — `<Description>` (API versioning, per-version OpenAPI documents with a Scalar reference UI, RFC 9457 problem-details error handling, correlation, health probes, security headers/HSTS/CORS and optional hardened JWT bearer validation — two calls and one `Cloudstrap:` subsection each), `<PackageTags>$(PackageTags);webapi;openapi;scalar;versioning;jwt;problemdetails;aspnetcore</PackageTags>`, `<PackageReadmeFile>README.md</PackageReadmeFile>` + `<None Include="README.md" Pack="true" PackagePath="/" />`.
@@ -662,7 +681,7 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 ## Step 11 — The WASM SUT Bff runs on this package: versioned endpoints, per-version documents, the Scalar UI and the hardened error response — proven through the real running app while all 17 existing E2E tests stay green (AC-W15)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/WasmTestProject/src/Host/Bff/Cloudstrap.WasmTestProject.Host.Bff.csproj` *(modify)* — `<ProjectReference>` to `Cloudstrap.WebApi`.
@@ -714,8 +733,24 @@ hooks.BeforeEndpoints → MapControllers (when hooks.MapControllers) → MapClou
 
 *Executor: STOP here. Present the results and WAIT for user approval. Any Git push afterwards requires the user's explicit go-ahead (CLAUDE.md: no push without confirmation).*
 
-- [ ] Behavioral verification: the six new `WebApiTests`/`ScalarPageTests` methods pass; **the 17 pre-existing E2E tests pass unchanged** against a Bff whose entire pipeline is now one `UseCloudstrapWebApi` call with the SPA composition carried by its hook points; the four `PackageSurfaceTests` guards are green; the expanded Release `.nupkg` contents were reviewed; the identifier sweep is empty.
-- [ ] Spec acceptance sign-off: walk **AC-W1…AC-W15 + AC-ASP2 + AC-A3** against the step evidence using the Overview's AC coverage map — all met; confirm nothing from the spec's Drop / Out-of-Scope lists was resurrected (no `NSwag.*` in the closure and no `Cloudstrap:Swagger` section, no `SwaggerBootstrapper`, no `UrlHelper`/`AddLegacyIssuer`, no `NormalizedQueryStringApiVersionReader`, no correlation middleware of our own, no `AddWebOptions`, no `DictionaryTKeyEnumTValueConverter`, no `/probe.aspx`, no health/DataProtection/KeyVault re-implementation, no OIDC or client-credentials code, no `NWebsec.*`, no `Aspire.*`) and that every De-NIHDI row for this deliverable is closed (`AddNihdiX` → `AddCloudstrapX`, the `ForDevTst` taxonomy → an explicit option, neutral fixtures, no internal IdP URLs or Keycloak path conventions).
-- [ ] Pipeline-pattern sign-off (⚠️ inherited by #6 and #7): the as-built `Add`/`Use` pair, the four hook points, the `MapControllers` switch and the canonical middleware order are what deliverables #6 (Mvc) and #7 (Worker) will copy — approve the shape explicitly, including every executor deviation reported at Gates 1–4.
-- [ ] Docs review: `src/Cloudstrap.WebApi/README.md` matches as-built behavior (canonical order, four settings tables, the security posture section, the SPA/BFF recipe, the Aspire note); `src/Test/WasmTestProject/README.md` demo-table row and harness notes accurate, including the "anonymous by design" statement and the CDN caveat.
-- [ ] User approved — deliverable #5 done; project-manager flips the ROADMAP row to ✅.
+### Step 11 executor report — two E2E predictions corrected
+
+1. **`api-supported-versions` reports one version per endpoint, not the union.** The plan's Scope puts each
+   status version on its own controller (`StatusController` / `StatusV2Controller`), and with URL-segment
+   versioning that produces two distinct endpoints — so `/api/v1/status` reports `1.0` and `/api/v2/status`
+   reports `2.0`. The plan's RED text expected the v1 response to list both, which only happens when one
+   controller declares both versions (the unit-suite `VersionedWidgetsController` shape). The Scope's
+   two-controller shape was kept — it is the realistic evolution pattern — and each test now asserts its own
+   endpoint's version. That **both** versions exist is proven by the v2 payload test and the two documents.
+2. **`HttpClient` follows the Scalar redirect automatically**, unlike `TestServer`'s client, so the E2E test
+   asserts the final `200 text/html` directly instead of the interim `302`.
+
+Ten E2E tests were added rather than the planned six: the plan's six plus the configured document title, the
+correlation id in the error payload, the v2 `api-supported-versions`, and the security headers on both an API
+response and a probe response.
+
+- [x] Behavioral verification: the ten new `WebApiTests`/`ScalarPageTests` methods pass; **the 17 pre-existing E2E tests pass unchanged** against a Bff whose entire pipeline is now one `UseCloudstrapWebApi` call with the SPA composition carried by its hook points; the four `PackageSurfaceTests` guards are green; the expanded Release `.nupkg` contents were reviewed; the identifier sweep is empty.
+- [x] Spec acceptance sign-off: walk **AC-W1…AC-W15 + AC-ASP2 + AC-A3** against the step evidence using the Overview's AC coverage map — all met; confirm nothing from the spec's Drop / Out-of-Scope lists was resurrected (no `NSwag.*` in the closure and no `Cloudstrap:Swagger` section, no `SwaggerBootstrapper`, no `UrlHelper`/`AddLegacyIssuer`, no `NormalizedQueryStringApiVersionReader`, no correlation middleware of our own, no `AddWebOptions`, no `DictionaryTKeyEnumTValueConverter`, no `/probe.aspx`, no health/DataProtection/KeyVault re-implementation, no OIDC or client-credentials code, no `NWebsec.*`, no `Aspire.*`) and that every De-NIHDI row for this deliverable is closed (`AddNihdiX` → `AddCloudstrapX`, the `ForDevTst` taxonomy → an explicit option, neutral fixtures, no internal IdP URLs or Keycloak path conventions).
+- [x] Pipeline-pattern sign-off (⚠️ inherited by #6 and #7): the as-built `Add`/`Use` pair, the four hook points, the `MapControllers` switch and the canonical middleware order are what deliverables #6 (Mvc) and #7 (Worker) will copy — approve the shape explicitly, including every executor deviation reported at Gates 1–4.
+- [x] Docs review: `src/Cloudstrap.WebApi/README.md` matches as-built behavior (canonical order, four settings tables, the security posture section, the SPA/BFF recipe, the Aspire note); `src/Test/WasmTestProject/README.md` demo-table row and harness notes accurate, including the "anonymous by design" statement and the CDN caveat.
+- [x] User approved — deliverable #5 done *(2026-08-03)*; project-manager still to flip the ROADMAP row to ✅.

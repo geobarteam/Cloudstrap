@@ -4,12 +4,15 @@ namespace Cloudstrap.WebApi
     using Asp.Versioning;
     using Cloudstrap.Core;
     using Cloudstrap.Observability.Correlation;
+    using Microsoft.AspNetCore.Authentication.JwtBearer;
+    using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.AspNetCore.Routing;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.DependencyInjection.Extensions;
+    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Options;
 
     /// <summary>
@@ -143,6 +146,95 @@ namespace Cloudstrap.WebApi
             services.AddSingleton(new ScalarConfigurator(configurator.Scalar));
 
             configurator.Mvc?.Invoke(mvc);
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Adds inbound JWT bearer validation, hardened beyond the framework's defaults, and — unless told
+        /// otherwise — makes every endpoint require an authenticated caller.
+        /// </summary>
+        /// <param name="builder">The web application builder to register into.</param>
+        /// <param name="configure">
+        /// An optional hook applied to the bearer options <em>after</em> the Cloudstrap defaults, for
+        /// anything the settings type does not model — additional valid issuers, a custom token validator,
+        /// event handlers.
+        /// </param>
+        /// <returns>The same <paramref name="builder"/> instance, so calls can be chained.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// <para>
+        /// This call is deliberately separate from <see cref="AddCloudstrapWebApi"/> and deliberately not a
+        /// configuration flag: whether an API requires authentication should be visible in the code that
+        /// composes it, not buried in a settings file where a deployment mistake can silently switch it off.
+        /// </para>
+        /// <para>
+        /// Four defaults are stricter than the framework's, and every one of them is a settable property of
+        /// <see cref="CloudstrapJwtBearerOptions"/>: audience validation is on and its value required; the
+        /// clock skew is 60 seconds rather than 300; metadata must be fetched over HTTPS outside
+        /// <c>Development</c>; and inbound claim names are left as the token spelled them. Registering the
+        /// bearer also installs a require-authenticated fallback authorization policy — see
+        /// <see cref="CloudstrapJwtBearerOptions.RequireAuthenticatedEndpoints"/> for the two opt-outs.
+        /// </para>
+        /// <para>
+        /// This validates tokens the API <em>receives</em>. It acquires none, holds no client credentials and
+        /// logs no token contents; the handler's own <c>Microsoft.AspNetCore.Authentication.JwtBearer</c> log
+        /// category carries the diagnostics for a rejected token.
+        /// </para>
+        /// <para>
+        /// A consumer who builds their own pipeline instead of calling
+        /// <see cref="WebApplicationExtensions.UseCloudstrapWebApi(WebApplication, Action{WebApiPipelineOptions}?)"/>
+        /// must place <c>UseAuthentication</c> and <c>UseAuthorization</c> themselves, after routing.
+        /// </para>
+        /// </remarks>
+        public static WebApplicationBuilder AddCloudstrapJwtBearer(
+            this WebApplicationBuilder builder,
+            Action<JwtBearerOptions>? configure = null)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+
+            IServiceCollection services = builder.Services;
+
+            services.AddOptions<CloudstrapJwtBearerOptions>()
+                .BindConfiguration(CloudstrapJwtBearerOptions.SectionName)
+                .ValidateOnStart();
+            services.TryAddEnumerable(
+                ServiceDescriptor.Singleton<IValidateOptions<CloudstrapJwtBearerOptions>,
+                    CloudstrapJwtBearerOptionsValidator>());
+
+            CloudstrapJwtBearerOptions options = builder.Configuration
+                .GetSection(CloudstrapJwtBearerOptions.SectionName)
+                .Get<CloudstrapJwtBearerOptions>() ?? new CloudstrapJwtBearerOptions();
+
+            bool requireHttpsMetadata = EnvironmentDefault.Resolve(
+                options.RequireHttpsMetadata,
+                !builder.Environment.IsDevelopment());
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(bearer =>
+                {
+                    bearer.Authority = options.Authority;
+                    bearer.Audience = options.Audience;
+                    bearer.RequireHttpsMetadata = requireHttpsMetadata;
+                    bearer.MapInboundClaims = options.MapInboundClaims;
+
+                    bearer.TokenValidationParameters.ValidateAudience = true;
+                    bearer.TokenValidationParameters.ValidateIssuer = true;
+                    bearer.TokenValidationParameters.ValidateLifetime = true;
+                    bearer.TokenValidationParameters.ClockSkew =
+                        TimeSpan.FromSeconds(options.ClockSkewSeconds);
+
+                    // Last, so the hook overrides anything above it.
+                    configure?.Invoke(bearer);
+                });
+
+            if (options.RequireAuthenticatedEndpoints)
+            {
+                services.AddAuthorization(authorization =>
+                    authorization.FallbackPolicy = new AuthorizationPolicyBuilder()
+                        .RequireAuthenticatedUser()
+                        .Build());
+            }
 
             return builder;
         }

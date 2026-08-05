@@ -3,6 +3,7 @@ namespace Cloudstrap.WebApi
     using Cloudstrap.Core;
     using Cloudstrap.Extensions;
     using Cloudstrap.Observability.Correlation;
+    using Microsoft.AspNetCore.Authentication;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
@@ -17,6 +18,18 @@ namespace Cloudstrap.WebApi
         /// The key marking an application whose Cloudstrap pipeline has already been built.
         /// </summary>
         private const string _pipelineMarker = "Cloudstrap.WebApi.Pipeline";
+
+        /// <summary>
+        /// The keys minimal hosting uses to decide whether it must insert the authentication and
+        /// authorization middleware itself. It would place them <em>ahead of routing</em>, where no endpoint
+        /// metadata is visible — which would make <c>[AllowAnonymous]</c> silently ineffective under a
+        /// fallback policy. Claiming the keys hands placement to this method, which puts them after routing.
+        /// The framework sets the same keys from <c>UseAuthentication</c> and <c>UseAuthorization</c>.
+        /// </summary>
+        private const string _authenticationMiddlewareMarker = "__AuthenticationMiddlewareSet";
+
+        /// <inheritdoc cref="_authenticationMiddlewareMarker"/>
+        private const string _authorizationMiddlewareMarker = "__AuthorizationMiddlewareSet";
 
         /// <summary>
         /// Adds the Cloudstrap Web API middleware and endpoints in the order a hardened, observable API
@@ -132,7 +145,30 @@ namespace Cloudstrap.WebApi
             // an authorization policy is still correlated in the logs and in its problem-details response.
             app.UseCloudstrapCorrelation();
 
+            // Whenever any authentication scheme is registered — Cloudstrap's bearer or one the consumer
+            // brought — the middleware belongs here, after routing. When none is, neither is added and every
+            // endpoint is anonymous.
+            //
+            // The test is the registered scheme map, not the presence of IAuthenticationSchemeProvider: MVC
+            // registers the authentication core services regardless, so the provider exists even in an
+            // application that never configured a scheme.
+            bool hasAuthentication = app.Services
+                .GetService<IOptions<AuthenticationOptions>>()?.Value.SchemeMap.Count > 0;
+
+            properties[_authenticationMiddlewareMarker] = true;
+            properties[_authorizationMiddlewareMarker] = true;
+
+            if (hasAuthentication)
+            {
+                app.UseAuthentication();
+            }
+
             hooks.BeforeAuthorization?.Invoke(app);
+
+            if (hasAuthentication)
+            {
+                app.UseAuthorization();
+            }
 
             hooks.BeforeEndpoints?.Invoke(app);
 

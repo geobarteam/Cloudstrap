@@ -2,6 +2,9 @@ namespace Cloudstrap.WebApi.Tests.Infrastructure
 {
     using Asp.Versioning;
     using Cloudstrap.Observability.Correlation;
+    using Microsoft.AspNetCore.Authentication;
+    using Microsoft.AspNetCore.Authentication.JwtBearer;
+    using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.AspNetCore.Routing;
 
@@ -22,6 +25,10 @@ namespace Cloudstrap.WebApi.Tests.Infrastructure
     /// <summary>The ambient correlation identifier, echoed back to the caller.</summary>
     /// <param name="CorrelationId">The ambient correlation identifier.</param>
     public sealed record CorrelationEchoDto(string CorrelationId);
+
+    /// <summary>The raw claim types carried by the authenticated principal.</summary>
+    /// <param name="ClaimTypes">The claim types, exactly as the token spelled them.</param>
+    public sealed record ClaimsDto(string[] ClaimTypes);
 
     /// <summary>
     /// A controller spanning two versions on one route, so both stock version readers are exercised.
@@ -255,6 +262,72 @@ namespace Cloudstrap.WebApi.Tests.Infrastructure
         public IActionResult Get()
         {
             return Ok(Marker);
+        }
+    }
+
+    /// <summary>
+    /// A controller whose actions differ only in their authorization metadata, so the fallback policy's
+    /// blast radius and its per-endpoint opt-out are both observable.
+    /// </summary>
+    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/guarded")]
+    public sealed class GuardedController : ControllerBase
+    {
+        /// <summary>An action carrying no authorization metadata at all.</summary>
+        /// <returns>A marker body.</returns>
+        [HttpGet]
+        public IActionResult Get()
+        {
+            return Ok("guarded");
+        }
+
+        /// <summary>An action opting out of the fallback policy.</summary>
+        /// <returns>A marker body.</returns>
+        [HttpGet("open")]
+        [AllowAnonymous]
+        public IActionResult Open()
+        {
+            return Ok("open");
+        }
+
+        /// <summary>An action demanding authorization explicitly.</summary>
+        /// <returns>A marker body.</returns>
+        [HttpGet("attributed")]
+        [Authorize]
+        public IActionResult Attributed()
+        {
+            return Ok("attributed");
+        }
+    }
+
+    /// <summary>
+    /// A controller exercising token validation directly, without involving the authorization pipeline —
+    /// so what it proves is exactly whether a token was accepted, and why.
+    /// </summary>
+    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/token")]
+    public sealed class TokenController : ControllerBase
+    {
+        /// <summary>
+        /// Authenticates the request against the bearer scheme and reports the outcome.
+        /// </summary>
+        /// <returns>
+        /// <c>200</c> with the principal's raw claim types when the token validates, <c>401</c> otherwise.
+        /// </returns>
+        [HttpGet]
+        public async Task<ActionResult<ClaimsDto>> Get()
+        {
+            AuthenticateResult result = await HttpContext.AuthenticateAsync(
+                JwtBearerDefaults.AuthenticationScheme);
+
+            if (!result.Succeeded || result.Principal is null)
+            {
+                return Unauthorized();
+            }
+
+            return Ok(new ClaimsDto([.. result.Principal.Claims.Select(claim => claim.Type)]));
         }
     }
 

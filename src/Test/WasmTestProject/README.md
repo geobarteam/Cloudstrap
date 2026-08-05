@@ -76,4 +76,26 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 | `/diagnostics` mode badge + startup scenarios | Cloudstrap.Observability.AzureMonitor (#3) | `AzureMonitorTests` — exporter-contribution guard lifted (the host boots in `AzureMonitor` mode at all), fail-fast naming both connection-string sources, per-environment mode flip on unchanged code |
 | `/healthz` + `/ready` (Cloudstrap-mapped) + `GET api/diagnostics/outbound` | Cloudstrap.Extensions (#4) | `ExtensionsTests` — typed-client outbound hop propagating the caller's correlation id, the `SelfApi-liveness` dependency check feeding readiness, and a second instance whose unreachable peer flips `/ready` to 503 while `/healthz` stays 200 |
 
+| `GET api/v1/status` + `api/v2/status` · `/openapi/v{n}.json` · `/scalar` · `GET api/v1/status/boom` | Cloudstrap.WebApi (#5) | `WebApiTests` — versioned endpoints reporting `api-supported-versions`, one OpenAPI document per version with the unversioned controllers assigned the default version, the hardened problem-details error response with the caller's correlation id, the Scalar shell listing both documents, and the constant security headers on API and probe alike; `ScalarPageTests` — the reference UI loads in headless Chromium |
+
 *(Extended by every deliverable — see `_plans/ROADMAP.md`.)*
+
+### Harness notes for deliverable #5
+
+- **The Bff's entire request pipeline is now one `UseCloudstrapWebApi` call.** The Blazor composition rides
+  on its documented hook points: `BeforeRouting` carries `UseBlazorFrameworkFiles()` + `UseStaticFiles()`,
+  and `ConfigureEndpoints` carries `MapFallbackToFile("index.html")`. The WASM app, the API, the probes and
+  the SPA fallback all stay reachable — `HomePageTests` is the proof that the static-file branch survived.
+- **The SUT is anonymous by design.** It deliberately never calls `AddCloudstrapJwtBearer`, which is exactly
+  the AC-W10 scenario: the pipeline must not assume authentication exists. Auth demonstrations arrive with
+  deliverables #9/#10, which bring an identity provider to demonstrate against.
+- **`Cloudstrap:WebApi:ExceptionHandling:IncludeDetails` is pinned to `false`** in `appsettings.json`. The
+  E2E suite runs in `Development`, where the unset default would include exception detail; pinning it makes
+  the *hardened* shape the one assertable here. `Error_WithIncludeDetailsEnabled_ReturnsTheExceptionDetail`
+  starts a second short-lived instance with the switch flipped on to cover the other mode.
+- **The Scalar assertions are shell-based**, not console-based: the reference UI pulls its JavaScript bundle
+  from a CDN a CI agent may not reach, so `ScalarPageTests` asserts only that the page loads and has a
+  title. Unlike `HomePageTests`, it makes no zero-console-errors assertion.
+- **Each status version lives on its own controller**, so URL-segment versioning gives each one its own
+  endpoint and `api-supported-versions` reports that endpoint's version alone. That both versions exist is
+  proven by the v2 payload and by the two OpenAPI documents.

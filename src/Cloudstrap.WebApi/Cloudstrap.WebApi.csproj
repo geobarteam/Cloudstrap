@@ -6,6 +6,16 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Description>Web API bootstrap for ASP.NET Core: API versioning, one OpenAPI document per version with a Scalar reference UI, RFC 9457 problem-details error handling, correlation, health probes, security headers, HSTS and CORS, plus optional hardened JWT bearer validation — two calls and one Cloudstrap: subsection each.</Description>
+    <PackageTags>$(PackageTags);webapi;openapi;scalar;versioning;jwt;problemdetails</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
@@ -22,6 +32,7 @@
     <PackageReference Include="Asp.Versioning.OpenApi" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Scalar.AspNetCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
   </ItemGroup>
 
   <ItemGroup>

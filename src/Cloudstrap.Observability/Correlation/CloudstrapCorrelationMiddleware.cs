@@ -59,6 +59,11 @@ namespace Cloudstrap.Observability.Correlation
             // an exception handler placed ahead of it, for instance — can still read the identifier.
             context.Items[HttpContextExtensions.CorrelationIdItemKey] = correlationId;
 
+            if (options.Request.EchoInResponse)
+            {
+                EchoInResponse(context, options.HeaderName, correlationId);
+            }
+
             await _next(context);
         }
 
@@ -92,6 +97,27 @@ namespace Cloudstrap.Observability.Correlation
 
             return endpoint?.Metadata.GetMetadata<AllowNoCorrelationAttribute>() is not null
                 || endpoint?.Metadata.GetMetadata<HealthCheckOptions>() is not null;
+        }
+
+        /// <summary>
+        /// Writes the correlation identifier back to the caller, without disturbing a value the application
+        /// set itself.
+        /// </summary>
+        /// <param name="context">The request being handled.</param>
+        /// <param name="headerName">The configured correlation header name.</param>
+        /// <param name="correlationId">The established correlation identifier.</param>
+        /// <remarks>
+        /// Set here rather than from a response callback, because this middleware runs before the endpoint
+        /// and the response has therefore not started. One consequence is deliberate: an exception handler
+        /// that clears the response drops this header, and the identifier travels in the problem-details
+        /// payload instead.
+        /// </remarks>
+        private static void EchoInResponse(HttpContext context, string headerName, string correlationId)
+        {
+            if (!context.Response.Headers.ContainsKey(headerName))
+            {
+                context.Response.Headers[headerName] = correlationId;
+            }
         }
 
         private static bool PathEquals(string path, string exemptPath) =>

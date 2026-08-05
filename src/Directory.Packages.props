@@ -39,6 +39,8 @@
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
     <!-- MIT (scalar/scalar) — the API reference UI rendered over the generated documents -->
     <PackageVersion Include="Scalar.AspNetCore" Version="2.16.17" />
+    <!-- Stock inbound JWT validation; replaces the internal enterprise authentication stack -->
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
   </ItemGroup>
   <ItemGroup>
     <!-- Apache-2.0 (Xabaril) — the canonical URI health check; replaces a bespoke liveness probe -->

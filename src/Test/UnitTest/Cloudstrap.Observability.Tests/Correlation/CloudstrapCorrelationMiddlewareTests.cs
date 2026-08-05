@@ -94,6 +94,64 @@ namespace Cloudstrap.Observability.Tests.Correlation
         }
 
         [Test]
+        public async Task Invoke_WithInboundHeader_EchoesTheIdInTheResponse()
+        {
+            // Arrange & Act
+            (DefaultHttpContext context, _) = await RunRequest(
+                MinimalValid(),
+                context => context.Request.Headers["X-Correlation-ID"] = "abc-123");
+
+            // Assert
+            Assert.That(context.Response.Headers["X-Correlation-ID"].ToString(), Is.EqualTo("abc-123"));
+        }
+
+        [Test]
+        public async Task Invoke_WithoutHeader_EchoesTheGeneratedIdInTheResponse()
+        {
+            // Arrange
+            using Activity activity = new("Contoso.Test.Request");
+            activity.Start();
+
+            // Act
+            (DefaultHttpContext context, string? observed) = await RunRequest(MinimalValid());
+
+            // Assert — this is the only way a caller who sent none can learn the identifier
+            Assert.That(context.Response.Headers["X-Correlation-ID"].ToString(), Is.EqualTo(observed));
+        }
+
+        [Test]
+        public async Task Invoke_WithConfiguredHeaderName_EchoesUnderThatName()
+        {
+            // Arrange
+            Dictionary<string, string?> values = MinimalValid();
+            values["Cloudstrap:Correlation:HeaderName"] = "X-Request-ID";
+
+            // Act
+            (DefaultHttpContext context, _) = await RunRequest(
+                values,
+                context => context.Request.Headers["X-Request-ID"] = "req-456");
+
+            // Assert
+            Assert.That(context.Response.Headers["X-Request-ID"].ToString(), Is.EqualTo("req-456"));
+        }
+
+        [Test]
+        public async Task Invoke_WithEchoDisabled_SetsNoResponseHeader()
+        {
+            // Arrange
+            Dictionary<string, string?> values = MinimalValid();
+            values["Cloudstrap:Correlation:Request:EchoInResponse"] = "false";
+
+            // Act
+            (DefaultHttpContext context, _) = await RunRequest(
+                values,
+                context => context.Request.Headers["X-Correlation-ID"] = "abc-123");
+
+            // Assert
+            Assert.That(context.Response.Headers.ContainsKey("X-Correlation-ID"), Is.False);
+        }
+
+        [Test]
         public void GetCloudstrapCorrelationId_BeforeTheMiddlewareRan_ReturnsNull()
         {
             // Arrange

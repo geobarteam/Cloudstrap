@@ -42,6 +42,10 @@ namespace Cloudstrap.WebApi
                     return Task.CompletedTask;
                 });
 
+                OpenApiSecurityTransformer security = new(options);
+                versioned.Document.AddDocumentTransformer(security);
+                versioned.Document.AddOperationTransformer(security);
+
                 // Registered after the Cloudstrap defaults, so a consumer transformer wins.
                 configure?.Invoke(versioned.Document);
             });

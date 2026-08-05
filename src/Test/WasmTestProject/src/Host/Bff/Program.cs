@@ -2,8 +2,8 @@ using Cloudstrap.Core;
 using Cloudstrap.Extensions;
 using Cloudstrap.Observability;
 using Cloudstrap.Observability.AzureMonitor;
-using Cloudstrap.Observability.Correlation;
 using Cloudstrap.WasmTestProject.Host.Bff.Services;
+using Cloudstrap.WebApi;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -25,7 +25,12 @@ startupLogger.LogInformation("Configuration loaded for {WorkloadName}", workload
 builder.UseCloudstrapObservability()
     .AddAzureMonitor(exporter => exporter.DisableOfflineStorage = true);
 
-builder.Services.AddControllers();
+// One call replaces AddControllers and brings the whole Web API service side with it: versioning with
+// per-version OpenAPI documents, the problem-details exception handler, HSTS/CORS registration and the
+// health-check builder (deliverable #5 demo).
+// Deliberately absent: AddCloudstrapJwtBearer. This SUT is anonymous by design — it is the AC-W10 scenario
+// (the pipeline never assumes auth exists), and the auth demonstrations arrive with deliverables #9/#10.
+builder.AddCloudstrapWebApi();
 builder.Services.AddSingleton<InMemoryDoctorStore>();
 
 // A typed client driven by Cloudstrap:HttpClients:SelfApi — config-bound base address and timeout, the
@@ -40,16 +45,14 @@ builder.Services.AddHealthChecks()
 
 WebApplication app = builder.Build();
 
-app.UseBlazorFrameworkFiles();
-app.UseStaticFiles();
-
-app.UseRouting();
-// After routing, so endpoint metadata (health checks, [AllowNoCorrelation]) is visible to it.
-app.UseCloudstrapCorrelation();
-
-app.MapControllers();
-// One call replaces the hand-mapped, tag-filtered probe endpoints (deliverable #4 demo).
-app.MapCloudstrapHealthChecks();
-app.MapFallbackToFile("index.html");
+// The entire request pipeline, in the order a hardened API needs it: problem-details error handling,
+// security headers, routing, correlation (#2), controllers, the health probes (#4) and the OpenAPI
+// documents plus the Scalar reference UI. The Blazor composition rides on the documented hook points, so
+// static files still short-circuit before routing and the SPA fallback still catches unmatched paths.
+app.UseCloudstrapWebApi(pipeline =>
+{
+    pipeline.BeforeRouting = branch => branch.UseBlazorFrameworkFiles().UseStaticFiles();
+    pipeline.ConfigureEndpoints = endpoints => endpoints.MapFallbackToFile("index.html");
+});
 
 await app.RunAsync();

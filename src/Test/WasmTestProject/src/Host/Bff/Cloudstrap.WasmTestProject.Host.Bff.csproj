@@ -16,6 +16,7 @@
     <ProjectReference Include="..\..\..\..\..\Cloudstrap.Observability\Cloudstrap.Observability.csproj" />
     <ProjectReference Include="..\..\..\..\..\Cloudstrap.Observability.AzureMonitor\Cloudstrap.Observability.AzureMonitor.csproj" />
     <ProjectReference Include="..\..\..\..\..\Cloudstrap.Extensions\Cloudstrap.Extensions.csproj" />
+    <ProjectReference Include="..\..\..\..\..\Cloudstrap.WebApi\Cloudstrap.WebApi.csproj" />
     <ProjectReference Include="..\..\Contracts\Cloudstrap.WasmTestProject.Contracts.csproj" />
     <ProjectReference Include="..\Wasm\Cloudstrap.WasmTestProject.Host.Wasm.csproj" />
   </ItemGroup>
