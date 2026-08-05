@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Workaround for a .NET 10 SDK bug: ApplyCompressionNegotiation fails with
+         "An item with the same key has already been added" on fingerprinted RCL static assets. -->
+    <DisableBuildCompression>true</DisableBuildCompression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
+    <ProjectReference Include="..\..\Presentation\Cloudstrap.WasmTestProject.Presentation.csproj" />
+  </ItemGroup>
+
+</Project>

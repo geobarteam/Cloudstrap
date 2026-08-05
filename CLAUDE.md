@@ -70,7 +70,7 @@ Cloudstrap coexists with Aspire **without depending on it** — full posture + A
 _plans/                                  # Feature/extraction plans (approve before implementing)
 _specs/                                  # Specifications — Cloudstrap.md is the founding spec
 src/
-├── Cloudstrap.Core/                     # CloudstrapConfiguration settings model + validation
+├── Cloudstrap.Core/                     # CloudstrapOptions settings model + validation
 ├── Cloudstrap.Extensions/               # KeyVault config, typed HttpClients, hosting helpers
 ├── Cloudstrap.Observability/            # Serilog bootstrap, OTel traces/metrics/logs, correlation
 ├── Cloudstrap.Observability.AzureMonitor/ # Application Insights exporter wiring
@@ -96,8 +96,10 @@ src/
 ├── Cloudstrap.Testing/                  # Test helper utilities
 └── Test/
     ├── UnitTest/                        # Unit tests (mirror source structure, one project per package)
-    ├── TestProject/                     # Blazor Server SUT — E2E smoke tests
-    └── WasmTestProject/                 # Blazor WASM SUT — E2E smoke tests
+    ├── TestProject/                     # Blazor Server SUT (arrives with deliverable 12)
+    └── WasmTestProject/                 # Blazor WASM SUT (src/: Contracts, Presentation, Host/Wasm, Host/Bff)
+                                         #   + test/Cloudstrap.WasmTestProject.E2E.Tests (NUnit 4 + Playwright)
+                                         #   Every deliverable demonstrates its feature here (workflow rule 9)
 ```
 
 ---
@@ -180,7 +182,7 @@ public static class ServiceCollectionExtensions
 - Mock at boundary (interfaces only, Moq). No real external services in unit tests (no live Azure, no live Application Insights).
 - Integration tests: verify DI registration, service resolution, and cross-cutting concerns.
 - Messaging tests run on Wolverine's in-memory/local transport — no network.
-- E2E smoke tests: run against the TestProject app that references the library as SUT.
+- E2E tests: NUnit 4 + Microsoft.Playwright in `src/Test/WasmTestProject/test/Cloudstrap.WasmTestProject.E2E.Tests/` — the fixture boots the real Bff host and drives headless Chromium against the WASM SUT (see the SUT README; one-time `playwright.ps1 install chromium`).
 
 ---
 
@@ -189,9 +191,13 @@ public static class ServiceCollectionExtensions
 ```powershell
 dotnet build src/Cloudstrap.sln                              # Build
 dotnet restore src/Cloudstrap.sln                            # Restore
-runTests                                                     # Run tests (Microsoft.Testing.Platform)
+runTests                                                     # Run tests (Microsoft.Testing.Platform) — includes the E2E suite
 {{TestExePath}} --filter "<TestMethod>"                      # Filtered test
 dotnet format src/Cloudstrap.sln --verify-no-changes         # Format check
+
+# E2E (WASM SUT) — one-time browser install, then run like any MTP suite (solution must be built first)
+pwsh src/Test/WasmTestProject/test/Cloudstrap.WasmTestProject.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
+src\Test\WasmTestProject\test\Cloudstrap.WasmTestProject.E2E.Tests\bin\Debug\net10.0\Cloudstrap.WasmTestProject.E2E.Tests.exe
 ```
 
 `dotnet test` is **not supported** — use the test `.exe` directly (`Microsoft.Testing.Platform` + .NET 10 SDK).
@@ -226,6 +232,7 @@ dotnet format src/Cloudstrap.sln --verify-no-changes         # Format check
 6. **Code analysis every step** — after REFACTOR, fix all violations, then run the full test suite.
 7. **🛑 STOP at HUMAN GATE** — plans place gates at slice boundaries, not after every step; do not proceed past one until the user confirms.
 8. **Mark done** — check a step's `Done` box when its VERIFY passes; check a gate's boxes only after user approval. First unchecked `[ ]` in `_plans/<FeatureName>.md` = where to resume.
+9. **Demonstrate every migrated feature in the WASM SUT** — each extraction deliverable's plan ends with a demonstration slice extending `src/Test/WasmTestProject` plus ≥ 1 E2E test in `Cloudstrap.WasmTestProject.E2E.Tests` proving the behavior through the running app, before its final 🛑 gate (planner rule 15; precedent `_plans/25-WasmTestProjectSut.md`).
 
 ---
 

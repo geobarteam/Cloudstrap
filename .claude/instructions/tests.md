@@ -5,9 +5,11 @@ applyTo: "src/Test/**"
 # Test Conventions — Cloudstrap
 
 ## Frameworks & Tooling
-- **MSTest** + **Moq** for all tests.
-- No xUnit, NUnit.
-- Code coverage reported via SonarQube during DEV & MAIN release builds. Target ≥ 80 % on new code, but prioritize meaningful tests over chasing a number.
+- **NUnit 4** + **Moq** for all tests, on **Microsoft.Testing.Platform** — each test project builds an executable (`OutputType=Exe`, `EnableNUnitRunner`, wired centrally in `src/Test/Directory.Build.props` for `*.Tests` projects only). `dotnet test` is NOT supported — run the built test `.exe` directly.
+- `[TestFixture]`/`[Test]`/`[SetUp]`/`[TearDown]`, assertions via the `Assert.That` constraint model. No xUnit, no MSTest.
+  *(Code samples below still show MSTest attributes from the source repo — translate to NUnit when applying them; the conventions themselves are unchanged.)*
+- E2E tests additionally use **Microsoft.Playwright** (see *E2E tests — WASM SUT* below).
+- Prioritize meaningful tests over chasing a coverage number.
 
 ## Project Layout
 
@@ -322,10 +324,28 @@ When a tester validates a feature through the UI, the application must contain r
 
 ---
 
+## E2E tests — WASM SUT (`src/Test/WasmTestProject`)
+
+Every extraction deliverable ends with a demonstration slice here (CLAUDE.md workflow rule 9, planner rule 15): extend the SUT (page/endpoint/config) and add ≥ 1 E2E test proving the behavior through the **real running app**.
+
+**Project**: `src/Test/WasmTestProject/test/Cloudstrap.WasmTestProject.E2E.Tests/` — NUnit 4 + Microsoft.Playwright, part of the normal MTP test leg (locally and in CI).
+
+**Harness** (`E2eFixture` + `Infrastructure/`):
+- `E2eFixture` (`[SetUpFixture]`) boots the Bff host once per run on `http://127.0.0.1:5300` (`dotnet run --no-build` — build the solution first), polls until ready, kills the process tree afterwards. `CLOUDSTRAP_E2E_BASEURL` attaches to an already-running instance instead.
+- Browser tests inherit `Infrastructure/PageTestBase` — headless Chromium, fresh context per test, `ConsoleErrors` collection; prefer `data-testid` selectors (`Page.GetByTestId`).
+- API-level tests use plain `HttpClient` against `E2eFixture.BaseUrl` — no browser needed.
+- Telemetry assertions poll `E2eFixture.CapturedSutOutput` (the SUT's stdout, OTel Console exporter) with a deadline — never a bare sleep.
+- `SutProcess.Start(baseUrl, applicationArguments)` launches extra short-lived SUT instances (different port) for startup/fail-fast scenarios.
+- Suite is `[assembly: NonParallelizable]` (one SUT, one fixed port). Tests must not depend on run order — the in-memory store lives for the whole run.
+- One-time setup: `pwsh <E2E bin>/playwright.ps1 install chromium`. A missing browser fails loudly with that instruction — tests never silently skip.
+- After adding a demo, update the demo table in `src/Test/WasmTestProject/README.md`.
+
 ## Run Commands
 
 ```powershell
-dotnet test --project src/Test/Unit/                          # all unit tests
-dotnet test --project src/Test/Integration/                   # all integration tests
-dotnet test --project src/Test/Unit/ --filter GetDoctors      # filtered by class/method
+# Build first, then run the MTP executables directly (dotnet test is not supported)
+dotnet build src/Cloudstrap.sln
+src\Test\UnitTest\Cloudstrap.Core.Tests\bin\Debug\net10.0\Cloudstrap.Core.Tests.exe
+src\Test\WasmTestProject\test\Cloudstrap.WasmTestProject.E2E.Tests\bin\Debug\net10.0\Cloudstrap.WasmTestProject.E2E.Tests.exe
+<TestExePath> --filter "<TestMethod>"                          # filtered run
 ```

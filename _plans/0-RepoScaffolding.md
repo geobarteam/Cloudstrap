@@ -108,12 +108,12 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 
 ⚠️ **This gate freezes the analyzer ruleset.** Per CLAUDE.md, the rules in `Directory.Build.props` are immutable after this deliverable — loosening is impossible later, only per-rule tightening via `.editorconfig`. Review accordingly.
 
-- [ ] Behavioral verification: the three local gates are green on a clean working tree (`dotnet build`, test exe run direct → pass/exit 0, `dotnet format --verify-no-changes` → exit 0); the four Step 1 probe outputs show CS1591, IDE1006, CA-rule, and NU1008 each **failing the build/restore as errors**; the Step 2 RED run output shows the deliberately failing test reported with non-zero exit.
-- [ ] Code review — `src/Directory.Build.props` (⚠️ frozen after approval): `AnalysisLevel=latest-recommended`, `EnforceCodeStyleInBuild`, NU1901–NU1904 carve-out, CPM switch, packaging metadata defaults; **zero StyleCop remnants**.
-- [ ] Code review — `src/.editorconfig` as the single style authority: naming rules at `warning`, no SA block, no company identifiers, no CS1591 downgrade.
-- [ ] Confirm the flagged assumptions: `Authors=Cloudstrap` *(settled 2026-07-25 — matches the nuget.org `Cloudstrap` organization that owns the reserved prefix)* · `Nullable`+`ImplicitUsings` enabled repo-wide · base `PackageTags` · placeholder `assets/icon.png` acceptable until final artwork.
-- [ ] ⚠️ Dependency review (risk area): NUnit 4.6.1+ / NUnit3TestAdapter 6.2.0+ / NUnit.Analyzers 4.14.0+ — all MIT, versions pinned only in `src/Directory.Packages.props`.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: the three local gates are green on a clean working tree (`dotnet build`, test exe run direct → pass/exit 0, `dotnet format --verify-no-changes` → exit 0); the four Step 1 probe outputs show CS1591, IDE1006, CA-rule, and NU1008 each **failing the build/restore as errors**; the Step 2 RED run output shows the deliberately failing test reported with non-zero exit.
+- [x] Code review — `src/Directory.Build.props` (⚠️ frozen after approval): `AnalysisLevel=latest-recommended`, `EnforceCodeStyleInBuild`, NU1901–NU1904 carve-out, CPM switch, packaging metadata defaults; **zero StyleCop remnants**. *(Approved with executor deviation: `dotnet_diagnostic.IDE1006.severity = warning` added to `src/.editorconfig` — naming-rule severities are IDE-only; this line makes naming build-breaking per AC-R7.)*
+- [x] Code review — `src/.editorconfig` as the single style authority: naming rules at `warning`, no SA block, no company identifiers, no CS1591 downgrade.
+- [x] Confirm the flagged assumptions: `Authors=Cloudstrap` *(settled 2026-07-25 — matches the nuget.org `Cloudstrap` organization that owns the reserved prefix)* · `Nullable`+`ImplicitUsings` enabled repo-wide · base `PackageTags` · placeholder `assets/icon.png` acceptable until final artwork.
+- [x] ⚠️ Dependency review (risk area): NUnit 4.6.1 / NUnit3TestAdapter 6.2.0 / NUnit.Analyzers 4.14.0 — all MIT, versions pinned only in `src/Directory.Packages.props`. *(Approved with executor deviation: `CA1707` added to the test-layer `NoWarn` — the `<Method>_<Scenario>_<Expected>` convention requires underscores; suppressed under `src/Test/` only.)*
+- [x] User approved — implementation may continue past this gate *(approved 2026-07-25)*
 
 ---
 
@@ -123,7 +123,7 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 
 ## Step 3 — GitVersion computes `-preview.N` on dev and exact `X.Y.Z` from tags on main
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `GitVersion.yml` *(create, repo root)* — GitVersion 6.x configuration.
@@ -155,7 +155,7 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 
 ## Step 4 — CI enforces build + test + format on every PR/push; `dev` pushes publish previews to GitHub Packages
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `.github/workflows/ci.yml` *(create)*.
@@ -190,7 +190,7 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 
 ## Step 5 — Pushing a `v*` tag releases stables to nuget.org; a scheduled job trims the preview feed to the last 20 versions
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `.github/workflows/release.yml` *(create)*.
@@ -227,15 +227,15 @@ This is an infrastructure deliverable: there is no UI and no API. "Vertical slic
 *Executor: STOP here. Present the results of all covered steps and WAIT for user approval — do not start the next step. Every push below requires the user's explicit go-ahead (CLAUDE.md: no Git push without confirmation).*
 
 **Manual prerequisites (user, on nuget.org / GitHub — from the spec's operational prerequisites):**
-- [ ] Reserve the `Cloudstrap.` package ID prefix on nuget.org (verified free 2026-07-24; required before the first *real* stable publish).
+- [x] Reserve the `Cloudstrap.` package ID prefix on nuget.org (verified free 2026-07-24; required before the first *real* stable publish). **Reserved — confirmed by the user 2026-07-26.**
 - [x] Trusted Publishing policy on nuget.org — `Cloudstrap-GitHubActions-Release`: owner `Cloudstrap`, repo `geobarteam/Cloudstrap`, workflow `release.yml`, no environment. **Active 2026-07-25** (public repo → no 7-day pending window). Replaces the previously planned `NUGET_API_KEY` secret.
 - [x] Create the `NUGET_USER` repository secret — **set to `Cloudstrap` on 2026-07-25**; consumed by `NuGet/login@v1`. Fall back to `geobarteam` if the token exchange reports no matching policy — the docs do not state which one applies to organization-owned policies, so this is settled at the first real push).
 
 **Behavioral verification on GitHub (user + executor together):**
-- [ ] GitVersion probes reviewed: Step 3 outputs show tag `v0.9.9` → exactly `0.9.9` and local `dev` → `-preview.N` incrementing per commit (AC-R9).
-- [ ] Push the working branch and open a PR → `ci.yml` runs: build, test, and format checks all execute and pass; the preview-publish step does **not** run on the PR (AC-R4).
-- [ ] After merge: create/push the `dev` branch → `ci.yml` completes green and the preview-publish step runs as a **graceful no-op** (zero packable projects) (AC-R5).
-- [ ] Manually dispatch `cleanup-previews.yml` → completes green as a no-op; confirm the weekly schedule (assumption: Sundays 03:00 UTC) is acceptable.
-- [ ] Recommended (optional now, required before deliverable 1 publishes anything): push tag `v0.1.0` on `main` → `release.yml` runs all gates green and no-ops the nuget.org push (AC-R6), anchoring the stable version baseline for future previews.
-- [ ] Code review across Steps 3–5: workflow permissions are minimal; secrets never echoed; action versions pinned; `release.yml` is the only stable path and nuget.org its only target; De-NIHDI sweep output (AC-R8) is empty.
-- [ ] User approved — implementation may continue past this gate *(deliverable #0 done; ROADMAP status update belongs to the project-manager, not the executor)*
+- [x] GitVersion probes reviewed: Step 3 outputs show tag `v0.9.9` → exactly `0.9.9` and local `dev` → `-preview.N` incrementing per commit (AC-R9).
+- [x] Push the working branch and open a PR → `ci.yml` runs: build, test, and format checks all execute and pass; the preview-publish step does **not** run on the PR (AC-R4).
+- [x] After merge: create/push the `dev` branch → `ci.yml` completes green and the preview-publish step runs as a **graceful no-op** (zero packable projects) (AC-R5).
+- [x] Manually dispatch `cleanup-previews.yml` → completes green as a no-op; confirm the weekly schedule (assumption: Sundays 03:00 UTC) is acceptable.
+- [x] Recommended (optional now, required before deliverable 1 publishes anything): push tag `v0.1.0` on `main` → `release.yml` runs all gates green and no-ops the nuget.org push (AC-R6), anchoring the stable version baseline for future previews.
+- [x] Code review across Steps 3–5: workflow permissions are minimal; secrets never echoed; action versions pinned; `release.yml` is the only stable path and nuget.org its only target; De-NIHDI sweep output (AC-R8) is empty.
+- [x] User approved — implementation may continue past this gate *(deliverable #0 done — user confirmed complete 2026-07-26; ROADMAP status update belongs to the project-manager, not the executor)*
