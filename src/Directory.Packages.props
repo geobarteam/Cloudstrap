@@ -42,6 +42,11 @@
     <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Apache-2.0 (Duende FOSS) — machine-to-machine token acquisition, caching and renewal; the
+         suite's first auth-stack runtime dependency (Cloudstrap.Authentication.ClientCredentials) -->
+    <PackageVersion Include="Duende.AccessTokenManagement" Version="4.2.0" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- MIT (dotnet org) — the .NET API versioning standard, one release train -->
     <PackageVersion Include="Asp.Versioning.Mvc" Version="10.0.1" />
     <PackageVersion Include="Asp.Versioning.Mvc.ApiExplorer" Version="10.0.1" />

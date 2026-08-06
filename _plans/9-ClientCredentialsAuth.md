@@ -467,13 +467,13 @@ verbatim, the project location (`src/Test/TestIdentityProvider/`), the two hosti
 fixtures neutral; zero source-STS content (the reviewer greps `src/Test/TestIdentityProvider` for
 `(?i)nihdi|riziv|keycloak` and checks for any personal data → nothing).
 
-- [ ] Behavioral verification: the nine `Cloudstrap.TestIdentityProvider.Tests` methods pass — discovery with
+- [x] Behavioral verification: the nine `Cloudstrap.TestIdentityProvider.Tests` methods pass — discovery with
   the single grant, JWKS, a verifiable signed JWT with configured audience/scope/claims, exact lifetime,
   `invalid_client` on wrong/unknown credentials, instance isolation, and real-HTTP loopback serving.
-- [ ] Code review: options model + public helper surface vs spec sketch; OpenIddict server configuration
+- [x] Code review: options model + public helper surface vs spec sketch; OpenIddict server configuration
   (client-credentials only, ephemeral key, encryption disabled — and nothing else enabled); the CPM pins and
   the "test-only" ItemGroup comment; identifier/personal-data grep clean.
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate
 
 ---
 
@@ -483,7 +483,7 @@ fixtures neutral; zero source-STS content (the reviewer greps `src/Test/TestIden
 
 ## Step 4 — `AddCloudstrapClientCredentials()`: a flagged typed client carries a bearer token issued by the real test IdP with no other consumer change; startup validation names exact keys and never echoes the secret; registration is idempotent (AC-CC1, AC-CC4, AC-CC10, AC-CC5-validation) ⚠️ *(auth risk area begins)*
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Directory.Packages.props` *(modify)* — pin `Duende.AccessTokenManagement` 4.2.0 (runtime; executor
@@ -596,7 +596,7 @@ member, naming the exact configuration keys.
 
 ## Step 5 — Tokens are cached, renewed and scoped: one token request per lifetime, expiry renews transparently, per-client Scope/Resource stay separate, a 401 triggers one refresh through the intact inner chain, and user-token settings on a client token warn once (AC-CC2, AC-CC3/AC-A2, AC-CC6, AC-CC9; plan-level pick 2 confirmed)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Authentication.ClientCredentials/` *(modify — whatever the lifecycle behaviors need:
@@ -669,17 +669,17 @@ Apache-2.0 confirmed, transitive promotions (Hybrid cache, Http.Resilience now r
 `System.IdentityModel.Tokens.Jwt` < 9.0.0) inspected in the restored graph · **mechanic (a.1)** ATM API-name
 confirmations and **plan-level pick 2** outcome (fake clock vs short lifetimes) reported here.
 
-- [ ] Behavioral verification: test exe output shows — the no-consumer-change bearer attachment with a real JWT
+- [x] Behavioral verification: test exe output shows — the no-consumer-change bearer attachment with a real JWT
   from the in-process IdP, the untouched unflagged client, correlation intact, all four exact-key validation
   failures, the secret-free validation message, double-registration idempotence, Duende-coexistence and the
   guard (Step 4); single-token-per-lifetime, transparent renewal, scope separation and sharing, the
   401-refresh-through-intact-chain proof, and the two one-time warnings (Step 5).
-- [ ] Code review (auth + API): signatures vs spec sketch §1 verbatim; `internal` by default, sealed, full XML
+- [x] Code review (auth + API): signatures vs spec sketch §1 verbatim; `internal` by default, sealed, full XML
   docs; the internal provider returns a fresh handler per call with no `InnerHandler`; the mapper ignores
   exactly the two user-token properties; `dotnet list src/Cloudstrap.Authentication.ClientCredentials/Cloudstrap.Authentication.ClientCredentials.csproj package`
   → `Duende.AccessTokenManagement` + the two project references and nothing else direct; zero `OpenIddict.*`
   anywhere near the shipped project.
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate
 
 ---
 
@@ -689,7 +689,7 @@ confirmations and **plan-level pick 2** outcome (fake clock vs short lifetimes) 
 
 ## Step 6 — Failure is loud, lazy and secret-free: a rejected, failing or unreachable IdP never lets an unauthenticated request out and never leaks the secret; the user-token flag names #10's package; a consumer assertion service replaces the secret (AC-CC7, AC-CC8, AC-CC11, AC-CC5-logs)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Authentication.ClientCredentials/` *(modify — acquisition-failure surfacing per AC-CC8's
@@ -748,7 +748,7 @@ never), the one-time credential-type log line, nothing else.
 
 ## Step 7 — Tokens never leak into the application's caches, and the token backchannel is a quiet, dedicated client: isolated `HybridCache` by default with the mode logged, `Shared` as the documented opt-in, no correlation header to the IdP, no token on the liveness probe (AC-CC12, D-3; Behaviors rows)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Authentication.ClientCredentials/ServiceCollectionExtensions.cs` *(modify — `Shared` mode
@@ -802,7 +802,7 @@ the mode.
 
 ## Step 8 — Acquisition and validation interoperate end to end: a #5-protected API accepts the acquired token after genuine discovery-document and JWKS retrieval (AC-CC14, in-process)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/UnitTest/Cloudstrap.Authentication.ClientCredentials.Tests/Cloudstrap.Authentication.ClientCredentials.Tests.csproj`
@@ -853,7 +853,7 @@ source and reported at Gate 4.
 
 ## Step 9 — The package is publishable and guarded forever: metadata, README, and permanent tripwires on the surface, the closure and the forbidden identifiers (AC-CC15, AC-ASP2, AC-A3)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Authentication.ClientCredentials/Cloudstrap.Authentication.ClientCredentials.csproj`
