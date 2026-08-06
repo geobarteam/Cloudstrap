@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\Cloudstrap.Authentication.ClientCredentials\Cloudstrap.Authentication.ClientCredentials.csproj" />
     <ProjectReference Include="..\..\..\..\..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
     <ProjectReference Include="..\..\..\..\..\Cloudstrap.Observability\Cloudstrap.Observability.csproj" />
     <ProjectReference Include="..\..\..\..\..\Cloudstrap.Observability.AzureMonitor\Cloudstrap.Observability.AzureMonitor.csproj" />

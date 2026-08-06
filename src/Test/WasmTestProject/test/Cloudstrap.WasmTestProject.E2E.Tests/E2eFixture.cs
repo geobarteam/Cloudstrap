@@ -1,12 +1,14 @@
 namespace Cloudstrap.WasmTestProject.E2E.Tests
 {
+    using Cloudstrap.TestIdentityProvider;
     using Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure;
     using NUnit.Framework;
 
     /// <summary>
-    /// Boots the Bff host once for the whole E2E assembly — or attaches to an already-running
-    /// instance when the CLOUDSTRAP_E2E_BASEURL environment variable is set — and exposes the
-    /// base URL plus the captured SUT console output for telemetry assertions.
+    /// Boots the test identity provider on loopback and then the Bff host, once for the whole E2E
+    /// assembly — or attaches to an already-running Bff when the CLOUDSTRAP_E2E_BASEURL environment
+    /// variable is set (the identity provider is booted by the fixture in either mode) — and exposes
+    /// the base URL plus the captured SUT console output for telemetry assertions.
     /// </summary>
     [SetUpFixture]
     public sealed class E2eFixture
@@ -14,7 +16,14 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
         /// <summary>Base URL used when the fixture launches the SUT itself.</summary>
         public const string DefaultBaseUrl = "http://127.0.0.1:5300";
 
+        /// <summary>
+        /// The loopback port of the test identity provider (D-5) the Bff validates against and
+        /// acquires from — 5300 is the Bff, 5301–5303 are second instances, 59999 is the dead port.
+        /// </summary>
+        public const int IdentityProviderPort = 5310;
+
         private static SutProcess? _sut;
+        private static TestIdentityProviderHost? _identityProvider;
 
         /// <summary>Base URL of the running SUT for this test run.</summary>
         public static string BaseUrl { get; private set; } = DefaultBaseUrl;
@@ -22,9 +31,26 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
         /// <summary>Everything the SUT wrote to stdout/stderr so far (empty in attach mode).</summary>
         public static string CapturedSutOutput => _sut?.CapturedOutput ?? string.Empty;
 
+        /// <summary>
+        /// The number of token requests the fixture-hosted identity provider has served — the hit
+        /// counter the caching E2E test asserts against.
+        /// </summary>
+        public static int IdentityProviderTokenRequestCount => _identityProvider?.TokenRequestCount ?? 0;
+
         [OneTimeSetUp]
         public async Task StartSutAsync()
         {
+            // The identity provider boots first — the Bff acquires machine tokens from it and
+            // validates them against its discovery document. Booted in attach mode too.
+            _identityProvider = TestIdentityProviderHost.StartLoopback(IdentityProviderPort, options =>
+                options.Clients.Add(new TestIdentityProviderClient
+                {
+                    ClientId = "wasmtestproject-bff",
+                    ClientSecret = "local-e2e-placeholder-secret",
+                    Scopes = { "selfapi" },
+                    Audiences = { "wasmtestproject-selfapi" },
+                }));
+
             string? externalBaseUrl = Environment.GetEnvironmentVariable("CLOUDSTRAP_E2E_BASEURL");
             if (!string.IsNullOrWhiteSpace(externalBaseUrl))
             {
@@ -43,6 +69,8 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
         {
             _sut?.Dispose();
             _sut = null;
+            _identityProvider?.Dispose();
+            _identityProvider = null;
         }
 
         private static async Task WaitUntilReadyAsync()

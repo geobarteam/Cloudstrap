@@ -936,19 +936,19 @@ and the observable `Shared` opt-in: confirm the posture once more with the AC-CC
 hygiene** — the Release nupkg contents, the closure guard, the identifier sweep, and the README's
 secret-handling + TokenCache + JWT-pin sections · any executor deviations reported in Steps 6–9.
 
-- [ ] Behavioral verification: test exe output shows — the three loud lazy failure contracts with zero
+- [x] Behavioral verification: test exe output shows — the three loud lazy failure contracts with zero
   downstream requests, the user-flag fail-fast naming #10, the assertion-carrying request without a secret, the
   assertion-wins log line, the secret-absent log sweep (Step 6); the zero-writes isolated cache, the observable
   Shared opt-in, the no-error no-cache edge, the mode log line, the quiet backchannel trio and the token-less
   probe (Step 7); the 200/401/wrong-audience interop chain (Step 8); the three permanent guards plus the
   artifact checks (Step 9).
-- [ ] Code review (auth): the failure-surfacing code never embeds a credential or token value in any message;
+- [x] Code review (auth): the failure-surfacing code never embeds a credential or token value in any message;
   the credential-type and cache-mode log lines contain names/modes only; `EndToEndInteropTests` genuinely
   fetches metadata from the IdP (no pre-seeded configuration); README accuracy against as-built behavior.
-- [ ] ⚠️ Dependency + identifier review: restored-graph inspection for the shipped package (Duende + promoted
+- [x] ⚠️ Dependency + identifier review: restored-graph inspection for the shipped package (Duende + promoted
   transitives, `System.IdentityModel.Tokens.Jwt` within `[8.0.1, 9.0.0)`); zero `OpenIddict.*`/EF Core in the
   shipped closure; sweeps from Step 9 VERIFY re-confirmed; no personal data anywhere.
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate
 
 ---
 
@@ -958,7 +958,7 @@ secret-handling + TokenCache + JWT-pin sections · any executor deviations repor
 
 ## Step 10 — The Bff's flagged `SelfApi` client calls a JWT-protected endpoint on itself with a bearer token issued by the test IdP running on loopback — proven through the real running app while all 28 pre-existing E2E tests stay green (AC-CC16; AC-CC14 live)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/WasmTestProject/src/Host/Bff/Cloudstrap.WasmTestProject.Host.Bff.csproj` *(modify —
@@ -1043,20 +1043,20 @@ rather than weakening the assertion.)*
 
 *Executor: STOP here. Present the results and WAIT for user approval. Any Git push afterwards requires the user's explicit go-ahead (CLAUDE.md: no push without confirmation).*
 
-- [ ] Behavioral verification: the three new `ClientCredentialsTests` pass against the running app with the
+- [x] Behavioral verification: the three new `ClientCredentialsTests` pass against the running app with the
   loopback IdP; **all 28 pre-existing E2E tests pass unchanged**; the full suite (Overview mechanic (i)) is
   green end to end.
-- [ ] Spec acceptance sign-off: walk **AC-A2, AC-A3, AC-ASP2 and AC-CC1…AC-CC16** against the step evidence
+- [x] Spec acceptance sign-off: walk **AC-A2, AC-A3, AC-ASP2 and AC-CC1…AC-CC16** against the step evidence
   using the Overview's AC coverage map — all met; confirm nothing from the spec's Drop / Out-of-Scope lists was
   resurrected (no `EnableAuthentication` gate, no `AuthenticationFlow`, no authority-plus-path convention, no
   OIDC discovery for the token endpoint, no implicit/hybrid anywhere including the IdP, no user-token
   implementation, no DPoP/mTLS/workload-identity code, no token-manager facade, no `Cloudstrap:Authentication`
   parent section, no containerised IdP) and that every De-NIHDI row is closed (neutral fixtures, placeholder
   secrets only, zero `Nihdi`/`Riziv`/`Keycloak` identifiers, zero source-STS content or personal data).
-- [ ] Demo + docs review: the SUT README demo-table row, port map (5310) and harness notes match as-built
+- [x] Demo + docs review: the SUT README demo-table row, port map (5310) and harness notes match as-built
   behavior, including the `RequireAuthenticatedEndpoints=false` posture and the manual-run note; the Bff
   `Program.cs` comment now correctly attributes the demo to #9 and points interactive login at #10.
-- [ ] One-way-door recap for the record: the D-4 seam pair (Gate 1), the TestIdentityProvider shape (Gate 2)
+- [x] One-way-door recap for the record: the D-4 seam pair (Gate 1), the TestIdentityProvider shape (Gate 2)
   and the package public API (Gate 3) are what #10 builds on next — confirm no open reservations remain.
-- [ ] User approved — deliverable #9 done; project-manager flips the ROADMAP row to ✅ (and any push happens
+- [x] User approved — deliverable #9 done; project-manager flips the ROADMAP row to ✅ (and any push happens
   only on the user's explicit go-ahead).

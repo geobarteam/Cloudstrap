@@ -1,3 +1,4 @@
+using Cloudstrap.Authentication.ClientCredentials;
 using Cloudstrap.Core;
 using Cloudstrap.Extensions;
 using Cloudstrap.Observability;
@@ -28,10 +29,19 @@ builder.UseCloudstrapObservability()
 // One call replaces AddControllers and brings the whole Web API service side with it: versioning with
 // per-version OpenAPI documents, the problem-details exception handler, HSTS/CORS registration and the
 // health-check builder (deliverable #5 demo).
-// Deliberately absent: AddCloudstrapJwtBearer. This SUT is anonymous by design — it is the AC-W10 scenario
-// (the pipeline never assumes auth exists), and the auth demonstrations arrive with deliverables #9/#10.
 builder.AddCloudstrapWebApi();
 builder.Services.AddSingleton<InMemoryDoctorStore>();
+
+// #5's inbound JWT validation, demonstrated by #9: the Authority is the test identity provider the E2E
+// fixture hosts on http://127.0.0.1:5310, and Cloudstrap:JwtBearer:RequireAuthenticatedEndpoints=false
+// is the documented whole-application opt-out — the SUT stays anonymous except the one [Authorize]
+// machine endpoint. Interactive user login arrives with deliverable #10.
+builder.AddCloudstrapJwtBearer();
+
+// Machine-to-machine tokens (deliverable #9 demo): with Cloudstrap:HttpClients:SelfApi flagged
+// AddClientAccessToken, this one call makes the SelfApi client transparently carry a cached, renewed
+// bearer token acquired from the test identity provider — no other consumer change.
+builder.Services.AddCloudstrapClientCredentials();
 
 // A typed client driven by Cloudstrap:HttpClients:SelfApi — config-bound base address and timeout, the
 // correlation handler in its pipeline, and a readiness check probing the peer's /healthz. It calls back

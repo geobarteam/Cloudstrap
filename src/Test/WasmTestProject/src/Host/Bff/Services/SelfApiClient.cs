@@ -36,5 +36,19 @@ namespace Cloudstrap.WasmTestProject.Host.Bff.Services
 
             return correlation?.CorrelationId ?? string.Empty;
         }
+
+        /// <inheritdoc/>
+        public async Task<MachineStatusDto> GetMachineStatusAsync(CancellationToken cancellationToken)
+        {
+            using HttpResponseMessage response = await _client.GetAsync(
+                new Uri("api/v1/machine/status", UriKind.Relative),
+                cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            MachineStatusDto? status =
+                await response.Content.ReadFromJsonAsync<MachineStatusDto>(cancellationToken);
+
+            return status ?? new MachineStatusDto(string.Empty, string.Empty, string.Empty);
+        }
     }
 }

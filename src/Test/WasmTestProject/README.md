@@ -48,7 +48,11 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 
 - Launches the Bff host once per test run on **`http://127.0.0.1:5300`** (`--no-launch-profile`,
   same build configuration as the test assembly) and kills the process tree afterwards.
-- Set **`CLOUDSTRAP_E2E_BASEURL`** to attach to an already-running instance instead.
+  Port map: **5300** Bff · **5301–5303** second-instance tests · **5310** the test identity provider
+  (`Cloudstrap.TestIdentityProvider`, hosted by the fixture on Kestrel loopback, started before the Bff
+  and disposed after it) · **59999** the dead-port test.
+- Set **`CLOUDSTRAP_E2E_BASEURL`** to attach to an already-running instance instead — the identity
+  provider is still booted by the fixture in attach mode.
 - Captures the SUT's stdout/stderr (`E2eFixture.CapturedSutOutput`) so tests can assert on
   console telemetry (OpenTelemetry Console exporter output).
 - The Bff runs in **`AzureMonitor`** mode against a syntactically valid but unreachable connection
@@ -77,6 +81,7 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 | `/healthz` + `/ready` (Cloudstrap-mapped) + `GET api/diagnostics/outbound` | Cloudstrap.Extensions (#4) | `ExtensionsTests` — typed-client outbound hop propagating the caller's correlation id, the `SelfApi-liveness` dependency check feeding readiness, and a second instance whose unreachable peer flips `/ready` to 503 while `/healthz` stays 200 |
 
 | `GET api/v1/status` + `api/v2/status` · `/openapi/v{n}.json` · `/scalar` · `GET api/v1/status/boom` | Cloudstrap.WebApi (#5) | `WebApiTests` — versioned endpoints reporting `api-supported-versions`, one OpenAPI document per version with the unversioned controllers assigned the default version, the hardened problem-details error response with the caller's correlation id, the Scalar shell listing both documents, and the constant security headers on API and probe alike; `ScalarPageTests` — the reference UI loads in headless Chromium |
+| `GET api/v1/machine/call` + `api/v1/machine/status` | Cloudstrap.Authentication.ClientCredentials (#9) + the test identity provider (D-5) | `ClientCredentialsTests` — the flagged `SelfApi` client transparently carries a bearer token issued by the loopback IdP into the one `[Authorize]` endpoint (#5 validates it against the IdP's real discovery document), the direct unauthenticated call gets 401, and two round trips reuse one cached token |
 
 *(Extended by every deliverable — see `_plans/ROADMAP.md`.)*
 
@@ -86,9 +91,11 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
   on its documented hook points: `BeforeRouting` carries `UseBlazorFrameworkFiles()` + `UseStaticFiles()`,
   and `ConfigureEndpoints` carries `MapFallbackToFile("index.html")`. The WASM app, the API, the probes and
   the SPA fallback all stay reachable — `HomePageTests` is the proof that the static-file branch survived.
-- **The SUT is anonymous by design.** It deliberately never calls `AddCloudstrapJwtBearer`, which is exactly
-  the AC-W10 scenario: the pipeline must not assume authentication exists. Auth demonstrations arrive with
-  deliverables #9/#10, which bring an identity provider to demonstrate against.
+- **The SUT stays effectively anonymous.** Since deliverable #9 the Bff *does* call `AddCloudstrapJwtBearer`,
+  but with `Cloudstrap:JwtBearer:RequireAuthenticatedEndpoints: false` — #5's documented whole-application
+  opt-out — so the 28 pre-#9 anonymous tests still exercise the AC-W10 posture unchanged. Exactly one
+  endpoint (`api/v1/machine/status`) opts back in with `[Authorize]`. Interactive user login arrives with
+  deliverable #10.
 - **`Cloudstrap:WebApi:ExceptionHandling:IncludeDetails` is pinned to `false`** in `appsettings.json`. The
   E2E suite runs in `Development`, where the unset default would include exception detail; pinning it makes
   the *hardened* shape the one assertable here. `Error_WithIncludeDetailsEnabled_ReturnsTheExceptionDetail`
@@ -99,3 +106,18 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 - **Each status version lives on its own controller**, so URL-segment versioning gives each one its own
   endpoint and `api-supported-versions` reports that endpoint's version alone. That both versions exist is
   proven by the v2 payload and by the two OpenAPI documents.
+
+### Harness notes for deliverable #9
+
+- **The Bff acquires machine tokens from the fixture-hosted identity provider on `http://127.0.0.1:5310`.**
+  `Cloudstrap:HttpClients:SelfApi:AddClientAccessToken: true` plus `AddCloudstrapClientCredentials()` is the
+  whole conversion — the `SelfApi` outbound hop now carries a bearer token everywhere, including to the
+  anonymous endpoints the pre-#9 tests exercise (which simply ignore it). The `SelfApi-liveness` readiness
+  probe client gets no token, by construction.
+- **The configured `ClientSecret` is an obvious placeholder** (`local-e2e-placeholder-secret`) for the
+  local-only test IdP, and only for it — real secrets belong in KeyVault, environment variables or
+  user-secrets, never `appsettings.json`.
+- **A manual `dotnet run` of the Bff without the IdP still boots** — token acquisition and the bearer's
+  metadata retrieval are both lazy, so `/healthz` answers while `api/v1/machine/call` fails loudly naming
+  the token endpoint until something listens on 5310. Second-instance startup-scenario tests likewise never
+  need the IdP to be reachable.
