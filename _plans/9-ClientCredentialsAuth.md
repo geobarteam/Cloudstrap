@@ -313,13 +313,13 @@ the seam #9 fills now and #10 fills next; review the two interfaces against the 
 verbatim (method names and signatures carried over unchanged, only multiplicity changed) and the wiring against
 the 8-row matrix row by row.
 
-- [ ] Behavioral verification: test exe output shows the four new matrix cases green (two separate providers →
+- [x] Behavioral verification: test exe output shows the four new matrix cases green (two separate providers →
   both handlers user-first; each one-present/one-missing case naming only the missing flag and its package; both
   missing → the aggregated message) plus the seven pre-existing seam behaviors unchanged.
-- [ ] Code review: `git diff` on `src/Cloudstrap.Extensions/` is confined to the seam files listed in Scope
+- [x] Code review: `git diff` on `src/Cloudstrap.Extensions/` is confined to the seam files listed in Scope
   (no other Extensions surface touched); the split test doubles are genuinely independent types; the
   `PackageSurfaceTests` guard now pins exactly the two interfaces; XML docs carry the full seam contract.
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate
 
 ---
 
@@ -329,7 +329,7 @@ the 8-row matrix row by row.
 
 ## Step 2 — A test boots a real OpenID Connect server in-process and obtains a signed client-credentials token from its real discovery document (D-5)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Directory.Packages.props` *(modify)* — pin `OpenIddict.Server.AspNetCore` 7.6.0,
@@ -408,7 +408,7 @@ deliverable)*.
 
 ## Step 3 — The identity provider is a controllable test double: claims are configuration data, the token lifetime is short and exact, bad credentials fail standards-shaped, and it serves real HTTP for the E2E fixture
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/TestIdentityProvider/Cloudstrap.TestIdentityProvider/` *(modify — claim shaping, lifetime wiring,
