@@ -54,6 +54,31 @@ namespace Cloudstrap.TestIdentityProvider
                     descriptor.Permissions.Add(Permissions.Prefixes.Scope + scopeName);
                 }
 
+                // A client with no redirect URIs keeps exactly the client-credentials-only permission
+                // set above; registered redirect URIs make it an interactive code-flow client with
+                // auto-consent and a PKCE requirement (no per-client opt-out exists).
+                if (client.RedirectUris.Count > 0)
+                {
+                    descriptor.ConsentType = ConsentTypes.Implicit;
+                    descriptor.Permissions.Add(Permissions.Endpoints.Authorization);
+                    descriptor.Permissions.Add(Permissions.Endpoints.EndSession);
+                    descriptor.Permissions.Add(Permissions.GrantTypes.AuthorizationCode);
+                    descriptor.Permissions.Add(Permissions.GrantTypes.RefreshToken);
+                    descriptor.Permissions.Add(Permissions.ResponseTypes.Code);
+                    descriptor.Permissions.Add(Permissions.Scopes.Profile);
+                    descriptor.Requirements.Add(Requirements.Features.ProofKeyForCodeExchange);
+
+                    foreach (Uri redirectUri in client.RedirectUris)
+                    {
+                        descriptor.RedirectUris.Add(redirectUri);
+                    }
+
+                    foreach (Uri postLogoutRedirectUri in client.PostLogoutRedirectUris)
+                    {
+                        descriptor.PostLogoutRedirectUris.Add(postLogoutRedirectUri);
+                    }
+                }
+
                 await applicationManager.CreateAsync(descriptor, cancellationToken);
             }
         }

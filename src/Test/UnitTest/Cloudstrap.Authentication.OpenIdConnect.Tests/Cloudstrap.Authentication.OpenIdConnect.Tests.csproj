@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Cloudstrap.Authentication.OpenIdConnect\Cloudstrap.Authentication.OpenIdConnect.csproj" />
+    <!-- Test-only, for the AC-CC13 re-proof with two real providers — never a package dependency -->
+    <ProjectReference Include="..\..\..\Cloudstrap.Authentication.ClientCredentials\Cloudstrap.Authentication.ClientCredentials.csproj" />
+    <!-- Test-only, for the AC-OIDC9 coexistence host (#5's AddCloudstrapJwtBearer) — never a package dependency -->
+    <ProjectReference Include="..\..\..\Cloudstrap.WebApi\Cloudstrap.WebApi.csproj" />
+    <!-- Test-only, for the AC-OIDC7 four-channel hygiene sweep (#2's pipeline + the in-memory exporter) -->
+    <ProjectReference Include="..\..\..\Cloudstrap.Observability\Cloudstrap.Observability.csproj" />
+    <ProjectReference Include="..\..\TestIdentityProvider\Cloudstrap.TestIdentityProvider\Cloudstrap.TestIdentityProvider.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <PackageReference Include="OpenTelemetry.Exporter.InMemory" />
+  </ItemGroup>
+
+</Project>

@@ -4,6 +4,7 @@ namespace Cloudstrap.WasmTestProject.Host.Bff.Controllers
     using Asp.Versioning;
     using Cloudstrap.WasmTestProject.Contracts;
     using Cloudstrap.WasmTestProject.Host.Bff.Services;
+    using Microsoft.AspNetCore.Authentication.JwtBearer;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
 
@@ -21,19 +22,21 @@ namespace Cloudstrap.WasmTestProject.Host.Bff.Controllers
     public sealed class MachineController(ISelfApiClient selfApiClient) : ControllerBase
     {
         /// <summary>
-        /// Echoes the validated machine caller's claims. Reachable only with a bearer token the test
-        /// identity provider issued — the <c>[Authorize]</c> here is the single opt-in next to
-        /// <c>RequireAuthenticatedEndpoints=false</c>.
+        /// Echoes the validated caller's claims. Reachable only with a bearer token the test identity
+        /// provider issued. Pinned to the <c>Bearer</c> scheme — the documented per-endpoint override
+        /// (#10's AC-OIDC9) — so a tokenless call keeps answering 401 instead of redirecting to a
+        /// login page now that a cookie/OIDC default scheme exists.
         /// </summary>
         /// <returns>The caller's identity claims.</returns>
         [HttpGet("status")]
-        [Authorize]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public ActionResult<MachineStatusDto> GetStatus()
         {
             return Ok(new MachineStatusDto(
                 User.FindFirstValue("client_id") ?? string.Empty,
                 User.FindFirstValue("iss") ?? string.Empty,
-                User.FindFirstValue("scope") ?? string.Empty));
+                User.FindFirstValue("scope") ?? string.Empty,
+                User.FindFirstValue("sub") ?? string.Empty));
         }
 
         /// <summary>

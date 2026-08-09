@@ -97,6 +97,12 @@ acquired and cached separately. `SignInScheme` and `ChallengeScheme` are user-to
 client-credentials request they are ignored, with one warning naming the key —
 interactive user tokens are `Cloudstrap.Authentication.OpenIdConnect`'s job.
 
+A client may set **both** `AddUserAccessToken` and `AddClientAccessToken`. The user-token handler
+runs first, and this handler **leaves an `Authorization` header another handler already set alone** —
+so on a both-flagged client the signed-in **user's** token is the one that reaches the peer, and no
+machine token is acquired for that request. The machine token applies only where no user token was
+attached.
+
 ## Direct access to the token
 
 The Duende client this package registers is named `cloudstrap`

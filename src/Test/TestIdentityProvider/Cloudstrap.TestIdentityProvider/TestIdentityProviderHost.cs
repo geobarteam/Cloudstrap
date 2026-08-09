@@ -16,12 +16,14 @@ namespace Cloudstrap.TestIdentityProvider
         private readonly IHost _host;
         private readonly TestServer? _testServer;
         private readonly Counter _counter;
+        private readonly TestIdentityProviderCounters _interactiveCounters;
 
         private TestIdentityProviderHost(IHost host, TestServer? testServer, Uri baseAddress, Counter counter)
         {
             _host = host;
             _testServer = testServer;
             _counter = counter;
+            _interactiveCounters = host.Services.GetRequiredService<TestIdentityProviderCounters>();
             BaseAddress = baseAddress;
             TokenEndpoint = new Uri(baseAddress, "connect/token");
         }
@@ -52,20 +54,47 @@ namespace Cloudstrap.TestIdentityProvider
         public int TokenRequestCount => Volatile.Read(ref _counter.Value);
 
         /// <summary>
+        /// Gets the number of requests the authorization endpoint has received.
+        /// </summary>
+        /// <value>The authorization request count.</value>
+        public int AuthorizeRequestCount => _interactiveCounters.AuthorizeRequestCount;
+
+        /// <summary>
+        /// Gets the number of refresh-token grant requests the token endpoint has received — the
+        /// counter transparent-renewal tests assert against.
+        /// </summary>
+        /// <value>The refresh-token grant request count.</value>
+        public int RefreshTokenRequestCount => _interactiveCounters.RefreshTokenRequestCount;
+
+        /// <summary>
         /// Starts an identity provider fully in-process on TestHost: real discovery, JWKS and token
         /// issuance with no sockets, reachable through <see cref="CreateHandler"/> and
         /// <see cref="CreateClient"/>.
         /// </summary>
         /// <param name="configure">An optional delegate configuring <see cref="TestIdentityProviderOptions"/>.</param>
+        /// <param name="baseAddress">
+        /// An optional explicit base address. It becomes the TestServer base address and — unless the
+        /// options configure one — the advertised issuer, so a fixture routing requests by authority
+        /// can give the provider an unambiguous identity such as <c>https://idp.example.com/</c>.
+        /// </param>
         /// <returns>The running host.</returns>
-        public static TestIdentityProviderHost StartInProcess(Action<TestIdentityProviderOptions>? configure = null)
+        public static TestIdentityProviderHost StartInProcess(
+            Action<TestIdentityProviderOptions>? configure = null,
+            Uri? baseAddress = null)
         {
             Counter counter = new();
             IHost host = new HostBuilder()
                 .ConfigureWebHost(webHost =>
                 {
                     webHost.UseTestServer();
-                    ConfigureIdentityProviderHost(webHost, counter, configure);
+                    ConfigureIdentityProviderHost(webHost, counter, options =>
+                    {
+                        configure?.Invoke(options);
+                        if (baseAddress is not null)
+                        {
+                            options.Issuer ??= baseAddress;
+                        }
+                    });
                 })
                 .Build();
 
@@ -73,6 +102,10 @@ namespace Cloudstrap.TestIdentityProvider
             {
                 host.Start();
                 TestServer testServer = host.GetTestServer();
+                if (baseAddress is not null)
+                {
+                    testServer.BaseAddress = baseAddress;
+                }
 
                 return new TestIdentityProviderHost(host, testServer, testServer.BaseAddress, counter);
             }

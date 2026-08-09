@@ -45,6 +45,16 @@
     <!-- Apache-2.0 (Duende FOSS) — machine-to-machine token acquisition, caching and renewal; the
          suite's first auth-stack runtime dependency (Cloudstrap.Authentication.ClientCredentials) -->
     <PackageVersion Include="Duende.AccessTokenManagement" Version="4.2.0" />
+    <!-- Apache-2.0 (Duende FOSS) — the OIDC/user-token half of the same library and version:
+         transparent user-token refresh for Cloudstrap.Authentication.OpenIdConnect (deliverable #10).
+         Version verified current on nuget.org at pin time (2026-08-08). -->
+    <PackageVersion Include="Duende.AccessTokenManagement.OpenIdConnect" Version="4.2.0" />
+    <!-- MIT (dotnet) — the stock interactive OIDC protocol handler, pinned to the repo's 10.0.x family
+         (transitive of Duende.AccessTokenManagement.OpenIdConnect, which requires >= 10.0.4).
+         ⚠️ Its Microsoft.IdentityModel.Protocols.OpenIdConnect dependency must stay >= 8.0.1 < 9.0.0 —
+         the same Microsoft.IdentityModel 8.x family constraint #9 recorded for
+         System.IdentityModel.Tokens.Jwt; a future 9.x pin breaks restore. -->
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.10" />
   </ItemGroup>
   <ItemGroup>
     <!-- MIT (dotnet org) — the .NET API versioning standard, one release train -->

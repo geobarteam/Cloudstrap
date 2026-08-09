@@ -35,5 +35,25 @@ namespace Cloudstrap.TestIdentityProvider
             get;
         } =
             new Dictionary<string, IList<string>>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Gets the claims added only to id tokens issued through the interactive flows.
+        /// </summary>
+        /// <value>Claim values by claim type. Empty by default.</value>
+        public IDictionary<string, IList<string>> IdToken
+        {
+            get;
+        } =
+            new Dictionary<string, IList<string>>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Gets the claims returned by the userinfo endpoint for tokens issued to this client.
+        /// </summary>
+        /// <value>Claim values by claim type. Empty by default.</value>
+        public IDictionary<string, IList<string>> UserInfo
+        {
+            get;
+        } =
+            new Dictionary<string, IList<string>>(StringComparer.Ordinal);
     }
 }

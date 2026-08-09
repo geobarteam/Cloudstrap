@@ -1,4 +1,5 @@
 using Cloudstrap.Authentication.ClientCredentials;
+using Cloudstrap.Authentication.OpenIdConnect;
 using Cloudstrap.Core;
 using Cloudstrap.Extensions;
 using Cloudstrap.Observability;
@@ -34,8 +35,8 @@ builder.Services.AddSingleton<InMemoryDoctorStore>();
 
 // #5's inbound JWT validation, demonstrated by #9: the Authority is the test identity provider the E2E
 // fixture hosts on http://127.0.0.1:5310, and Cloudstrap:JwtBearer:RequireAuthenticatedEndpoints=false
-// is the documented whole-application opt-out — the SUT stays anonymous except the one [Authorize]
-// machine endpoint. Interactive user login arrives with deliverable #10.
+// is the documented whole-application opt-out — the SUT stays anonymous except the endpoints that opt
+// back in with [Authorize].
 builder.AddCloudstrapJwtBearer();
 
 // Machine-to-machine tokens (deliverable #9 demo): with Cloudstrap:HttpClients:SelfApi flagged
@@ -43,10 +44,20 @@ builder.AddCloudstrapJwtBearer();
 // bearer token acquired from the test identity provider — no other consumer change.
 builder.Services.AddCloudstrapClientCredentials();
 
+// Interactive user login (deliverable #10 demo): one call registers the hardened cookie session and
+// the auth-code + PKCE challenge against the same test identity provider, coexisting with the JWT
+// bearer scheme above (bearer callers still get 401s, browsers get a login page). The WASM
+// auth-state UI arrives with deliverable #13.
+builder.Services.AddCloudstrapOpenIdConnect();
+
 // A typed client driven by Cloudstrap:HttpClients:SelfApi — config-bound base address and timeout, the
 // correlation handler in its pipeline, and a readiness check probing the peer's /healthz. It calls back
 // into this same app, so one process demonstrates a real outbound hop (deliverable #4 demo).
 builder.Services.AddCloudstrapHttpServiceClient<ISelfApiClient, SelfApiClient>("SelfApi");
+
+// The #10 user-token demo client: flagged both AddUserAccessToken and AddClientAccessToken — the
+// signed-in user's token is the one that reaches the peer (AC-CC13 live in the running app).
+builder.Services.AddCloudstrapHttpServiceClient<IUserApiClient, UserApiClient>("UserApi");
 builder.Services.AddHealthChecks()
     .AddCheck(
         "self",
@@ -62,7 +73,13 @@ WebApplication app = builder.Build();
 app.UseCloudstrapWebApi(pipeline =>
 {
     pipeline.BeforeRouting = branch => branch.UseBlazorFrameworkFiles().UseStaticFiles();
-    pipeline.ConfigureEndpoints = endpoints => endpoints.MapFallbackToFile("index.html");
+    pipeline.ConfigureEndpoints = endpoints =>
+    {
+        // The #10 opt-in login/logout endpoints (D-5), mapped before the SPA fallback so the
+        // explicit routes win.
+        endpoints.MapCloudstrapAuthenticationEndpoints();
+        endpoints.MapFallbackToFile("index.html");
+    };
 });
 
 await app.RunAsync();

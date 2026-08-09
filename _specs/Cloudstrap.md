@@ -184,7 +184,7 @@ The OTel pipeline in `Common/DistributedTracing/ServiceCollectionExtensions.cs` 
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-A1 | OIDC configured against any standards-compliant IdP (test: Keycloak container) | User signs in | Auth code + PKCE flow completes; tokens managed/refreshed by Duende ATM. |
+| AC-A1 | OIDC configured against any standards-compliant IdP (test: the in-repo `Cloudstrap.TestIdentityProvider` — extended with interactive flows by deliverable #10, D-4; third-party-IdP verification is a documented manual procedure) | User signs in | Auth code + PKCE flow completes; tokens managed/refreshed by Duende ATM. |
 | AC-A2 | Client-credentials HttpClient registered | Two calls 1 h apart with 5-min token lifetime | Token transparently renewed; no 401s. |
 | AC-A3 | Solution searched for `Nihdi.AspNetCore` | — | Zero references. |
 

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>Interactive OpenID Connect login on the stock ASP.NET Core handlers and Duende AccessTokenManagement: one call for authorization-code + PKCE sign-in against any standards-compliant identity provider, a hardened __Host-Cloudstrap session cookie, transparent user-token refresh, and the signed-in user's token on every flagged Cloudstrap typed HttpClient.</Description>
+    <PackageTags>$(PackageTags);oidc;openid-connect;authentication;login;cookie;pkce;duende</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
+    <ProjectReference Include="..\Cloudstrap.Extensions\Cloudstrap.Extensions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Duende.AccessTokenManagement.OpenIdConnect" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cloudstrap.Authentication.OpenIdConnect.Tests" />
+  </ItemGroup>
+
+</Project>

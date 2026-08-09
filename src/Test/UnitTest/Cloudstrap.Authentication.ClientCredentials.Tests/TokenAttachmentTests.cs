@@ -80,6 +80,38 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
         }
 
         [Test]
+        public async Task PreSetAuthorizationHeader_SurvivesTheClientCredentialsHandler()
+        {
+            // Arrange
+            using TestIdentityProviderHost identityProvider = ClientCredentialsTestHost.StartIdentityProvider();
+            HostApplicationBuilder builder = ClientCredentialsTestHost.CreateBuilder(
+                ClientCredentialsTestHost.DefaultConfig(identityProvider));
+            CapturingPrimaryHandler capturing = new();
+            builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
+                .ConfigurePrimaryHttpMessageHandler(() => capturing);
+            builder.Services.AddCloudstrapClientCredentials(ClientCredentialsTestHost.BackchannelTo(identityProvider));
+
+            using IHost host = builder.Build();
+            host.Start();
+            ICatalogClient client = host.Services.GetRequiredService<ICatalogClient>();
+
+            // Act — an Authorization header another handler already set (the user-token handler, when a
+            // client is flagged for both token kinds) must reach the peer untouched
+            using HttpRequestMessage request = new(HttpMethod.Get, new Uri("orders", UriKind.Relative));
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "placeholder-pre-set-user-token");
+            using HttpResponseMessage response = await client.Client.SendAsync(request);
+
+            // Assert — the pre-set header survives and no machine token is acquired for the request
+            Assert.Multiple(() =>
+            {
+                Assert.That(
+                    capturing.LastRequest!.Headers.Authorization!.Parameter,
+                    Is.EqualTo("placeholder-pre-set-user-token"));
+                Assert.That(identityProvider.TokenRequestCount, Is.Zero);
+            });
+        }
+
+        [Test]
         public async Task FlaggedClient_StillCarriesTheCorrelationHeader()
         {
             // Arrange

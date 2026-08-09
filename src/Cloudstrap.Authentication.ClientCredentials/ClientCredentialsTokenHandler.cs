@@ -12,12 +12,20 @@ namespace Cloudstrap.Authentication.ClientCredentials
     /// returning the response to the caller.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Acquisition, caching and renewal are entirely Duende's
     /// <see cref="IClientCredentialsTokenManager"/>; this handler only attaches the result and applies
     /// the single-retry-on-401 semantics Duende AccessTokenManagement v4 documents for its own composed
     /// pipeline (its <c>AccessTokenRequestHandler</c> plus default access-token resiliency — a
     /// composition the one-handler <c>IClientAccessTokenHandlerProvider</c> seam hosts as one piece).
     /// A failed acquisition throws — an unauthenticated request is never sent in its place.
+    /// </para>
+    /// <para>
+    /// An <c>Authorization</c> header another handler already set is left alone: on a client flagged
+    /// for both token kinds the user-token handler runs first, and "user first" means the
+    /// <em>user's</em> token is the one that reaches the peer (AC-CC13). No machine token is acquired
+    /// for such a request.
+    /// </para>
     /// </remarks>
     internal sealed class ClientCredentialsTokenHandler : DelegatingHandler
     {
@@ -51,6 +59,13 @@ namespace Cloudstrap.Authentication.ClientCredentials
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
+
+            if (request.Headers.Authorization is not null)
+            {
+                // Another handler — the user-token handler, on a client flagged for both token
+                // kinds — already authenticated this request; its header must arrive untouched.
+                return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            }
 
             HttpResponseMessage response =
                 await SendWithTokenAsync(request, _parameters, cancellationToken).ConfigureAwait(false);

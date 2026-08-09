@@ -82,6 +82,7 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 
 | `GET api/v1/status` + `api/v2/status` · `/openapi/v{n}.json` · `/scalar` · `GET api/v1/status/boom` | Cloudstrap.WebApi (#5) | `WebApiTests` — versioned endpoints reporting `api-supported-versions`, one OpenAPI document per version with the unversioned controllers assigned the default version, the hardened problem-details error response with the caller's correlation id, the Scalar shell listing both documents, and the constant security headers on API and probe alike; `ScalarPageTests` — the reference UI loads in headless Chromium |
 | `GET api/v1/machine/call` + `api/v1/machine/status` | Cloudstrap.Authentication.ClientCredentials (#9) + the test identity provider (D-5) | `ClientCredentialsTests` — the flagged `SelfApi` client transparently carries a bearer token issued by the loopback IdP into the one `[Authorize]` endpoint (#5 validates it against the IdP's real discovery document), the direct unauthenticated call gets 401, and two round trips reuse one cached token |
+| `/account/login` + `/account/logout` + `GET api/v1/user/whoami` + `api/v1/user/call` | Cloudstrap.Authentication.OpenIdConnect (#10) + the test identity provider's interactive flows (D-4) | `OpenIdConnectTests` — a real Chromium signs in at the loopback IdP through auth-code + PKCE, the hardened `__Host-Cloudstrap` cookie is inspected in the browser, the user-flagged `UserApi` client calls the protected API *as that user*, logout ends both sessions, and the anonymous browser is challenged while the machine endpoint still answers 401 |
 
 *(Extended by every deliverable — see `_plans/ROADMAP.md`.)*
 
@@ -93,9 +94,9 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
   the SPA fallback all stay reachable — `HomePageTests` is the proof that the static-file branch survived.
 - **The SUT stays effectively anonymous.** Since deliverable #9 the Bff *does* call `AddCloudstrapJwtBearer`,
   but with `Cloudstrap:JwtBearer:RequireAuthenticatedEndpoints: false` — #5's documented whole-application
-  opt-out — so the 28 pre-#9 anonymous tests still exercise the AC-W10 posture unchanged. Exactly one
-  endpoint (`api/v1/machine/status`) opts back in with `[Authorize]`. Interactive user login arrives with
-  deliverable #10.
+  opt-out — so the 28 pre-#9 anonymous tests still exercise the AC-W10 posture unchanged. Only the
+  machine endpoint (`api/v1/machine/status`, #9) and the user endpoints (`api/v1/user/*`, #10) opt back
+  in with `[Authorize]`.
 - **`Cloudstrap:WebApi:ExceptionHandling:IncludeDetails` is pinned to `false`** in `appsettings.json`. The
   E2E suite runs in `Development`, where the unset default would include exception detail; pinning it makes
   the *hardened* shape the one assertable here. `Error_WithIncludeDetailsEnabled_ReturnsTheExceptionDetail`
@@ -121,3 +122,27 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
   metadata retrieval are both lazy, so `/healthz` answers while `api/v1/machine/call` fails loudly naming
   the token endpoint until something listens on 5310. Second-instance startup-scenario tests likewise never
   need the IdP to be reachable.
+
+### Harness notes for deliverable #10
+
+- **Interactive login is one call plus configuration.** `AddCloudstrapOpenIdConnect()` +
+  `Cloudstrap:OpenIdConnect` (client `wasmtestproject-web` at the same loopback IdP — no new port) and
+  `MapCloudstrapAuthenticationEndpoints()` in the `ConfigureEndpoints` hook, mapped before the SPA
+  fallback so the explicit routes win.
+- **`Cloudstrap:OpenIdConnect:RequireAuthenticatedEndpoints: false`** is D-6's documented
+  whole-application opt-out: the 31 pre-#10 anonymous E2E tests keep exercising their posture unchanged,
+  and the two `api/v1/user/*` endpoints opt back in with `[Authorize]` (cookie scheme). The **cookie
+  settings stay at their D-1 defaults on purpose** — the E2E run is the proof that `__Host-`/`Secure`
+  cookies work in Chromium on the trustworthy loopback origin, over plain `http://127.0.0.1:5300`.
+- **`api/v1/machine/status` is now pinned to the `Bearer` scheme**
+  (`[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]`) — the documented
+  per-endpoint override. With a cookie/OIDC default scheme in the host, the pin keeps the #9 contract
+  intact: a tokenless call answers **401**, never a login redirect. The #9 test file itself is untouched.
+- **The `UserApi` client demonstrates AC-CC13 live**: flagged **both** `AddUserAccessToken` and
+  `AddClientAccessToken` at the same base address as `SelfApi` — the signed-in user's token is the one
+  that reaches the protected endpoint (its `subject` is the test user, its `clientId` the web client).
+  `SelfApi` keeps its machine-only flag, so the anonymous diagnostics hops are undisturbed.
+- **The `ClientSecret` is an obvious placeholder** (`local-e2e-placeholder-secret-web`) for the
+  local-only test IdP — the same rule as #9's.
+- **A manual `dotnet run` without the IdP still boots** — OIDC metadata retrieval is lazy, so `/healthz`
+  answers while `/account/login` fails loudly naming the authority until something listens on 5310.

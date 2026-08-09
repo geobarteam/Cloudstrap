@@ -16,6 +16,14 @@ namespace Cloudstrap.TestIdentityProvider
         public TimeSpan AccessTokenLifetime { get; set; } = TimeSpan.FromMinutes(5);
 
         /// <summary>
+        /// Gets or sets the lifetime of issued refresh tokens.
+        /// </summary>
+        /// <value>
+        /// The lifetime. Defaults to 30 minutes — short; renewal-expiry tests shorten it further.
+        /// </value>
+        public TimeSpan RefreshTokenLifetime { get; set; } = TimeSpan.FromMinutes(30);
+
+        /// <summary>
         /// Gets or sets the issuer advertised in the discovery document and stamped into issued tokens.
         /// </summary>
         /// <value>
@@ -32,5 +40,14 @@ namespace Cloudstrap.TestIdentityProvider
         /// </summary>
         /// <value>The configured clients. Empty by default.</value>
         public IList<TestIdentityProviderClient> Clients { get; } = [];
+
+        /// <summary>
+        /// Gets the users the provider can sign in interactively through its minimal login form.
+        /// Configuring at least one user — or one client with redirect URIs — enables the
+        /// authorization-code (PKCE-required) and refresh-token grants next to the always-on
+        /// client-credentials grant.
+        /// </summary>
+        /// <value>The configured users. Empty by default.</value>
+        public IList<TestIdentityProviderUser> Users { get; } = [];
     }
 }

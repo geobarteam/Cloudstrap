@@ -7,12 +7,19 @@ namespace Cloudstrap.TestIdentityProvider
     using OpenIddict.Server;
 
     /// <summary>
-    /// Registers the test identity provider: a real OpenIddict server supporting exactly the
-    /// client-credentials grant, backed by a per-instance in-memory SQLite store, signing with an
-    /// ephemeral per-process key and issuing unencrypted (validatable) JWT access tokens.
+    /// Registers the test identity provider: a real OpenIddict server supporting the
+    /// client-credentials grant — plus, when interactive users or redirect URIs are configured, the
+    /// authorization-code (PKCE-required) and refresh-token grants — backed by a per-instance
+    /// in-memory SQLite store, signing with an ephemeral per-process key and issuing unencrypted
+    /// (validatable) JWT access tokens.
     /// </summary>
     public static class ServiceCollectionExtensions
     {
+        /// <summary>
+        /// The cookie authentication scheme holding the interactive login session at the provider.
+        /// </summary>
+        internal const string SessionAuthenticationScheme = "TestIdentityProviderSession";
+
         /// <summary>
         /// Adds the test identity provider services to the dependency injection container.
         /// </summary>
@@ -67,9 +74,20 @@ namespace Cloudstrap.TestIdentityProvider
                     server.DisableAccessTokenEncryption();
                     server.UseAspNetCore()
                         .EnableTokenEndpointPassthrough()
+                        .EnableAuthorizationEndpointPassthrough()
+                        .EnableUserInfoEndpointPassthrough()
+                        .EnableEndSessionEndpointPassthrough()
                         .DisableTransportSecurityRequirement();
                 });
 
+            // The interactive grants themselves (authorization code + PKCE requirement + refresh) are
+            // enabled by TestIdentityProviderServerOptionsConfigurator only when users or redirect URIs
+            // are configured, so a client-credentials-only provider keeps exactly its original discovery
+            // document. The session cookie scheme carries the login-form session.
+            services.AddAuthentication().AddCookie(SessionAuthenticationScheme, static cookie =>
+                cookie.Cookie.Name = ".TestIdentityProvider.Session");
+
+            services.AddSingleton<TestIdentityProviderCounters>();
             services.AddSingleton<IConfigureOptions<OpenIddictServerOptions>, TestIdentityProviderServerOptionsConfigurator>();
             services.AddHostedService<TestIdentityProviderSeeder>();
 

@@ -40,6 +40,22 @@ namespace Cloudstrap.TestIdentityProvider
         public IList<string> Audiences { get; } = [];
 
         /// <summary>
+        /// Gets the redirect URIs registered for the authorization-code flow. This list is the
+        /// whitelist: an authorization request naming any other <c>redirect_uri</c> is rejected. A
+        /// client with no redirect URIs stays a client-credentials-only client with exactly its
+        /// pre-interactive permission set.
+        /// </summary>
+        /// <value>The registered redirect URIs. Empty by default.</value>
+        public IList<Uri> RedirectUris { get; } = [];
+
+        /// <summary>
+        /// Gets the post-logout redirect URIs registered for RP-initiated sign-out. This list is the
+        /// whitelist for <c>post_logout_redirect_uri</c>.
+        /// </summary>
+        /// <value>The registered post-logout redirect URIs. Empty by default.</value>
+        public IList<Uri> PostLogoutRedirectUris { get; } = [];
+
+        /// <summary>
         /// Gets the additional claims stamped into tokens issued to this client.
         /// </summary>
         /// <value>The claim sets, keyed by token kind.</value>
