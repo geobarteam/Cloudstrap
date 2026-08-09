@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\TestIdentityProvider\Cloudstrap.TestIdentityProvider\Cloudstrap.TestIdentityProvider.csproj" />
+    <ProjectReference Include="..\..\src\Host\IdentityProvider\Cloudstrap.WasmTestProject.Host.IdentityProvider.csproj" />
   </ItemGroup>
 
 </Project>

@@ -15,8 +15,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
     [TestFixture]
     public sealed class OpenIdConnectTests : PageTestBase
     {
-        private const string _username = "wasmtestproject.user";
-        private const string _password = "local-e2e-placeholder-password";
+        private const string _username = BrowserSignIn.Username;
 
         [Test]
         public async Task Login_ThroughTheBrowser_SignsTheUserInAndIssuesTheHardenedCookie()
@@ -143,14 +142,6 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
         /// Navigates to the opt-in login endpoint, fills the provider's login form, and waits for the
         /// <c>form_post</c> callback to land the browser back on the application.
         /// </summary>
-        private async Task SignInThroughBrowserAsync()
-        {
-            await Page.GotoAsync(BaseUrl + "/account/login?returnUrl=/");
-            await Page.WaitForURLAsync($"http://127.0.0.1:{E2eFixture.IdentityProviderPort}/**");
-            await Page.FillAsync("[data-testid='username']", _username);
-            await Page.FillAsync("[data-testid='password']", _password);
-            await Page.ClickAsync("[data-testid='submit']");
-            await Page.WaitForURLAsync(BaseUrl + "/**");
-        }
+        private Task SignInThroughBrowserAsync() => BrowserSignIn.SignInAsync(Page, BaseUrl);
     }
 }

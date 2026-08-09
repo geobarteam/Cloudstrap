@@ -48,7 +48,22 @@ builder.Services.AddCloudstrapClientCredentials();
 // the auth-code + PKCE challenge against the same test identity provider, coexisting with the JWT
 // bearer scheme above (bearer callers still get 401s, browsers get a login page). The WASM
 // auth-state UI arrives with deliverable #13.
-builder.Services.AddCloudstrapOpenIdConnect();
+// The configurator installs SUT-local challenge shaping (replaced by deliverable #13): callers not
+// asking for text/html (API/XHR) get a bare 401 instead of a login redirect, while browser
+// navigations keep redirecting — which is what auto-triggers login on /doctors. Only the one event
+// property is assigned; the Events object stays Cloudstrap's (its sign-out wiring must survive).
+builder.Services.AddCloudstrapOpenIdConnect(configure =>
+    configure.OpenIdConnect = oidc =>
+        oidc.Events.OnRedirectToIdentityProvider = context =>
+        {
+            if (!context.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.HandleResponse();
+            }
+
+            return Task.CompletedTask;
+        });
 
 // A typed client driven by Cloudstrap:HttpClients:SelfApi — config-bound base address and timeout, the
 // correlation handler in its pipeline, and a readiness check probing the peer's /healthz. It calls back

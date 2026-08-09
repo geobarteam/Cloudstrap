@@ -10,10 +10,13 @@
 
 @if (Doctors is null)
 {
+    @* Covers both the auth-state probe and the auto-triggered login redirect — no sign-in button. *@
     <MudProgressCircular Indeterminate="true" />
 }
 else
 {
+    <MudText Class="mb-2" data-testid="doctors-user">Signed in as @SignedInName</MudText>
+
     <MudSimpleTable Dense="true" Style="max-width: 40rem;" data-testid="doctors-grid">
         <thead>
             <tr><th>Name</th><th>Specialty</th></tr>

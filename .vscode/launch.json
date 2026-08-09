@@ -33,6 +33,31 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ASPNETCORE_URLS": "https://localhost:7200;http://127.0.0.1:5300"
       }
+    },
+    {
+      // The demo identity provider on 5310 — start it next to the Bff (or use the compound below)
+      // so sign-in works outside the E2E fixture.
+      "name": "WASM Test Project (IdP host)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-wasmtestproject-idp",
+      "program": "${workspaceFolder}/src/Test/WasmTestProject/src/Host/IdentityProvider/bin/Debug/net10.0/Cloudstrap.WasmTestProject.Host.IdentityProvider.dll",
+      "cwd": "${workspaceFolder}/src/Test/WasmTestProject/src/Host/IdentityProvider",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://127.0.0.1:5310"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      // One F5 for the full demo: the identity provider plus the Bff server.
+      "name": "WASM Test Project (full app + IdP)",
+      "configurations": [
+        "WASM Test Project (IdP host)",
+        "WASM Test Project (Bff server)"
+      ],
+      "stopAll": true
     }
   ]
 }

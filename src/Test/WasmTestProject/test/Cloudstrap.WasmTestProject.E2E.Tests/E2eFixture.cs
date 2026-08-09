@@ -2,6 +2,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
 {
     using Cloudstrap.TestIdentityProvider;
     using Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure;
+    using Cloudstrap.WasmTestProject.Host.IdentityProvider;
     using NUnit.Framework;
 
     /// <summary>
@@ -43,36 +44,12 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
             // The identity provider boots first — the Bff acquires machine tokens from it and
             // validates them against its discovery document. Booted in attach mode too. The same
             // provider serves the #9 machine client and, since deliverable #10, the interactive web
-            // client and its one neutral test user — no new port.
-            _identityProvider = TestIdentityProviderHost.StartLoopback(IdentityProviderPort, options =>
-            {
-                options.Clients.Add(new TestIdentityProviderClient
-                {
-                    ClientId = "wasmtestproject-bff",
-                    ClientSecret = "local-e2e-placeholder-secret",
-                    Scopes = { "selfapi" },
-                    Audiences = { "wasmtestproject-selfapi" },
-                });
-                options.Clients.Add(new TestIdentityProviderClient
-                {
-                    ClientId = "wasmtestproject-web",
-                    ClientSecret = "local-e2e-placeholder-secret-web",
-                    Scopes = { "selfapi" },
-                    Audiences = { "wasmtestproject-selfapi" },
-                    RedirectUris = { new Uri(DefaultBaseUrl + "/signin-oidc") },
-                    PostLogoutRedirectUris = { new Uri(DefaultBaseUrl + "/signout-callback-oidc") },
-                });
-                options.Users.Add(new TestIdentityProviderUser
-                {
-                    Username = "wasmtestproject.user",
-                    Password = "local-e2e-placeholder-password",
-                    Claims =
-                    {
-                        ["name"] = ["Wasm Test User"],
-                        ["role"] = ["tester"],
-                    },
-                });
-            });
+            // client and its one neutral test user — no new port. The seed is the demo IdP host's
+            // helper, so the two hosts can never drift apart; the fixture keeps its own loopback
+            // host for the token-request counter.
+            _identityProvider = TestIdentityProviderHost.StartLoopback(
+                IdentityProviderPort,
+                options => TestIdentityProviderSeed.Configure(options, [new Uri(DefaultBaseUrl)]));
 
             string? externalBaseUrl = Environment.GetEnvironmentVariable("CLOUDSTRAP_E2E_BASEURL");
             if (!string.IsNullOrWhiteSpace(externalBaseUrl))

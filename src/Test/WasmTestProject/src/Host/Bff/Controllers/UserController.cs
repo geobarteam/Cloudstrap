@@ -21,6 +21,20 @@ namespace Cloudstrap.WasmTestProject.Host.Bff.Controllers
     public sealed class UserController(IUserApiClient userApiClient) : ControllerBase
     {
         /// <summary>
+        /// Reports whether the caller has a signed-in cookie session — anonymous by design, always
+        /// 200, so pages can probe auth state without any console-visible 401 noise. (SUT application
+        /// code for the demo — the BFF user-info contract is deliverable #13.)
+        /// </summary>
+        /// <returns>The caller's auth state and display name.</returns>
+        [HttpGet("state")]
+        public ActionResult<UserStateDto> GetState()
+        {
+            return Ok(new UserStateDto(
+                User.Identity?.IsAuthenticated == true,
+                User.Identity?.Name ?? string.Empty));
+        }
+
+        /// <summary>
         /// Echoes the signed-in user's identity from the cookie principal. (SUT application code for
         /// the demo — the BFF user-info contract is deliverable #13.)
         /// </summary>

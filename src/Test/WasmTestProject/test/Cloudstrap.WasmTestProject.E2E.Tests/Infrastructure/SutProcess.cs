@@ -5,11 +5,15 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure
     using System.Text;
 
     /// <summary>
-    /// Runs the Bff host as a child process (<c>dotnet run --no-build</c>, so the solution must be
-    /// built first) and captures its console output for telemetry assertions.
+    /// Runs a SUT host — the Bff by default, any repo project by path — as a child process
+    /// (<c>dotnet run --no-build</c>, so the solution must be built first) and captures its console
+    /// output for telemetry assertions.
     /// </summary>
     internal sealed class SutProcess : IDisposable
     {
+        private const string _bffProjectPath =
+            "src/Test/WasmTestProject/src/Host/Bff/Cloudstrap.WasmTestProject.Host.Bff.csproj";
+
         private readonly Process _process;
         private readonly StringBuilder _output = new StringBuilder();
         private readonly object _outputLock = new object();
@@ -53,15 +57,19 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure
         }
 
         /// <summary>
-        /// Starts the Bff host bound to <paramref name="baseUrl"/>. Optional
+        /// Starts a SUT host bound to <paramref name="baseUrl"/>. Optional
         /// <paramref name="applicationArguments"/> are forwarded to the application (after
-        /// <c>--</c>), e.g. configuration overrides such as <c>--Cloudstrap:Application:SystemName=</c>.
+        /// <c>--</c>), e.g. configuration overrides such as <c>--Cloudstrap:Application:SystemName=</c>;
+        /// an optional <paramref name="projectRelativePath"/> (repo-root-relative, forward slashes)
+        /// selects a project other than the default Bff host.
         /// </summary>
-        public static SutProcess Start(string baseUrl, IReadOnlyList<string>? applicationArguments = null)
+        public static SutProcess Start(
+            string baseUrl,
+            IReadOnlyList<string>? applicationArguments = null,
+            string? projectRelativePath = null)
         {
             string projectPath = Path.Combine(
-                FindRepoRoot(), "src", "Test", "WasmTestProject", "src", "Host", "Bff",
-                "Cloudstrap.WasmTestProject.Host.Bff.csproj");
+                [FindRepoRoot(), .. (projectRelativePath ?? _bffProjectPath).Split('/')]);
             if (!File.Exists(projectPath))
             {
                 throw new FileNotFoundException($"SUT project not found at '{projectPath}'.", projectPath);

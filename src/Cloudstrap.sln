@@ -53,6 +53,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Authentication.O
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Authentication.OpenIdConnect.Tests", "Test\UnitTest\Cloudstrap.Authentication.OpenIdConnect.Tests\Cloudstrap.Authentication.OpenIdConnect.Tests.csproj", "{917AF762-C891-4850-AA67-24295A71491E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WasmTestProject", "WasmTestProject", "{24AD2C4B-15BE-4CAB-A0F2-98DDE0FD0A50}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.WasmTestProject.Host.IdentityProvider", "Test\WasmTestProject\src\Host\IdentityProvider\Cloudstrap.WasmTestProject.Host.IdentityProvider.csproj", "{D4159C72-61A3-4B13-BF88-63556DB4E327}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -315,6 +319,18 @@ Global
 		{917AF762-C891-4850-AA67-24295A71491E}.Release|x64.Build.0 = Release|Any CPU
 		{917AF762-C891-4850-AA67-24295A71491E}.Release|x86.ActiveCfg = Release|Any CPU
 		{917AF762-C891-4850-AA67-24295A71491E}.Release|x86.Build.0 = Release|Any CPU
+		{D4159C72-61A3-4B13-BF88-63556DB4E327}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4159C72-61A3-4B13-BF88-63556DB4E327}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4159C72-61A3-4B13-BF88-63556DB4E327}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D4159C72-61A3-4B13-BF88-63556DB4E327}.Debug|x64.Build.0 = Debug|Any CPU
+		{D4159C72-61A3-4B13-BF88-63556DB4E327}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D4159C72-61A3-4B13-BF88-63556DB4E327}.Debug|x86.Build.0 = Debug|Any CPU
+		{D4159C72-61A3-4B13-BF88-63556DB4E327}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4159C72-61A3-4B13-BF88-63556DB4E327}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4159C72-61A3-4B13-BF88-63556DB4E327}.Release|x64.ActiveCfg = Release|Any CPU
+		{D4159C72-61A3-4B13-BF88-63556DB4E327}.Release|x64.Build.0 = Release|Any CPU
+		{D4159C72-61A3-4B13-BF88-63556DB4E327}.Release|x86.ActiveCfg = Release|Any CPU
+		{D4159C72-61A3-4B13-BF88-63556DB4E327}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -337,6 +353,7 @@ Global
 		{CEE2CECD-2DCF-466F-B3B8-7794AD302770} = {CCD63FA8-44FC-456A-9753-BA81AE205BEA}
 		{FF67A9A4-38D2-41E5-A884-B32CA1EDBEB4} = {CCD63FA8-44FC-456A-9753-BA81AE205BEA}
 		{917AF762-C891-4850-AA67-24295A71491E} = {CCD63FA8-44FC-456A-9753-BA81AE205BEA}
+		{D4159C72-61A3-4B13-BF88-63556DB4E327} = {24AD2C4B-15BE-4CAB-A0F2-98DDE0FD0A50}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3364A037-5441-4A9F-BCA3-B176DE209723}

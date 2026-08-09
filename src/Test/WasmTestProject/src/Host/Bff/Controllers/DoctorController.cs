@@ -3,13 +3,17 @@ namespace Cloudstrap.WasmTestProject.Host.Bff.Controllers
     using Cloudstrap.Observability;
     using Cloudstrap.WasmTestProject.Contracts;
     using Cloudstrap.WasmTestProject.Host.Bff.Services;
+    using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
 
     /// <summary>
     /// The doctors API: an in-memory CRUD round-trip whose write path records an
-    /// <c>AddDoctor</c> business span (deliverable #2 demo).
+    /// <c>AddDoctor</c> business span (deliverable #2 demo). The whole feature — read and write —
+    /// requires a signed-in user on the default (cookie) scheme, the <see cref="UserController"/>
+    /// pattern; the home page is the only anonymous page.
     /// </summary>
     [ApiController]
+    [Authorize]
     [Route("api/doctor")]
     public sealed class DoctorController : ControllerBase
     {

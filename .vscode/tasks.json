@@ -13,6 +13,17 @@
       "group": "build"
     },
     {
+      "label": "build-wasmtestproject-idp",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/Test/WasmTestProject/src/Host/IdentityProvider/Cloudstrap.WasmTestProject.Host.IdentityProvider.csproj"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
       "label": "build-solution",
       "type": "process",
       "command": "dotnet",

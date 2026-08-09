@@ -16,17 +16,27 @@ src/
 ├── Presentation/    Cloudstrap.WasmTestProject.Presentation     Razor Class Library (MudBlazor pages)
 └── Host/
     ├── Wasm/        Cloudstrap.WasmTestProject.Host.Wasm        Blazor WebAssembly client
-    └── Bff/         Cloudstrap.WasmTestProject.Host.Bff         ASP.NET Core server: serves the WASM app + API
+    ├── Bff/         Cloudstrap.WasmTestProject.Host.Bff         ASP.NET Core server: serves the WASM app + API
+    └── IdentityProvider/  Cloudstrap.WasmTestProject.Host.IdentityProvider  Demo IdP host (seeded test IdP on 5310)
 test/
 └── Cloudstrap.WasmTestProject.E2E.Tests                         NUnit 4 + Microsoft.Playwright (MTP executable)
 ```
 
 ## Running the app manually
 
+The full demo needs two processes — the identity provider first, then the Bff. In VS Code that is
+one F5: the compound launch configuration **"WASM Test Project (full app + IdP)"** (stopping the
+session stops both). In a terminal:
+
 ```powershell
-dotnet run --project src/Test/WasmTestProject/src/Host/Bff            # http profile: http://127.0.0.1:5300
-dotnet run --project src/Test/WasmTestProject/src/Host/Bff -lp https  # https://localhost:7200
+dotnet run --project src/Test/WasmTestProject/src/Host/IdentityProvider  # the demo IdP: http://127.0.0.1:5310
+dotnet run --project src/Test/WasmTestProject/src/Host/Bff               # http profile: http://127.0.0.1:5300
+dotnet run --project src/Test/WasmTestProject/src/Host/Bff -lp https     # https://localhost:7200
 ```
+
+Then browse `/doctors` — login is auto-triggered at the IdP; sign in as `wasmtestproject.user` /
+`local-e2e-placeholder-password`. The Bff alone still boots and serves every anonymous page, but
+any sign-in (and therefore `/doctors`) needs the IdP process.
 
 ## Running the E2E tests
 
@@ -48,9 +58,10 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 
 - Launches the Bff host once per test run on **`http://127.0.0.1:5300`** (`--no-launch-profile`,
   same build configuration as the test assembly) and kills the process tree afterwards.
-  Port map: **5300** Bff · **5301–5303** second-instance tests · **5310** the test identity provider
+  Port map: **5300** Bff · **5301–5304** second-instance tests · **5310** the test identity provider
   (`Cloudstrap.TestIdentityProvider`, hosted by the fixture on Kestrel loopback, started before the Bff
-  and disposed after it) · **59999** the dead-port test.
+  and disposed after it) · **5311** the IdP host instance `SelfHostedIdentityProviderTests` boots ·
+  **59999** the dead-port test.
 - Set **`CLOUDSTRAP_E2E_BASEURL`** to attach to an already-running instance instead — the identity
   provider is still booted by the fixture in attach mode.
 - Captures the SUT's stdout/stderr (`E2eFixture.CapturedSutOutput`) so tests can assert on
@@ -76,7 +87,7 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 | `/` Home | — (skeleton) | `HomePageTests` — app boots, WASM renders, no console errors |
 | `/diagnostics` + `GET api/diagnostics/options` | Cloudstrap.Core (#1) | `DiagnosticsTests` — server-side binding (`AddCloudstrapCore`/`GetCloudstrapOptions`), client-side WASM binding (header badge), fail-fast startup validation |
 | `/healthz` + `/ready` + `GET api/diagnostics/correlation` | Cloudstrap.Observability (#2) | `HealthAndCorrelationTests` — tagged health probes (`CloudstrapHealthCheckTags`), ambient correlation id (inbound header adopted, generated otherwise) |
-| `/doctors` + `GET/POST api/doctor` | Cloudstrap.Observability (#2) | `DoctorsTests` — client→API round-trip; `AddDoctor` business span (`IBusinessTrace`) asserted in the captured console telemetry |
+| `/doctors` + `GET/POST api/doctor` (secured) + `GET api/v1/user/state` | Cloudstrap.Observability (#2) + Cloudstrap.Authentication.OpenIdConnect (#10) | `DoctorsTests` — signed-in client→API round-trip with the `AddDoctor` business span (`IBusinessTrace`) asserted in the captured console telemetry; anonymous `GET`/`POST api/doctor` answer **401** (never a login redirect), the anonymous `state` probe answers 200, and navigating to `/doctors` anonymously **auto-triggers login** and returns to the working page. `SelfHostedIdentityProviderTests` proves the same flow against the separately hosted demo IdP |
 | `/diagnostics` mode badge + startup scenarios | Cloudstrap.Observability.AzureMonitor (#3) | `AzureMonitorTests` — exporter-contribution guard lifted (the host boots in `AzureMonitor` mode at all), fail-fast naming both connection-string sources, per-environment mode flip on unchanged code |
 | `/healthz` + `/ready` (Cloudstrap-mapped) + `GET api/diagnostics/outbound` | Cloudstrap.Extensions (#4) | `ExtensionsTests` — typed-client outbound hop propagating the caller's correlation id, the `SelfApi-liveness` dependency check feeding readiness, and a second instance whose unreachable peer flips `/ready` to 503 while `/healthz` stays 200 |
 
@@ -92,11 +103,13 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
   on its documented hook points: `BeforeRouting` carries `UseBlazorFrameworkFiles()` + `UseStaticFiles()`,
   and `ConfigureEndpoints` carries `MapFallbackToFile("index.html")`. The WASM app, the API, the probes and
   the SPA fallback all stay reachable — `HomePageTests` is the proof that the static-file branch survived.
-- **The SUT stays effectively anonymous.** Since deliverable #9 the Bff *does* call `AddCloudstrapJwtBearer`,
-  but with `Cloudstrap:JwtBearer:RequireAuthenticatedEndpoints: false` — #5's documented whole-application
-  opt-out — so the 28 pre-#9 anonymous tests still exercise the AC-W10 posture unchanged. Only the
-  machine endpoint (`api/v1/machine/status`, #9) and the user endpoints (`api/v1/user/*`, #10) opt back
-  in with `[Authorize]`.
+- **The SUT's application posture stays opt-in.** Since deliverable #9 the Bff *does* call
+  `AddCloudstrapJwtBearer`, but with `Cloudstrap:JwtBearer:RequireAuthenticatedEndpoints: false` —
+  #5's documented whole-application opt-out — so the pre-#9 anonymous tests still exercise the
+  AC-W10 posture unchanged. The machine endpoint (`api/v1/machine/status`, #9), the user endpoints
+  (`api/v1/user/whoami` + `call`, #10) and — since SecureDoctorsAndDemoIdp — the whole doctors
+  feature (class-level `[Authorize]` on `DoctorController`) opt back in; the home page is the
+  anonymous page, and `/diagnostics`, the status endpoints and the probes stay anonymous too.
 - **`Cloudstrap:WebApi:ExceptionHandling:IncludeDetails` is pinned to `false`** in `appsettings.json`. The
   E2E suite runs in `Development`, where the unset default would include exception detail; pinning it makes
   the *hardened* shape the one assertable here. `Error_WithIncludeDetailsEnabled_ReturnsTheExceptionDetail`
@@ -145,4 +158,27 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 - **The `ClientSecret` is an obvious placeholder** (`local-e2e-placeholder-secret-web`) for the
   local-only test IdP — the same rule as #9's.
 - **A manual `dotnet run` without the IdP still boots** — OIDC metadata retrieval is lazy, so `/healthz`
-  answers while `/account/login` fails loudly naming the authority until something listens on 5310.
+  answers while `/account/login` fails loudly naming the authority until something listens on 5310
+  (start the demo IdP host, or use the compound launch — see *Running the app manually*).
+
+### Harness notes for SecureDoctorsAndDemoIdp
+
+- **The doctors feature requires sign-in end to end.** `DoctorController` carries class-level
+  `[Authorize]` on the default (cookie) scheme; the page probes the anonymous
+  `GET api/v1/user/state` **first** and only fetches doctors when it reports signed-in, so an
+  anonymous visit performs exactly one anonymous 200 fetch and then a full-page redirect into
+  `/account/login?returnUrl=/doctors` — zero console errors, no sign-in button. `UserStateDto` and
+  the `state` action are SUT demo code that deliverable #13's BFF user-info contract replaces.
+- **Anonymous API callers get a bare 401, never a login redirect.** The Bff installs SUT-local
+  challenge shaping through the documented `CloudstrapOpenIdConnectConfigurator.OpenIdConnect`
+  hook: an `OnRedirectToIdentityProvider` event answers 401 + `HandleResponse()` when the request's
+  `Accept` header does not contain `text/html`; browser navigations keep redirecting — which is
+  what powers the auto-trigger. Also #13-replaced placeholder code.
+- **The IdP host is demo-only test infrastructure — never a real IdP.** It hosts the same seeded
+  `Cloudstrap.TestIdentityProvider` the E2E fixture runs in-process, on the same port 5310, with
+  placeholder credentials only. `TestIdentityProviderSeed` (in the IdP host project) is the single
+  source of truth for clients/user — `E2eFixture` calls the same helper, so the two hosts cannot
+  drift. Redirect URIs derive from `WasmTestProject:ApplicationBaseAddresses` (defaults: the two
+  VS Code launch addresses), so a differently-ported Bff is one configuration override away —
+  exactly what `SelfHostedIdentityProviderTests` does on ports 5311/5304. The fixture keeps its own
+  loopback host for `IdentityProviderTokenRequestCount`; the demo host deliberately has no counters.
