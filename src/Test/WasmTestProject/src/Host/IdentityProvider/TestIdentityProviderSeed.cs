@@ -52,11 +52,11 @@ namespace Cloudstrap.WasmTestProject.Host.IdentityProvider
 
             options.Users.Add(new TestIdentityProviderUser
             {
-                Username = "wasmtestproject.user",
-                Password = "local-e2e-placeholder-password",
+                Username = "geobarteam",
+                Password = "password",
                 Claims =
                 {
-                    ["name"] = ["Wasm Test User"],
+                    ["name"] = ["Geo Bar Team"],
                     ["role"] = ["tester"],
                 },
             });
