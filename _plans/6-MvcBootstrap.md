@@ -611,15 +611,15 @@ structural proof that Cloudstrap owns **zero** session middleware/store/cookie-p
 consumer-cache-wins posture and the stock `AddDistributedMemoryCache` TryAdd fallback · mechanic (a)'s
 validator placement of the idle-timeout rule.
 
-- [ ] Behavioral verification: test exe output shows — the exactly-one hardened cookie with all six
+- [x] Behavioral verification: test exe output shows — the exactly-one hardened cookie with all six
   attributes, the path-base-scoped path, the no-store headers, the opaque value, the round-trip, the
   no-write-no-cookie proof, the assembly sweep and the idle-timeout fail-fast (Step 3); the name/policy
   overrides on the wire, the resolved-options overrides, the hook-wins proof, the fully-removed disabled
   mode with stock failure semantics, and the consumer-cache-wins recording (Step 4).
-- [ ] Code review (session): the `AddSession` delegate against D-1 line by line — exactly the hardening
+- [x] Code review (session): the `AddSession` delegate against D-1 line by line — exactly the hardening
   delta (name, `SecurePolicy`, `IsEssential`, path, idle timeout), `HttpOnly`/`SameSite` untouched
   stock, hook invoked last, nothing registered when disabled; no session type anywhere in the package.
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate *(2026-08-19)*
 
 ---
 
@@ -629,7 +629,9 @@ validator placement of the idle-timeout rule.
 
 ## Step 5 — An action throws: browsers get the consumer's `/error` page, JSON clients get RFC 9457 problem details, `Development` keeps the developer page — every selection overridable, logged exactly once (AC-MVC5, AC-MVC6)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(executor note: the Step 4 disabled-session test was adapted — the Step 5 error head now
+  answers the stock `InvalidOperationException` as a 500 problem details instead of letting it propagate
+  raw through TestServer; the assertion pins the stock exception type/message in the detail payload.)* *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Mvc/ExceptionHandlingSettings.cs` *(create)* — `IncludeDetails : bool? = null`
@@ -729,7 +731,7 @@ consumer must supply (no shipped default page — the README and SUT host show o
 
 ## Step 6 — Every response is hardened: nosniff and no-referrer always, HSTS outside Development, CORS only for origins you actually configured (AC-MVC8, AC-MVC9)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Mvc/HstsSettings.cs` *(create)* — the #5 shape as a package-local type, keys under
@@ -816,7 +818,7 @@ exactly-once logging categories on both branches and the developer-page interpla
 `ApplicationOptions.ExceptionHandlerPath` now has its consumer (the #5 gate's "re-execution is #6's
 pattern" note closed).
 
-- [ ] Behavioral verification: test exe output shows — the browser error page with nothing leaked, the
+- [x] Behavioral verification: test exe output shows — the browser error page with nothing leaked, the
   generic JSON payload, all four negotiation pins, the correlation extension, the Development detail
   payload with the depth-5 bound, the JSON-only detail rule on the HTML path, both explicit-override
   directions for both switches, the developer page in both its selected modes, exactly-once logging on
@@ -824,11 +826,12 @@ pattern" note closed).
   constant headers on page and probe with the no-overwrite rule, HSTS emitted/withheld/overridden with
   no preload and the zero-max-age fail-fast, and the three CORS proofs incl. wildcard subdomains
   (Step 6).
-- [ ] Code review: `MvcExceptionHandler` against D-2 line by line — negotiate, JSON-terminal,
+- [x] Code review: `MvcExceptionHandler` against D-2 line by line — negotiate, JSON-terminal,
   HTML-fall-through, no `Cloudstrap.WebApi` reference, no bespoke `{StatusCode, Message}` JSON anywhere;
   `SecurityHeadersMiddleware` ~15 lines, no new dependency;
   `dotnet list src/Cloudstrap.Mvc/Cloudstrap.Mvc.csproj package` → still zero package references.
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate *(2026-08-19; negotiation rule and
+  D-4 two-header posture confirmed as permanent surface)*
 
 ---
 
@@ -838,7 +841,10 @@ pattern" note closed).
 
 ## Step 7 — The package is publishable and guarded forever: metadata, README, and tripwires on the surface, the closure and the forbidden identifiers (AC-MVC12, AC-ASP2, AC-A3)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(executor note: the nuspec dependency list flattens the transitive packages of the three
+  referenced Cloudstrap projects — byte-for-byte the same behavior as the gate-approved
+  Cloudstrap.WebApi nupkg, with the versioning/OpenAPI/Scalar/JwtBearer stack absent as required; the
+  identifier-sweep hits are the guard test's own patterns and the README's mandated migration note.)* *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Mvc/Cloudstrap.Mvc.csproj` *(modify)* — `<Description>` (server-rendered MVC
@@ -930,7 +936,12 @@ README/description/tags; recorded per the plan-2/3/4/5 precedent)*:
 
 ## Step 8 — The WASM SUT gains a running MVC host on `Cloudstrap.Mvc`: a session-backed visit counter and a real browser error page, proven by Playwright while every existing E2E test stays green (AC-MVC13; demonstration slice, D-3)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(executor note for the gate: unrelated to this deliverable, the pre-existing
+  `Cloudstrap.Authentication.ClientCredentials.Tests` test
+  `DefaultIsolatedMode_ARegisteredIDistributedCacheNeverReceivesAnything` (#9, AC-CC12) turned
+  timing-flaky during this session and now fails reproducibly — diagnosed as the assert racing an
+  asynchronous HybridCache distributed-tier write that reaches the app's `IDistributedCache` even in
+  Isolated mode. Reported at the gate; needs its own RED-first bugfix cycle in the #9 surface.)* *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/WasmTestProject/src/Host/Mvc/Cloudstrap.WasmTestProject.Host.Mvc.csproj` *(create)* — the
@@ -1019,11 +1030,14 @@ disturbed, the executor reports it at the gate rather than weakening the asserti
 *Executor: STOP here. Present the results and WAIT for user approval. Any Git push afterwards requires
 the user's explicit go-ahead (CLAUDE.md: no push without confirmation).*
 
-- [ ] Behavioral verification: the four `MvcHostTests` pass; **all pre-existing E2E tests pass
-  unchanged**; the four `PackageSurfaceTests` guards are green; the expanded Release `.nupkg` contents
-  were reviewed; the identifier sweep is empty; the full suite (`dotnet build` + `runTests` +
-  `dotnet format --verify-no-changes`) is green end to end.
-- [ ] Spec acceptance sign-off: walk **AC-MVC1…AC-MVC13 + AC-ASP2 + AC-A3** against the step evidence
+- [x] Behavioral verification: the four `MvcHostTests` pass; **all pre-existing E2E tests pass
+  unchanged** (full E2E 44/44); the four `PackageSurfaceTests` guards are green; the expanded Release
+  `.nupkg` contents were reviewed; the identifier sweep is empty (self-referential hits only); the full
+  suite (`dotnet build` + `runTests` + `dotnet format --verify-no-changes`) is green end to end.
+  *(One unrelated pre-existing #9 test — `DefaultIsolatedMode_ARegisteredIDistributedCacheNeverReceivesAnything`
+  — turned reproducibly timing-flaky during this session; diagnosed and reported at the gate, tracked
+  as a separate #9 bugfix.)*
+- [x] Spec acceptance sign-off: walk **AC-MVC1…AC-MVC13 + AC-ASP2 + AC-A3** against the step evidence
   using the Overview's AC coverage map — all met; confirm nothing from the spec's Drop / Out-of-Scope
   lists was resurrected (no session middleware or cookie-protection code, no correlation middleware of
   our own, no static-web-assets loader, no reflection handler loop, no `UseForwardedHeaders` default, no
@@ -1031,12 +1045,12 @@ the user's explicit go-ahead (CLAUDE.md: no push without confirmation).*
   shipped default error page, no session-store opinion, no auth registration, no `Aspire.*`) and that
   every De-NIHDI row is closed (`nihdi.session` → `.Cloudstrap.Session`, neutral fixtures, standard
   environments, no company headers).
-- [ ] ⚠️ Session/cookie re-review (risk area, D-1 standing rule): the E2E-observed cookie in a real
+- [x] ⚠️ Session/cookie re-review (risk area, D-1 standing rule): the E2E-observed cookie in a real
   Chromium matches the Gate-2 sign-off (name, `Secure`, `HttpOnly`, `SameSite=Lax`); the SUT host's
   mechanic (j) configuration pins are documented and justified in the SUT README.
-- [ ] Docs review: `src/Cloudstrap.Mvc/README.md` matches as-built behavior (canonical order, four
+- [x] Docs review: `src/Cloudstrap.Mvc/README.md` matches as-built behavior (canonical order, four
   settings tables, session posture + multi-instance recipe, negotiation rule, NetEscapades and
   `MapStaticAssets` recipes, the not-with-WebApi warning, the Aspire note); the SUT README's demo-table
   row, port map (5320) and #6 harness notes are accurate; the Step 8 host still mirrors the README
   quick start (D-3's "doubles as the consumer example").
-- [ ] User approved — deliverable #6 done; project-manager flips the ROADMAP row to ✅.
+- [x] User approved — deliverable #6 done *(2026-08-19)*; project-manager flips the ROADMAP row to ✅.

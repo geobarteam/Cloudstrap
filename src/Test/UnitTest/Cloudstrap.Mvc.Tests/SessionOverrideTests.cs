@@ -106,11 +106,12 @@ namespace Cloudstrap.Mvc.Tests
         [Test]
         public async Task SessionDisabled_WiresNoSessionServicesAndIssuesNoCookie()
         {
-            // Arrange
+            // Arrange — details enabled so the surfaced exception's identity is assertable in the payload
             await using WebApplication app = await MvcTestHost.StartAsync(
                 new Dictionary<string, string?>
                 {
                     ["Cloudstrap:Mvc:Session:Enabled"] = "false",
+                    ["Cloudstrap:Mvc:ExceptionHandling:IncludeDetails"] = "true",
                 });
             using HttpClient client = app.GetTestClient();
 
@@ -118,17 +119,26 @@ namespace Cloudstrap.Mvc.Tests
             using HttpResponseMessage page = await client.GetAsync(
                 new Uri("/", UriKind.Relative),
                 TestContext.CurrentContext.CancellationToken);
+            using HttpResponseMessage write = await client.GetAsync(
+                new Uri("/session/write", UriKind.Relative),
+                TestContext.CurrentContext.CancellationToken);
+            string body = await write.Content.ReadAsStringAsync(
+                TestContext.CurrentContext.CancellationToken);
+            System.Text.Json.JsonElement problem = System.Text.Json.JsonDocument.Parse(body).RootElement;
 
-            // Assert — no session cookie anywhere, and touching HttpContext.Session surfaces the stock
-            // InvalidOperationException, unmasked (confirmed through TestServer in RED)
+            // Assert — no session cookie anywhere; touching HttpContext.Session surfaces the framework's
+            // own InvalidOperationException, unmasked (the Step 5 error contract answers it as a 500)
             Assert.Multiple(() =>
             {
                 Assert.That(page.Headers.Contains("Set-Cookie"), Is.False);
+                Assert.That(write.StatusCode, Is.EqualTo(HttpStatusCode.InternalServerError));
+                Assert.That(write.Headers.Contains("Set-Cookie"), Is.False);
                 Assert.That(
-                    async () => await client.GetAsync(
-                        new Uri("/session/write", UriKind.Relative),
-                        TestContext.CurrentContext.CancellationToken),
-                    Throws.InstanceOf<InvalidOperationException>());
+                    problem.GetProperty("exceptionType").GetString(),
+                    Is.EqualTo(typeof(InvalidOperationException).FullName));
+                Assert.That(
+                    problem.GetProperty("exceptionMessage").GetString(),
+                    Does.Contain("Session"));
             });
         }
 

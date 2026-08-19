@@ -27,6 +27,13 @@ namespace Cloudstrap.Mvc
                     + $"zero when '{CloudstrapMvcOptions.SectionName}:Session:Enabled' is true.");
             }
 
+            if (options.Hsts.Enabled && options.Hsts.MaxAgeDays <= 0)
+            {
+                failures.Add(
+                    $"'{CloudstrapMvcOptions.SectionName}:Hsts:MaxAgeDays' must be greater than zero when "
+                    + $"'{CloudstrapMvcOptions.SectionName}:Hsts:Enabled' is true.");
+            }
+
             return failures.Count == 0
                 ? ValidateOptionsResult.Success
                 : ValidateOptionsResult.Fail(failures);

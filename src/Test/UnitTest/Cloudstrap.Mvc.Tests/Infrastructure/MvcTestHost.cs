@@ -5,6 +5,7 @@ namespace Cloudstrap.Mvc.Tests.Infrastructure
     using Microsoft.AspNetCore.TestHost;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Logging;
     using NUnit.Framework;
 
     /// <summary>
@@ -35,6 +36,7 @@ namespace Cloudstrap.Mvc.Tests.Infrastructure
         /// <param name="environment">The hosting environment name.</param>
         /// <param name="beforeBuild">Work applied to the builder before <c>AddCloudstrapMvc</c>.</param>
         /// <param name="includeTestControllers">Whether the fixture controllers' application part is added.</param>
+        /// <param name="loggerProvider">A capturing logger provider, when a test asserts over log entries.</param>
         /// <returns>The built application.</returns>
         public static WebApplication Build(
             IDictionary<string, string?>? configuration = null,
@@ -42,7 +44,8 @@ namespace Cloudstrap.Mvc.Tests.Infrastructure
             Action<IMvcBuilder>? configureMvc = null,
             string environment = "Production",
             Action<WebApplicationBuilder>? beforeBuild = null,
-            bool includeTestControllers = true)
+            bool includeTestControllers = true,
+            ILoggerProvider? loggerProvider = null)
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
@@ -53,6 +56,11 @@ namespace Cloudstrap.Mvc.Tests.Infrastructure
 
             builder.Configuration.AddInMemoryCollection(Compose(configuration));
             builder.WebHost.UseTestServer();
+
+            if (loggerProvider is not null)
+            {
+                builder.Logging.AddProvider(loggerProvider);
+            }
 
             beforeBuild?.Invoke(builder);
 
@@ -87,6 +95,7 @@ namespace Cloudstrap.Mvc.Tests.Infrastructure
         /// <param name="beforeBuild">Work applied to the builder before <c>AddCloudstrapMvc</c>.</param>
         /// <param name="includeTestControllers">Whether the fixture controllers' application part is added.</param>
         /// <param name="afterUse">Work applied to the application after <c>UseCloudstrapMvc</c>.</param>
+        /// <param name="loggerProvider">A capturing logger provider, when a test asserts over log entries.</param>
         /// <returns>The started application.</returns>
         public static async Task<WebApplication> StartAsync(
             IDictionary<string, string?>? configuration = null,
@@ -96,7 +105,8 @@ namespace Cloudstrap.Mvc.Tests.Infrastructure
             string environment = "Production",
             Action<WebApplicationBuilder>? beforeBuild = null,
             bool includeTestControllers = true,
-            Action<WebApplication>? afterUse = null)
+            Action<WebApplication>? afterUse = null,
+            ILoggerProvider? loggerProvider = null)
         {
             WebApplication app = Build(
                 configuration,
@@ -104,7 +114,8 @@ namespace Cloudstrap.Mvc.Tests.Infrastructure
                 configureMvc,
                 environment,
                 beforeBuild,
-                includeTestControllers);
+                includeTestControllers,
+                loggerProvider);
 
             app.UseCloudstrapMvc(pipeline);
             afterUse?.Invoke(app);

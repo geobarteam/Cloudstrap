@@ -17,7 +17,8 @@ src/
 └── Host/
     ├── Wasm/        Cloudstrap.WasmTestProject.Host.Wasm        Blazor WebAssembly client
     ├── Bff/         Cloudstrap.WasmTestProject.Host.Bff         ASP.NET Core server: serves the WASM app + API
-    └── IdentityProvider/  Cloudstrap.WasmTestProject.Host.IdentityProvider  Demo IdP host (seeded test IdP on 5310)
+    ├── IdentityProvider/  Cloudstrap.WasmTestProject.Host.IdentityProvider  Demo IdP host (seeded test IdP on 5310)
+    └── Mvc/         Cloudstrap.WasmTestProject.Host.Mvc         Server-rendered MVC demo host (Cloudstrap.Mvc, 5320)
 test/
 └── Cloudstrap.WasmTestProject.E2E.Tests                         NUnit 4 + Microsoft.Playwright (MTP executable)
 ```
@@ -61,7 +62,7 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
   Port map: **5300** Bff · **5301–5304** second-instance tests · **5310** the test identity provider
   (`Cloudstrap.TestIdentityProvider`, hosted by the fixture on Kestrel loopback, started before the Bff
   and disposed after it) · **5311** the IdP host instance `SelfHostedIdentityProviderTests` boots ·
-  **59999** the dead-port test.
+  **5320** the MVC demo host `MvcHostTests` boots · **59999** the dead-port test.
 - Set **`CLOUDSTRAP_E2E_BASEURL`** to attach to an already-running instance instead — the identity
   provider is still booted by the fixture in attach mode.
 - Captures the SUT's stdout/stderr (`E2eFixture.CapturedSutOutput`) so tests can assert on
@@ -94,6 +95,7 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 | `GET api/v1/status` + `api/v2/status` · `/openapi/v{n}.json` · `/scalar` · `GET api/v1/status/boom` | Cloudstrap.WebApi (#5) | `WebApiTests` — versioned endpoints reporting `api-supported-versions`, one OpenAPI document per version with the unversioned controllers assigned the default version, the hardened problem-details error response with the caller's correlation id, the Scalar shell listing both documents, and the constant security headers on API and probe alike; `ScalarPageTests` — the reference UI loads in headless Chromium |
 | `GET api/v1/machine/call` + `api/v1/machine/status` | Cloudstrap.Authentication.ClientCredentials (#9) + the test identity provider (D-5) | `ClientCredentialsTests` — the flagged `SelfApi` client transparently carries a bearer token issued by the loopback IdP into the one `[Authorize]` endpoint (#5 validates it against the IdP's real discovery document), the direct unauthenticated call gets 401, and two round trips reuse one cached token |
 | `/account/login` + `/account/logout` + `GET api/v1/user/whoami` + `api/v1/user/call` | Cloudstrap.Authentication.OpenIdConnect (#10) + the test identity provider's interactive flows (D-4) | `OpenIdConnectTests` — a real Chromium signs in at the loopback IdP through auth-code + PKCE, the hardened `__Host-Cloudstrap` cookie is inspected in the browser, the user-flagged `UserApi` client calls the protected API *as that user*, logout ends both sessions, and the anonymous browser is challenged while the machine endpoint still answers 401 |
+| `/` visit counter · `/home/boom` + `/error` *(MVC host, 5320)* | Cloudstrap.Mvc (#6) | `MvcHostTests` — the two-call MVC host: the session-backed counter round-trips in a real browser with the exactly-one hardened `.Cloudstrap.Session` cookie inspected in Chromium, the throwing action shows the consumer's error page with no stack trace, a JSON caller gets generic RFC 9457 problem details, and the real `.cshtml` view renders with `site.css` served and zero console errors |
 
 *(Extended by every deliverable — see `_plans/ROADMAP.md`.)*
 
@@ -160,6 +162,21 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 - **A manual `dotnet run` without the IdP still boots** — OIDC metadata retrieval is lazy, so `/healthz`
   answers while `/account/login` fails loudly naming the authority until something listens on 5310
   (start the demo IdP host, or use the compound launch — see *Running the app manually*).
+
+### Harness notes for deliverable #6
+
+- **The MVC host is the `Cloudstrap.Mvc` README's consumer example, live** (D-3): `AddCloudstrapMvc()`
+  + `UseCloudstrapMvc()` and nothing else — under ten lines, anonymous by design (no auth package, no
+  IdP dependency; the pairing proof lives in the unit suite). `MvcHostTests` boots it itself on
+  **5320** by project path — the `SelfHostedIdentityProviderTests` precedent — polling `/healthz`,
+  which is AC-MVC1's probe clause exercised live.
+- **`appsettings.json` pins `UseDeveloperExceptionPage: false` and `IncludeDetails: false`.** The
+  fixture forces `ASPNETCORE_ENVIRONMENT=Development`, where the unset defaults would select the
+  developer page and detail-bearing JSON; the pins are the documented AC-MVC6 overrides that make the
+  *hardened* error page and generic problem details the shapes the E2E asserts (the #5
+  `IncludeDetails` SUT precedent).
+- **The `Secure` session cookie works in Chromium over plain `http://127.0.0.1:5320`** because
+  loopback is a trustworthy origin — the same precedent the #10 `__Host-` cookie recorded.
 
 ### Harness notes for SecureDoctorsAndDemoIdp
 

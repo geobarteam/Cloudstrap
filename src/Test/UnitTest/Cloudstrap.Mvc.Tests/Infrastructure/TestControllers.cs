@@ -76,6 +76,76 @@ namespace Cloudstrap.Mvc.Tests.Infrastructure
     }
 
     /// <summary>
+    /// A controller setting a security header itself, so the middleware's no-overwrite rule is observable.
+    /// </summary>
+    [Route("headers")]
+    public sealed class HeadersController : Controller
+    {
+        /// <summary>Sets its own referrer policy and returns.</summary>
+        /// <returns>An empty successful response.</returns>
+        [HttpGet]
+        public IActionResult Get()
+        {
+            Response.Headers["Referrer-Policy"] = "same-origin";
+
+            return Ok();
+        }
+    }
+
+    /// <summary>
+    /// A controller whose action fails with a deeply nested exception chain, so both error-response modes
+    /// and the depth bound are observable.
+    /// </summary>
+    [Route("boom")]
+    public sealed class BoomController : Controller
+    {
+        /// <summary>The text carried by the innermost exception of the fixture chain.</summary>
+        public const string RootCauseMessage = "contoso root cause";
+
+        /// <summary>Throws an eight-deep exception chain.</summary>
+        /// <returns>Never returns.</returns>
+        [HttpGet]
+        public IActionResult Get()
+        {
+            Exception failure = BuildNestedFailure(depth: 8);
+            failure.Data["path"] = Request.Path.Value;
+
+            throw failure;
+        }
+
+        private static Exception BuildNestedFailure(int depth)
+        {
+            Exception current = new InvalidOperationException(RootCauseMessage);
+
+            for (int level = 1; level <= depth; level++)
+            {
+                current = new InvalidOperationException($"failure level {level}", current);
+            }
+
+            return current;
+        }
+    }
+
+    /// <summary>
+    /// The consumer's error page at <c>Cloudstrap:Application:ExceptionHandlerPath</c>'s default — the
+    /// endpoint stock <c>UseExceptionHandler</c> re-executes for HTML-preferring callers.
+    /// </summary>
+    [Route("error")]
+    public sealed class ErrorController : Controller
+    {
+        /// <summary>The marker proving the error page rendered.</summary>
+        public const string Marker = "contoso-error-page";
+
+        /// <summary>Serves the neutral error page.</summary>
+        /// <returns>The marker as HTML.</returns>
+        [HttpGet]
+        public IActionResult Get()
+        {
+            return Content(Marker, "text/html");
+        }
+    }
+
+    /// <summary>
     /// A controller writing to and reading from <see cref="Microsoft.AspNetCore.Http.ISession"/>, so the
     /// establish-on-write cookie semantics and the round-trip are observable.
     /// </summary>

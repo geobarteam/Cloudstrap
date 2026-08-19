@@ -110,10 +110,58 @@ namespace Cloudstrap.Mvc
 
             IMvcBuilder mvc = services.AddControllersWithViews();
 
+            services.AddHsts(hsts =>
+            {
+                hsts.MaxAge = TimeSpan.FromDays(options.Hsts.MaxAgeDays);
+                hsts.IncludeSubDomains = options.Hsts.IncludeSubDomains;
+                hsts.Preload = options.Hsts.Preload;
+            });
+
+            ConfigureCors(services, options.Cors);
+
+            services.AddProblemDetails();
+
+            // Registered last, so any handler the consumer added before this call gets the first attempt.
+            services.AddExceptionHandler<MvcExceptionHandler>();
+
             // Last, so the hook always has the final say.
             configurator.Mvc?.Invoke(mvc);
 
             return builder;
+        }
+
+        /// <summary>
+        /// Registers the default CORS policy — but only once at least one origin is configured.
+        /// </summary>
+        /// <param name="services">The service collection to register into.</param>
+        /// <param name="cors">The configured cross-origin settings.</param>
+        /// <remarks>
+        /// With no origins configured nothing at all is registered, so no <c>Access-Control-Allow-Origin</c>
+        /// header can be emitted and browsers keep their same-origin default. There is deliberately no
+        /// allow-any-origin fallback.
+        /// </remarks>
+        private static void ConfigureCors(IServiceCollection services, CorsSettings cors)
+        {
+            if (cors.AllowedOrigins.Count == 0)
+            {
+                return;
+            }
+
+            string[] origins = [.. cors.AllowedOrigins];
+            bool hasWildcardSubdomain = origins.Any(origin => origin.Contains('*', StringComparison.Ordinal));
+
+            services.AddCors(options => options.AddDefaultPolicy(policy =>
+            {
+                policy.WithOrigins(origins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+
+                if (hasWildcardSubdomain)
+                {
+                    policy.SetIsOriginAllowedToAllowWildcardSubdomains();
+                }
+            }));
         }
     }
 }

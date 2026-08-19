@@ -6,6 +6,7 @@ namespace Cloudstrap.Mvc
     using Microsoft.AspNetCore.Authentication;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Options;
 
     /// <summary>
@@ -122,6 +123,42 @@ namespace Cloudstrap.Mvc
                 .GetRequiredService<IOptions<CloudstrapMvcOptions>>()
                 .Value;
 
+            // The error handling head. When the developer page is selected it is the framework's: in
+            // Development minimal hosting has already auto-inserted it as the outermost middleware, and
+            // outside Development it is added explicitly here. Otherwise the exception handler answers —
+            // Cloudstrap's negotiating handler terminally for JSON-preferring callers, a re-execution of
+            // the consumer's page at Cloudstrap:Application:ExceptionHandlerPath for browsers. Sitting
+            // inner to any auto-inserted developer page, it catches first, so that page never renders
+            // when deselected (mechanic (i.3)).
+            bool useDeveloperExceptionPage = EnvironmentDefault.Resolve(
+                mvc.ExceptionHandling.UseDeveloperExceptionPage,
+                app.Environment.IsDevelopment());
+
+            if (useDeveloperExceptionPage)
+            {
+                if (!app.Environment.IsDevelopment())
+                {
+                    app.UseDeveloperExceptionPage();
+                }
+            }
+            else
+            {
+                app.UseExceptionHandler(new ExceptionHandlerOptions
+                {
+                    ExceptionHandlingPath = application.ExceptionHandlerPath,
+                });
+            }
+
+            // Browsers only honour HSTS over HTTPS, and pinning a developer's localhost would be a nuisance
+            // they have to clear by hand.
+            if (mvc.Hsts.Enabled && !app.Environment.IsDevelopment())
+            {
+                app.UseHsts();
+            }
+
+            // Before the path base and before routing, so a short-circuited probe response carries them too.
+            app.UseMiddleware<SecurityHeadersMiddleware>();
+
             if (!string.IsNullOrEmpty(application.PathBase))
             {
                 app.UsePathBase(application.PathBase);
@@ -135,6 +172,13 @@ namespace Cloudstrap.Mvc
             hooks.BeforeRouting?.Invoke(app);
 
             app.UseRouting();
+
+            // Before correlation, so a preflight is answered by the CORS middleware and can never be
+            // rejected for carrying no correlation identifier.
+            if (mvc.Cors.AllowedOrigins.Count > 0)
+            {
+                app.UseCors();
+            }
 
             // After routing, so endpoint metadata is visible; before authentication, so a request rejected by
             // an authorization policy is still correlated in the logs and in its problem-details response.
