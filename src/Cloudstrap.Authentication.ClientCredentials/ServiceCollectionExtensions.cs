@@ -87,7 +87,13 @@ namespace Cloudstrap.Authentication.ClientCredentials
             configurator.Backchannel?.Invoke(backchannel);
 
             services.TryAddSingleton<IsolatedTokenCache>();
-            services.TryAddKeyedSingleton(
+
+            // AddKeyedSingleton, not TryAddKeyedSingleton: AddClientCredentialsTokenManagement above
+            // already registered this key with the application's HybridCache — whose distributed second
+            // tier is the application's own IDistributedCache. A TryAdd here would be a no-op, silently
+            // defeating TokenCacheMode.Isolated (tokens would reach the application cache through the
+            // asynchronous L2 flush). Keyed resolution takes the last registration, so this one wins.
+            services.AddKeyedSingleton(
                 ServiceProviderKeys.ClientCredentialsTokenCache,
                 static (provider, _) =>
                     provider.GetRequiredService<IOptions<CloudstrapClientCredentialsOptions>>().Value.TokenCache
