@@ -941,7 +941,10 @@ README/description/tags; recorded per the plan-2/3/4/5 precedent)*:
   `DefaultIsolatedMode_ARegisteredIDistributedCacheNeverReceivesAnything` (#9, AC-CC12) turned
   timing-flaky during this session and now fails reproducibly — diagnosed as the assert racing an
   asynchronous HybridCache distributed-tier write that reaches the app's `IDistributedCache` even in
-  Isolated mode. Reported at the gate; needs its own RED-first bugfix cycle in the #9 surface.)* *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+  Isolated mode. Reported at the gate; root-caused and fixed 2026-08-19 (commit `ebf8a4b`): Duende
+  pre-registers the keyed token cache, so the package's `TryAddKeyedSingleton` was a silent no-op and
+  `TokenCacheMode.Isolated` never took effect — a real AC-CC12 defect in shipped behavior, not an
+  unsound test.)* *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/WasmTestProject/src/Host/Mvc/Cloudstrap.WasmTestProject.Host.Mvc.csproj` *(create)* — the
