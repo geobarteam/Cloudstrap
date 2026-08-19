@@ -9,6 +9,15 @@ namespace Cloudstrap.WasmTestProject.Host.IdentityProvider
     /// </summary>
     public static class TestIdentityProviderSeed
     {
+        /// <summary>The seeded demo user's username — the one value sign-in helpers must submit.</summary>
+        public const string Username = "geobarteam";
+
+        /// <summary>The seeded demo user's password (a local-only placeholder, never a real secret).</summary>
+        public const string Password = "password";
+
+        /// <summary>The seeded demo user's <c>name</c> claim, as pages and tokens display it.</summary>
+        public const string DisplayName = "Geo Bar Team";
+
         /// <summary>
         /// Seeds the provider with the WasmTestProject clients (<c>wasmtestproject-bff</c> for
         /// machine tokens, <c>wasmtestproject-web</c> for interactive login) and the one neutral test
@@ -52,11 +61,11 @@ namespace Cloudstrap.WasmTestProject.Host.IdentityProvider
 
             options.Users.Add(new TestIdentityProviderUser
             {
-                Username = "geobarteam",
-                Password = "password",
+                Username = Username,
+                Password = Password,
                 Claims =
                 {
-                    ["name"] = ["Geo Bar Team"],
+                    ["name"] = [DisplayName],
                     ["role"] = ["tester"],
                 },
             });

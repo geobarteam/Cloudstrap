@@ -3,6 +3,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
     using System.Net;
     using System.Text.Json;
     using Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure;
+    using Cloudstrap.WasmTestProject.Host.IdentityProvider;
     using Microsoft.Playwright;
     using NUnit.Framework;
 
@@ -39,7 +40,9 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
                 Assert.That(sessionCookie.Path, Is.EqualTo("/"));
                 Assert.That(status, Is.EqualTo((int)HttpStatusCode.OK));
                 Assert.That(whoAmIJson.GetProperty("sub").GetString(), Is.EqualTo(_username));
-                Assert.That(whoAmIJson.GetProperty("name").GetString(), Is.EqualTo("Wasm Test User"));
+                Assert.That(
+                    whoAmIJson.GetProperty("name").GetString(),
+                    Is.EqualTo(TestIdentityProviderSeed.DisplayName));
             });
         }
 

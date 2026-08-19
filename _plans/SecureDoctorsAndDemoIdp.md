@@ -251,7 +251,7 @@ PATH — steps run the built test executables directly.
 
 ## Step 3 — The full app launches for demos: a separate IdP host process on 5310, one VS Code compound launch (or two `dotnet run` commands) *(demonstration slice — workflow rule 9)* ⚠️ *(auth configuration — risk area)*
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope** *(all layers touched by this slice)*:
 - `src/Test/WasmTestProject/src/Host/IdentityProvider/Cloudstrap.WasmTestProject.Host.IdentityProvider.csproj` *(create — `Microsoft.NET.Sdk.Web`, `net10.0`, single `ProjectReference` to `..\..\..\..\TestIdentityProvider\Cloudstrap.TestIdentityProvider\Cloudstrap.TestIdentityProvider.csproj`; a test asset like its siblings — no packaging properties)*
@@ -317,17 +317,19 @@ PATH — steps run the built test executables directly.
 
 *Executor: STOP here. Present the results of all covered steps and WAIT for user approval — do not start the next step.*
 
-- [ ] Behavioral verification: `SeparateIdpHost_FullBrowserLogin_AddsDoctorThroughTheUi` green; full
+- [x] Behavioral verification: `SeparateIdpHost_FullBrowserLogin_AddsDoctorThroughTheUi` green; full
       E2E suite green (fixture-owned 5310 IdP and all second-instance tests undisturbed; seed
-      relocation behavior-neutral).
-- [ ] **Manual demo** (the headline behavior, run by the user): VS Code → run the compound
+      relocation behavior-neutral). *(2026-08-19: full E2E suite 40/40, all 8 unit suites 510/510,
+      build zero warnings, format clean.)*
+- [x] **Manual demo** (the headline behavior, run by the user): VS Code → run the compound
       configuration **"WASM Test Project (full app + IdP)"** (or, terminal:
       `dotnet run --project src/Test/WasmTestProject/src/Host/IdentityProvider` then
       `dotnet run --project src/Test/WasmTestProject/src/Host/Bff`) → browse
       `http://127.0.0.1:5300/doctors` → login is **auto-triggered** at the self-hosted IdP → sign in
-      as `wasmtestproject.user` / `local-e2e-placeholder-password` → add a doctor. Stopping the
-      compound session stops both processes.
-- [ ] Code review *(⚠️ auth configuration risk area)*: the IdP host project is documented **demo-only**
+      as `geobarteam` / `password` *(the seeded credentials the user changed in commit `05d71ce`;
+      tests and README follow `TestIdentityProviderSeed`, the single source of truth)* → add a
+      doctor. Stopping the compound session stops both processes.
+- [x] Code review *(⚠️ auth configuration risk area)*: the IdP host project is documented **demo-only**
       test infrastructure in the README (never a real IdP; placeholder credentials only — nothing
       resembling a real secret); the Bff gained **no** reference to `Cloudstrap.TestIdentityProvider`;
       `TestIdentityProviderSeed` is the single source of truth (fixture inline seed deleted); the
@@ -335,8 +337,10 @@ PATH — steps run the built test executables directly.
       confined to `src/Test/WasmTestProject/**`, `.vscode/tasks.json`, `.vscode/launch.json` and
       `src/Cloudstrap.sln` — no shipped `Cloudstrap.*` package touched anywhere in this plan
       (`git diff --stat` confirms).
-- [ ] Solution/launch review: the sln entry sits in the `WasmTestProject` solution folder; the new
+- [x] Solution/launch review: the sln entry sits in the `WasmTestProject` solution folder; the new
       launch config and compound work from a clean checkout (`build-wasmtestproject-idp` task builds
-      the IdP host first).
-- [ ] README review: layout tree, launch story, demo table row, port map (5304/5311), harness notes.
-- [ ] User approved — the plan is complete
+      the IdP host first). *(2026-08-19: the entry had landed in a duplicate root-level
+      "WasmTestProject" folder — fixed at the gate: repointed into the existing `Test\WasmTestProject`
+      folder next to the Bff and the duplicate folder removed.)*
+- [x] README review: layout tree, launch story, demo table row, port map (5304/5311), harness notes.
+- [x] User approved — the plan is complete *(2026-08-19)*

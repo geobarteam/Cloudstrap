@@ -34,9 +34,9 @@ dotnet run --project src/Test/WasmTestProject/src/Host/Bff               # http 
 dotnet run --project src/Test/WasmTestProject/src/Host/Bff -lp https     # https://localhost:7200
 ```
 
-Then browse `/doctors` — login is auto-triggered at the IdP; sign in as `wasmtestproject.user` /
-`local-e2e-placeholder-password`. The Bff alone still boots and serves every anonymous page, but
-any sign-in (and therefore `/doctors`) needs the IdP process.
+Then browse `/doctors` — login is auto-triggered at the IdP; sign in as `geobarteam` / `password`
+(the placeholder demo user seeded by `TestIdentityProviderSeed`). The Bff alone still boots and
+serves every anonymous page, but any sign-in (and therefore `/doctors`) needs the IdP process.
 
 ## Running the E2E tests
 

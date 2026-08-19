@@ -1,19 +1,21 @@
 namespace Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure
 {
+    using Cloudstrap.WasmTestProject.Host.IdentityProvider;
     using Microsoft.Playwright;
 
     /// <summary>
     /// Signs a browser page in at the fixture-hosted test identity provider through the Bff's opt-in
     /// login endpoint — the one sign-in flow shared by every fixture that needs an authenticated
-    /// cookie session.
+    /// cookie session. The credentials alias <see cref="TestIdentityProviderSeed"/>, the single
+    /// source of truth, so a seed change can never strand the sign-in helpers.
     /// </summary>
     internal static class BrowserSignIn
     {
         /// <summary>The seeded test user's username.</summary>
-        public const string Username = "wasmtestproject.user";
+        public const string Username = TestIdentityProviderSeed.Username;
 
         /// <summary>The seeded test user's password (a local-only placeholder, not a real secret).</summary>
-        public const string Password = "local-e2e-placeholder-password";
+        public const string Password = TestIdentityProviderSeed.Password;
 
         /// <summary>
         /// Navigates to the opt-in login endpoint, fills the provider's login form, and waits for the

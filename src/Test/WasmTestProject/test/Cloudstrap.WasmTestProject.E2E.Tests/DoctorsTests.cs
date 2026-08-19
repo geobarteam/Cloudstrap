@@ -4,6 +4,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
     using System.Net.Http.Json;
     using System.Text.Json;
     using Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure;
+    using Cloudstrap.WasmTestProject.Host.IdentityProvider;
     using Microsoft.Playwright;
     using NUnit.Framework;
 
@@ -82,7 +83,9 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
             // Assert — the signed-in page: identity line, seeded grid, add form, no console noise
             // (the state probe ran before any [Authorize]'d fetch)
             await Assertions.Expect(Page.GetByTestId("doctors-user"))
-                .ToContainTextAsync("Wasm Test User", new LocatorAssertionsToContainTextOptions { Timeout = 30_000 });
+                .ToContainTextAsync(
+                    TestIdentityProviderSeed.DisplayName,
+                    new LocatorAssertionsToContainTextOptions { Timeout = 30_000 });
             await Assertions.Expect(Page.GetByTestId("doctors-grid")).ToContainTextAsync("Dr. Alice Carter");
             await Assertions.Expect(Page.GetByTestId("add-doctor-submit")).ToBeVisibleAsync();
             Assert.That(
