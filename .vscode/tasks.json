@@ -24,6 +24,39 @@
       "group": "build"
     },
     {
+      "label": "build-demo-api",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/demo/Api/Cloudstrap.Demo.Api.csproj"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
+      "label": "build-demo-mvc",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/demo/Mvc/Cloudstrap.Demo.Mvc.csproj"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
+      "label": "build-demo-blazorserver",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/demo/BlazorServer/Cloudstrap.Demo.BlazorServer.csproj"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
       "label": "build-solution",
       "type": "process",
       "command": "dotnet",

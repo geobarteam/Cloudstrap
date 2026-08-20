@@ -1,5 +1,19 @@
 # Spec: WasmTestProjectDemoCompletion — the WASM SUT as the complete auth/authz demonstration app
 
+> **⚠️ Reconciliation note (deliverable #27, 2026-08-20)** — `_specs/27-DemoAppsRestructure.md`
+> restructured the SUT into demo apps under `src/demo` (`Cloudstrap.Demo.*` names; E2E suite at
+> `src/Test/E2E/Cloudstrap.Demo.E2E.Tests`). Three consequences for this spec:
+> 1. **AC-D11's diff-scope pin (`src/Test/WasmTestProject/**`) is superseded** for the moved paths —
+>    the equivalent scope is now `src/demo/**` + `src/Test/E2E/**`.
+> 2. **Increment 3 is realized by #27**: the downstream JWT host exists as `Cloudstrap.Demo.Api`
+>    on port **5330** (not the 5320 planned here — #6's MVC host took 5320 in the meantime),
+>    `UserApi` is retargeted, and AC-D7/AC-D8/AC-D9 are covered by `ApiHostTests` +
+>    `UserCall_SignedIn_ProvesTheApiHostValidatedTheUsersToken`.
+> 3. **Increment 2 (the authorization demo) remains open** and runs as its own follow-up plan after
+>    #27's gate (D-E). This spec's remaining Open Questions — including ⚠️ **OQ-2** (the shipped
+>    `Cloudstrap.WebApi` claim-type change) — stay owned by this spec's own gate, untouched by #27.
+> Identifier renames since: `wasmtestproject-*` → `demo-*`, seed user unchanged.
+
 > **Subject**: completing `src/Test/WasmTestProject` as the demonstration app for the Cloudstrap
 > suite, with emphasis on authentication and authorization: the target end-state and the increments
 > to get there. This is SUT-local work (a test asset, not a shipped package), so the founding spec's

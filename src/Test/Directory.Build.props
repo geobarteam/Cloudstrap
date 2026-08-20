@@ -12,8 +12,8 @@
     <NoWarn>$(NoWarn);CS1591;CA1707;CA1848;CA1873</NoWarn>
   </PropertyGroup>
 
-  <!-- MTP test-runner wiring applies only to *.Tests projects — SUT apps and libraries under
-       src/Test (e.g. WasmTestProject) are plain projects, not test executables -->
+  <!-- MTP test-runner wiring applies only to *.Tests projects — libraries under src/Test
+       (e.g. TestIdentityProvider) are plain projects, not test executables -->
   <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests'))">
     <OutputType>Exe</OutputType>
     <EnableNUnitRunner>true</EnableNUnitRunner>

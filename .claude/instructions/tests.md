@@ -16,10 +16,9 @@ applyTo: "src/Test/**"
 | Project | Contains |
 |---|---|
 | `Test/UnitTest/` | Unit tests (mirror source structure per library package) |
-| `Test/TestProject/` | Blazor Server SUT — E2E smoke tests |
-| `Test/WasmTestProject/` | Blazor WASM SUT — E2E smoke tests |
-| `Test/MVC/` | MVC test app |
-| `Test/Bridge/` | Bridge console test |
+| `Test/E2E/` | `Cloudstrap.Demo.E2E.Tests` — Playwright E2E suite driving the demo apps |
+| `Test/TestIdentityProvider/` | `Cloudstrap.TestIdentityProvider` — shared OpenIddict test IdP library |
+| `../demo/` | The demo applications the E2E suite drives (Api, BlazorServer, BlazorWasm, Mvc, shared IdP host) |
 
 Mirror the source folder structure inside each test project. Name test files `<ClassUnderTest>Tests.cs`.
 
@@ -324,21 +323,21 @@ When a tester validates a feature through the UI, the application must contain r
 
 ---
 
-## E2E tests — WASM SUT (`src/Test/WasmTestProject`)
+## E2E tests — demo apps (`src/demo`)
 
-Every extraction deliverable ends with a demonstration slice here (CLAUDE.md workflow rule 9, planner rule 15): extend the SUT (page/endpoint/config) and add ≥ 1 E2E test proving the behavior through the **real running app**.
+Every extraction deliverable ends with a demonstration slice here (CLAUDE.md workflow rule 9, planner rule 15): extend the appropriate demo app (page/endpoint/config) and add ≥ 1 E2E test proving the behavior through the **real running app**.
 
-**Project**: `src/Test/WasmTestProject/test/Cloudstrap.WasmTestProject.E2E.Tests/` — NUnit 4 + Microsoft.Playwright, part of the normal MTP test leg (locally and in CI).
+**Project**: `src/Test/E2E/Cloudstrap.Demo.E2E.Tests/` — NUnit 4 + Microsoft.Playwright, part of the normal MTP test leg (locally and in CI).
 
 **Harness** (`E2eFixture` + `Infrastructure/`):
-- `E2eFixture` (`[SetUpFixture]`) boots the Bff host once per run on `http://127.0.0.1:5300` (`dotnet run --no-build` — build the solution first), polls until ready, kills the process tree afterwards. `CLOUDSTRAP_E2E_BASEURL` attaches to an already-running instance instead.
+- `E2eFixture` (`[SetUpFixture]`) boots once per run: the demo IdP (in-process, 5310), the Api host (5330, polled on `/healthz`), then the Bff (`http://127.0.0.1:5300`) — `dotnet run --no-build`, so build the solution first; process trees are killed afterwards. `CLOUDSTRAP_E2E_BASEURL` attaches to an already-running Bff instead (IdP + Api stay fixture-booted). The Mvc and BlazorServer fixtures boot their own hosts by project path.
 - Browser tests inherit `Infrastructure/PageTestBase` — headless Chromium, fresh context per test, `ConsoleErrors` collection; prefer `data-testid` selectors (`Page.GetByTestId`).
 - API-level tests use plain `HttpClient` against `E2eFixture.BaseUrl` — no browser needed.
 - Telemetry assertions poll `E2eFixture.CapturedSutOutput` (the SUT's stdout, OTel Console exporter) with a deadline — never a bare sleep.
-- `SutProcess.Start(baseUrl, applicationArguments)` launches extra short-lived SUT instances (different port) for startup/fail-fast scenarios.
-- Suite is `[assembly: NonParallelizable]` (one SUT, one fixed port). Tests must not depend on run order — the in-memory store lives for the whole run.
+- `SutProcess.Start(baseUrl, applicationArguments, projectRelativePath)` launches extra short-lived host instances (different port, any demo project by repo-relative path) for startup/fail-fast scenarios.
+- Suite is `[assembly: NonParallelizable]` (fixed ports). Tests must not depend on run order — the in-memory store lives for the whole run.
 - One-time setup: `pwsh <E2E bin>/playwright.ps1 install chromium`. A missing browser fails loudly with that instruction — tests never silently skip.
-- After adding a demo, update the demo table in `src/Test/WasmTestProject/README.md`.
+- After adding a demo, update the feature matrix in the extended app's README under `src/demo`.
 
 ## Run Commands
 
@@ -346,6 +345,6 @@ Every extraction deliverable ends with a demonstration slice here (CLAUDE.md wor
 # Build first, then run the MTP executables directly (dotnet test is not supported)
 dotnet build src/Cloudstrap.sln
 src\Test\UnitTest\Cloudstrap.Core.Tests\bin\Debug\net10.0\Cloudstrap.Core.Tests.exe
-src\Test\WasmTestProject\test\Cloudstrap.WasmTestProject.E2E.Tests\bin\Debug\net10.0\Cloudstrap.WasmTestProject.E2E.Tests.exe
+src\Test\E2E\Cloudstrap.Demo.E2E.Tests\bin\Debug\net10.0\Cloudstrap.Demo.E2E.Tests.exe
 <TestExePath> --filter "<TestMethod>"                          # filtered run
 ```

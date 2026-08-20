@@ -94,12 +94,17 @@ src/
 ├── Cloudstrap.Dashboard.*/              # Ops dashboard (contracts, API, components — MudBlazor)
 ├── Cloudstrap.Localization/             # Thin setup over ASP.NET Core localization
 ├── Cloudstrap.Testing/                  # Test helper utilities
+├── demo/                                # Demo applications (deliverable #27) — consumer examples + E2E test bed
+│   ├── Api/                             #   Cloudstrap.Demo.Api — pure JWT host, hardened by default (5330)
+│   ├── BlazorServer/                    #   Cloudstrap.Demo.BlazorServer — OIDC + user-token client (5340)
+│   ├── BlazorWasm/                      #   Bff (5300) + Client + Presentation — the WASM/BFF demo
+│   ├── Mvc/                             #   Cloudstrap.Demo.Mvc — two-call MVC example (5320)
+│   └── Shared/                          #   Contracts (shared DTOs) + IdentityProvider (demo IdP host, 5310)
+│                                        #   Every deliverable demonstrates its feature here (workflow rule 9)
 └── Test/
     ├── UnitTest/                        # Unit tests (mirror source structure, one project per package)
-    ├── TestProject/                     # Blazor Server SUT (arrives with deliverable 12)
-    └── WasmTestProject/                 # Blazor WASM SUT (src/: Contracts, Presentation, Host/Wasm, Host/Bff)
-                                         #   + test/Cloudstrap.WasmTestProject.E2E.Tests (NUnit 4 + Playwright)
-                                         #   Every deliverable demonstrates its feature here (workflow rule 9)
+    ├── E2E/                             # Cloudstrap.Demo.E2E.Tests (NUnit 4 + Playwright) — drives the demo apps
+    └── TestIdentityProvider/            # Cloudstrap.TestIdentityProvider — shared OpenIddict test IdP library
 ```
 
 ---
@@ -182,7 +187,7 @@ public static class ServiceCollectionExtensions
 - Mock at boundary (interfaces only, Moq). No real external services in unit tests (no live Azure, no live Application Insights).
 - Integration tests: verify DI registration, service resolution, and cross-cutting concerns.
 - Messaging tests run on Wolverine's in-memory/local transport — no network.
-- E2E tests: NUnit 4 + Microsoft.Playwright in `src/Test/WasmTestProject/test/Cloudstrap.WasmTestProject.E2E.Tests/` — the fixture boots the real Bff host and drives headless Chromium against the WASM SUT (see the SUT README; one-time `playwright.ps1 install chromium`).
+- E2E tests: NUnit 4 + Microsoft.Playwright in `src/Test/E2E/Cloudstrap.Demo.E2E.Tests/` — the fixture boots the demo IdP, the Api host and the Bff and drives headless Chromium against the demo apps (see `src/demo/README.md`; one-time `playwright.ps1 install chromium`).
 
 ---
 
@@ -196,8 +201,8 @@ runTests                                                     # Run tests (Micros
 dotnet format src/Cloudstrap.sln --verify-no-changes         # Format check
 
 # E2E (WASM SUT) — one-time browser install, then run like any MTP suite (solution must be built first)
-pwsh src/Test/WasmTestProject/test/Cloudstrap.WasmTestProject.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
-src\Test\WasmTestProject\test\Cloudstrap.WasmTestProject.E2E.Tests\bin\Debug\net10.0\Cloudstrap.WasmTestProject.E2E.Tests.exe
+pwsh src/Test/E2E/Cloudstrap.Demo.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
+src\Test\E2E\Cloudstrap.Demo.E2E.Tests\bin\Debug\net10.0\Cloudstrap.Demo.E2E.Tests.exe
 ```
 
 `dotnet test` is **not supported** — use the test `.exe` directly (`Microsoft.Testing.Platform` + .NET 10 SDK).
@@ -232,7 +237,7 @@ src\Test\WasmTestProject\test\Cloudstrap.WasmTestProject.E2E.Tests\bin\Debug\net
 6. **Code analysis every step** — after REFACTOR, fix all violations, then run the full test suite.
 7. **🛑 STOP at HUMAN GATE** — plans place gates at slice boundaries, not after every step; do not proceed past one until the user confirms.
 8. **Mark done** — check a step's `Done` box when its VERIFY passes; check a gate's boxes only after user approval. First unchecked `[ ]` in `_plans/<FeatureName>.md` = where to resume.
-9. **Demonstrate every migrated feature in the WASM SUT** — each extraction deliverable's plan ends with a demonstration slice extending `src/Test/WasmTestProject` plus ≥ 1 E2E test in `Cloudstrap.WasmTestProject.E2E.Tests` proving the behavior through the running app, before its final 🛑 gate (planner rule 15; precedent `_plans/25-WasmTestProjectSut.md`).
+9. **Demonstrate every migrated feature in the demo apps** — each deliverable's plan ends with a demonstration slice extending the appropriate app under `src/demo` (API/hosting features → `Cloudstrap.Demo.Api` · interactive/BFF/browser features → the BlazorWasm app · MVC features → `Cloudstrap.Demo.Mvc` · Blazor Server features → `Cloudstrap.Demo.BlazorServer` · worker/messaging features → the demo app their deliverable designates) plus ≥ 1 E2E test in `Cloudstrap.Demo.E2E.Tests` proving the behavior through the running app, before its final 🛑 gate (planner rule 15; precedents `_plans/25-WasmTestProjectSut.md`, `_plans/27-DemoAppsRestructure.md`).
 
 ---
 
@@ -348,4 +353,4 @@ The agent **stops and waits for user confirmation** at every gate. This is non-n
 
 - Commit format: `<type>(<scope>): <desc>`.
 - Build + test + format before push.
-- `protected Program() {}` in TestProject host (if applicable).
+- `protected Program() {}` in demo host projects (if applicable).

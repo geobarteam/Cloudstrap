@@ -438,7 +438,7 @@ listens — AC-DR3); Otlp mode boots with no collector running (spec matrix note
 
 ## Step 6 — The demo suite is self-documenting and boots with one F5 (READMEs + compound launch)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope** *(all layers touched by this slice)*:
 - `src/demo/README.md` *(rewrite the interim carry — suite overview: architecture diagram (five
@@ -482,7 +482,7 @@ nothing; every E2E test name cited in a README resolves to a method in the E2E p
 
 ## Step 7 — The process docs point every future deliverable at the demo apps (AC-DR12) + final sweep
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope** *(process docs outside `src/` — human-reviewed at the final gate; the spec's canonical
 standing-rule wording is the text to install, final wording user-approved at the gate)*:
