@@ -2,23 +2,23 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build-wasmtestproject",
+      "label": "build-demo",
       "type": "process",
       "command": "dotnet",
       "args": [
         "build",
-        "${workspaceFolder}/src/demo/BlazorWasm/Bff/Cloudstrap.WasmTestProject.Host.Bff.csproj"
+        "${workspaceFolder}/src/demo/BlazorWasm/Bff/Cloudstrap.Demo.BlazorWasm.Bff.csproj"
       ],
       "problemMatcher": "$msCompile",
       "group": "build"
     },
     {
-      "label": "build-wasmtestproject-idp",
+      "label": "build-demo-idp",
       "type": "process",
       "command": "dotnet",
       "args": [
         "build",
-        "${workspaceFolder}/src/demo/Shared/IdentityProvider/Cloudstrap.WasmTestProject.Host.IdentityProvider.csproj"
+        "${workspaceFolder}/src/demo/Shared/IdentityProvider/Cloudstrap.Demo.IdentityProvider.csproj"
       ],
       "problemMatcher": "$msCompile",
       "group": "build"

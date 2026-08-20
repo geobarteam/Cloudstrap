@@ -1,7 +1,7 @@
-namespace Cloudstrap.WasmTestProject.Presentation.Diagnostics
+namespace Cloudstrap.Demo.BlazorWasm.Presentation.Diagnostics
 {
     using System.Net.Http.Json;
-    using Cloudstrap.WasmTestProject.Contracts;
+    using Cloudstrap.Demo.Contracts;
     using Microsoft.AspNetCore.Components;
 
     /// <summary>

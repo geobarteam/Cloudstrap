@@ -1,4 +1,4 @@
-namespace Cloudstrap.WasmTestProject.Host.IdentityProvider
+namespace Cloudstrap.Demo.IdentityProvider
 {
     using Cloudstrap.TestIdentityProvider;
 
@@ -19,8 +19,8 @@ namespace Cloudstrap.WasmTestProject.Host.IdentityProvider
         public const string DisplayName = "Geo Bar Team";
 
         /// <summary>
-        /// Seeds the provider with the WasmTestProject clients (<c>wasmtestproject-bff</c> for
-        /// machine tokens, <c>wasmtestproject-web</c> for interactive login) and the one neutral test
+        /// Seeds the provider with the demo clients (<c>demo-bff</c> for
+        /// machine tokens, <c>demo-web</c> for interactive login) and the one neutral test
         /// user, deriving the web client's redirect URIs from the application base address(es) so
         /// they follow whichever Bff instance is being served.
         /// </summary>
@@ -38,18 +38,18 @@ namespace Cloudstrap.WasmTestProject.Host.IdentityProvider
 
             options.Clients.Add(new TestIdentityProviderClient
             {
-                ClientId = "wasmtestproject-bff",
+                ClientId = "demo-bff",
                 ClientSecret = "local-e2e-placeholder-secret",
                 Scopes = { "selfapi" },
-                Audiences = { "wasmtestproject-selfapi" },
+                Audiences = { "demo-selfapi" },
             });
 
             TestIdentityProviderClient webClient = new TestIdentityProviderClient
             {
-                ClientId = "wasmtestproject-web",
+                ClientId = "demo-web",
                 ClientSecret = "local-e2e-placeholder-secret-web",
                 Scopes = { "selfapi" },
-                Audiences = { "wasmtestproject-selfapi" },
+                Audiences = { "demo-selfapi" },
             };
             foreach (Uri baseAddress in applicationBaseAddresses)
             {

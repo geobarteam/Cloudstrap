@@ -44,7 +44,7 @@ jobs:
       # The E2E suite (src/Test/E2E) drives headless Chromium; without this
       # install the test leg fails loudly with Playwright's install instruction.
       - name: Install Playwright Chromium (E2E)
-        run: pwsh src/Test/E2E/Cloudstrap.WasmTestProject.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+        run: pwsh src/Test/E2E/Cloudstrap.Demo.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 
       - name: Run all MTP test executables
         run: |

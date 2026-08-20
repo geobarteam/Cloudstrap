@@ -1,4 +1,4 @@
-namespace Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure
+namespace Cloudstrap.Demo.E2E.Tests.Infrastructure
 {
     using Microsoft.Playwright;
     using NUnit.Framework;
@@ -34,7 +34,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure
             {
                 throw new InvalidOperationException(
                     "Chromium is not installed for Playwright. Run once: " +
-                    "pwsh src/Test/E2E/Cloudstrap.WasmTestProject.E2E.Tests/bin/<Configuration>/net10.0/playwright.ps1 install chromium",
+                    "pwsh src/Test/E2E/Cloudstrap.Demo.E2E.Tests/bin/<Configuration>/net10.0/playwright.ps1 install chromium",
                     exception);
             }
         }

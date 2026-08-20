@@ -1,4 +1,4 @@
-namespace Cloudstrap.WasmTestProject.E2E.Tests
+namespace Cloudstrap.Demo.E2E.Tests
 {
     using System.Net;
     using System.Text.Json;
@@ -50,7 +50,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
             {
                 Assert.That(
                     document.RootElement.GetProperty("clientId").GetString(),
-                    Is.EqualTo("wasmtestproject-bff"));
+                    Is.EqualTo("demo-bff"));
                 Assert.That(
                     new Uri(document.RootElement.GetProperty("issuer").GetString()!),
                     Is.EqualTo(new Uri($"http://127.0.0.1:{E2eFixture.IdentityProviderPort}")));

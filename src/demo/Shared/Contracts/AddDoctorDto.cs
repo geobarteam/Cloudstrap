@@ -1,4 +1,4 @@
-namespace Cloudstrap.WasmTestProject.Contracts
+namespace Cloudstrap.Demo.Contracts
 {
     /// <summary>
     /// The payload for adding a doctor.

@@ -23,15 +23,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BlazorWasm", "BlazorWasm", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "E2E", "E2E", "{3E259BE0-262E-4FF9-AD72-053DC1652D9D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.WasmTestProject.E2E.Tests", "Test\E2E\Cloudstrap.WasmTestProject.E2E.Tests\Cloudstrap.WasmTestProject.E2E.Tests.csproj", "{BA166188-715D-4672-919C-FA0D3DD66554}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Demo.E2E.Tests", "Test\E2E\Cloudstrap.Demo.E2E.Tests\Cloudstrap.Demo.E2E.Tests.csproj", "{BA166188-715D-4672-919C-FA0D3DD66554}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.WasmTestProject.Contracts", "demo\Shared\Contracts\Cloudstrap.WasmTestProject.Contracts.csproj", "{76A0BF5D-A337-474C-BF85-9305DB521FC9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Demo.Contracts", "demo\Shared\Contracts\Cloudstrap.Demo.Contracts.csproj", "{76A0BF5D-A337-474C-BF85-9305DB521FC9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.WasmTestProject.Presentation", "demo\BlazorWasm\Presentation\Cloudstrap.WasmTestProject.Presentation.csproj", "{572BAEFA-A79B-49C5-9CF5-BED9A719EE03}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Demo.BlazorWasm.Presentation", "demo\BlazorWasm\Presentation\Cloudstrap.Demo.BlazorWasm.Presentation.csproj", "{572BAEFA-A79B-49C5-9CF5-BED9A719EE03}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.WasmTestProject.Host.Wasm", "demo\BlazorWasm\Client\Cloudstrap.WasmTestProject.Host.Wasm.csproj", "{765C274A-1D78-452B-9E04-766DCDB881B0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Demo.BlazorWasm.Client", "demo\BlazorWasm\Client\Cloudstrap.Demo.BlazorWasm.Client.csproj", "{765C274A-1D78-452B-9E04-766DCDB881B0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.WasmTestProject.Host.Bff", "demo\BlazorWasm\Bff\Cloudstrap.WasmTestProject.Host.Bff.csproj", "{409E3810-B21A-490E-97FD-9FFEE1CE7C41}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Demo.BlazorWasm.Bff", "demo\BlazorWasm\Bff\Cloudstrap.Demo.BlazorWasm.Bff.csproj", "{409E3810-B21A-490E-97FD-9FFEE1CE7C41}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Observability.AzureMonitor", "Cloudstrap.Observability.AzureMonitor\Cloudstrap.Observability.AzureMonitor.csproj", "{2B3DB88C-A9DE-4F10-9FFC-BC812BEAC7F6}"
 EndProject
@@ -59,13 +59,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Authentication.O
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Authentication.OpenIdConnect.Tests", "Test\UnitTest\Cloudstrap.Authentication.OpenIdConnect.Tests\Cloudstrap.Authentication.OpenIdConnect.Tests.csproj", "{917AF762-C891-4850-AA67-24295A71491E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.WasmTestProject.Host.IdentityProvider", "demo\Shared\IdentityProvider\Cloudstrap.WasmTestProject.Host.IdentityProvider.csproj", "{D4159C72-61A3-4B13-BF88-63556DB4E327}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Demo.IdentityProvider", "demo\Shared\IdentityProvider\Cloudstrap.Demo.IdentityProvider.csproj", "{D4159C72-61A3-4B13-BF88-63556DB4E327}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Mvc", "Cloudstrap.Mvc\Cloudstrap.Mvc.csproj", "{03455A11-4F5E-4C3A-B4D6-8E7E32ED5584}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Mvc.Tests", "Test\UnitTest\Cloudstrap.Mvc.Tests\Cloudstrap.Mvc.Tests.csproj", "{0D8FD013-299B-4897-8582-0331FEE8D491}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.WasmTestProject.Host.Mvc", "demo\Mvc\Cloudstrap.WasmTestProject.Host.Mvc.csproj", "{DED7BF91-4989-4FC5-B917-B742644533AF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cloudstrap.Demo.Mvc", "demo\Mvc\Cloudstrap.Demo.Mvc.csproj", "{DED7BF91-4989-4FC5-B917-B742644533AF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

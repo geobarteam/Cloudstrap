@@ -1,8 +1,8 @@
-namespace Cloudstrap.WasmTestProject.E2E.Tests
+namespace Cloudstrap.Demo.E2E.Tests
 {
+    using Cloudstrap.Demo.E2E.Tests.Infrastructure;
+    using Cloudstrap.Demo.IdentityProvider;
     using Cloudstrap.TestIdentityProvider;
-    using Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure;
-    using Cloudstrap.WasmTestProject.Host.IdentityProvider;
     using NUnit.Framework;
 
     /// <summary>

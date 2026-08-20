@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
-    <ProjectReference Include="..\Presentation\Cloudstrap.WasmTestProject.Presentation.csproj" />
+    <ProjectReference Include="..\Presentation\Cloudstrap.Demo.BlazorWasm.Presentation.csproj" />
   </ItemGroup>
 
 </Project>

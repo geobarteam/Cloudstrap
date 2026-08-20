@@ -1,6 +1,6 @@
-namespace Cloudstrap.WasmTestProject.E2E.Tests
+namespace Cloudstrap.Demo.E2E.Tests
 {
-    using Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure;
+    using Cloudstrap.Demo.E2E.Tests.Infrastructure;
     using Microsoft.Playwright;
     using NUnit.Framework;
 

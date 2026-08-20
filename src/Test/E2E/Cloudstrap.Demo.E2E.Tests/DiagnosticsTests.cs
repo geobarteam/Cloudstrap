@@ -1,6 +1,6 @@
-namespace Cloudstrap.WasmTestProject.E2E.Tests
+namespace Cloudstrap.Demo.E2E.Tests
 {
-    using Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure;
+    using Cloudstrap.Demo.E2E.Tests.Infrastructure;
     using Microsoft.Playwright;
     using NUnit.Framework;
 
@@ -19,7 +19,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
 
             // Assert — values must match the Bff host's appsettings.json 'Cloudstrap' section
             await Assertions.Expect(Page.GetByTestId("server-workload"))
-                .ToContainTextAsync("wasmtestproject-application-bff", new LocatorAssertionsToContainTextOptions { Timeout = 30_000 });
+                .ToContainTextAsync("demo-application-bff", new LocatorAssertionsToContainTextOptions { Timeout = 30_000 });
             await Assertions.Expect(Page.GetByTestId("server-otel-mode")).ToContainTextAsync("AzureMonitor");
             await Assertions.Expect(Page.GetByTestId("server-correlation-header")).ToContainTextAsync("X-Correlation-ID");
             Assert.That(ConsoleErrors, Is.Empty, "The browser console reported errors while loading the diagnostics page.");
@@ -34,7 +34,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
             // Assert — the badge renders from options bound INSIDE the WASM client
             // (wwwroot/appsettings.json), proving Cloudstrap.Core is WASM-loadable.
             await Assertions.Expect(Page.GetByTestId("client-workload"))
-                .ToContainTextAsync("wasmtestproject-application-wasm", new LocatorAssertionsToContainTextOptions { Timeout = 30_000 });
+                .ToContainTextAsync("demo-application-wasm", new LocatorAssertionsToContainTextOptions { Timeout = 30_000 });
         }
 
         [Test]

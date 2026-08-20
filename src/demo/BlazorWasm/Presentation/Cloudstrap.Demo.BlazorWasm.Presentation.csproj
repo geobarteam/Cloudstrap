@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
-    <ProjectReference Include="..\..\Shared\Contracts\Cloudstrap.WasmTestProject.Contracts.csproj" />
+    <ProjectReference Include="..\..\Shared\Contracts\Cloudstrap.Demo.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

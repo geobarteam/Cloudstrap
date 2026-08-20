@@ -2,12 +2,12 @@
   "version": "0.2.0",
   "configurations": [
     {
-      // F5: run the WASM Test Project — debugs the Bff (server) process and opens the browser.
-      "name": "WASM Test Project (Bff server)",
+      // F5: run the BlazorWasm demo app — debugs the Bff (server) process and opens the browser.
+      "name": "Demo BlazorWasm (Bff server)",
       "type": "coreclr",
       "request": "launch",
-      "preLaunchTask": "build-wasmtestproject",
-      "program": "${workspaceFolder}/src/demo/BlazorWasm/Bff/bin/Debug/net10.0/Cloudstrap.WasmTestProject.Host.Bff.dll",
+      "preLaunchTask": "build-demo",
+      "program": "${workspaceFolder}/src/demo/BlazorWasm/Bff/bin/Debug/net10.0/Cloudstrap.Demo.BlazorWasm.Bff.dll",
       "cwd": "${workspaceFolder}/src/demo/BlazorWasm/Bff",
       "env": {
         "ASPNETCORE_ENVIRONMENT": "Development",
@@ -19,14 +19,14 @@
       }
     },
     {
-      // Debug the C# running INSIDE the browser (breakpoints in Presentation / Host.Wasm).
+      // Debug the C# running INSIDE the browser (breakpoints in Presentation / Client).
       // Launches the Bff as the host and attaches the WASM debugger to Chrome/Edge.
-      "name": "WASM Test Project (client debug)",
+      "name": "Demo BlazorWasm (client debug)",
       "type": "blazorwasm",
       "request": "launch",
       "hosted": true,
-      "preLaunchTask": "build-wasmtestproject",
-      "program": "${workspaceFolder}/src/demo/BlazorWasm/Bff/bin/Debug/net10.0/Cloudstrap.WasmTestProject.Host.Bff.dll",
+      "preLaunchTask": "build-demo",
+      "program": "${workspaceFolder}/src/demo/BlazorWasm/Bff/bin/Debug/net10.0/Cloudstrap.Demo.BlazorWasm.Bff.dll",
       "cwd": "${workspaceFolder}/src/demo/BlazorWasm/Bff",
       "url": "https://localhost:7200",
       "env": {
@@ -37,11 +37,11 @@
     {
       // The demo identity provider on 5310 — start it next to the Bff (or use the compound below)
       // so sign-in works outside the E2E fixture.
-      "name": "WASM Test Project (IdP host)",
+      "name": "Demo IdP host",
       "type": "coreclr",
       "request": "launch",
-      "preLaunchTask": "build-wasmtestproject-idp",
-      "program": "${workspaceFolder}/src/demo/Shared/IdentityProvider/bin/Debug/net10.0/Cloudstrap.WasmTestProject.Host.IdentityProvider.dll",
+      "preLaunchTask": "build-demo-idp",
+      "program": "${workspaceFolder}/src/demo/Shared/IdentityProvider/bin/Debug/net10.0/Cloudstrap.Demo.IdentityProvider.dll",
       "cwd": "${workspaceFolder}/src/demo/Shared/IdentityProvider",
       "env": {
         "ASPNETCORE_ENVIRONMENT": "Development",
@@ -52,10 +52,10 @@
   "compounds": [
     {
       // One F5 for the full demo: the identity provider plus the Bff server.
-      "name": "WASM Test Project (full app + IdP)",
+      "name": "Demo BlazorWasm (full app + IdP)",
       "configurations": [
-        "WASM Test Project (IdP host)",
-        "WASM Test Project (Bff server)"
+        "Demo IdP host",
+        "Demo BlazorWasm (Bff server)"
       ],
       "stopAll": true
     }

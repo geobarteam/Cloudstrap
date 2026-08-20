@@ -1,9 +1,9 @@
-namespace Cloudstrap.WasmTestProject.E2E.Tests
+namespace Cloudstrap.Demo.E2E.Tests
 {
     using System.Net;
     using System.Text.Json;
-    using Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure;
-    using Cloudstrap.WasmTestProject.Host.IdentityProvider;
+    using Cloudstrap.Demo.E2E.Tests.Infrastructure;
+    using Cloudstrap.Demo.IdentityProvider;
     using Microsoft.Playwright;
     using NUnit.Framework;
 
@@ -62,7 +62,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
             {
                 Assert.That(status, Is.EqualTo((int)HttpStatusCode.OK));
                 Assert.That(json.GetProperty("subject").GetString(), Is.EqualTo(_username));
-                Assert.That(json.GetProperty("clientId").GetString(), Is.EqualTo("wasmtestproject-web"));
+                Assert.That(json.GetProperty("clientId").GetString(), Is.EqualTo("demo-web"));
             });
         }
 

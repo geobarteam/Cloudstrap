@@ -1,4 +1,4 @@
-namespace Cloudstrap.WasmTestProject.Contracts
+namespace Cloudstrap.Demo.Contracts
 {
     /// <summary>
     /// The caller's authentication state, reported by the anonymous <c>state</c> endpoint (SUT demo

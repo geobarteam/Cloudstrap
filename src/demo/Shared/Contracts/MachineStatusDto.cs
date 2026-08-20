@@ -1,4 +1,4 @@
-namespace Cloudstrap.WasmTestProject.Contracts
+namespace Cloudstrap.Demo.Contracts
 {
     /// <summary>
     /// The validated caller's identity, echoed from the claims of the bearer token the protected

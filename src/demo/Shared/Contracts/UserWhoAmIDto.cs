@@ -1,4 +1,4 @@
-namespace Cloudstrap.WasmTestProject.Contracts
+namespace Cloudstrap.Demo.Contracts
 {
     /// <summary>
     /// The signed-in user's identity, echoed from the cookie principal (deliverable #10 demo — SUT

@@ -1,10 +1,10 @@
 using Cloudstrap.Authentication.ClientCredentials;
 using Cloudstrap.Authentication.OpenIdConnect;
 using Cloudstrap.Core;
+using Cloudstrap.Demo.BlazorWasm.Bff.Services;
 using Cloudstrap.Extensions;
 using Cloudstrap.Observability;
 using Cloudstrap.Observability.AzureMonitor;
-using Cloudstrap.WasmTestProject.Host.Bff.Services;
 using Cloudstrap.WebApi;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -16,7 +16,7 @@ CloudstrapOptions cloudstrapOptions = builder.Configuration.GetCloudstrapOptions
 
 // Bootstrap logging covers the window before the host's own pipeline exists (deliverable #2 demo).
 using ILoggerFactory bootstrapLoggers = CloudstrapBootstrapLogger.Create(cloudstrapOptions);
-ILogger startupLogger = bootstrapLoggers.CreateLogger("Cloudstrap.WasmTestProject.Startup");
+ILogger startupLogger = bootstrapLoggers.CreateLogger("Cloudstrap.Demo.Startup");
 string workloadName = cloudstrapOptions.Application.WorkloadName;
 startupLogger.LogInformation("Configuration loaded for {WorkloadName}", workloadName);
 

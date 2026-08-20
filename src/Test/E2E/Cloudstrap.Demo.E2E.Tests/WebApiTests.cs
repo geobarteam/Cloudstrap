@@ -1,8 +1,8 @@
-namespace Cloudstrap.WasmTestProject.E2E.Tests
+namespace Cloudstrap.Demo.E2E.Tests
 {
     using System.Net;
     using System.Text.Json;
-    using Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure;
+    using Cloudstrap.Demo.E2E.Tests.Infrastructure;
     using NUnit.Framework;
 
     /// <summary>
@@ -40,7 +40,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
                 Assert.That(document.RootElement.GetProperty("apiVersion").GetString(), Is.EqualTo("1.0"));
                 Assert.That(
                     document.RootElement.GetProperty("workloadName").GetString(),
-                    Is.EqualTo("wasmtestproject-application-bff"));
+                    Is.EqualTo("demo-application-bff"));
 
                 // Each version lives on its own controller, so URL-segment versioning gives each one its own
                 // endpoint and its own reported version set. That both versions exist is proven by the v2
@@ -106,7 +106,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
             using JsonDocument document = JsonDocument.Parse(body);
             Assert.That(
                 document.RootElement.GetProperty("info").GetProperty("title").GetString(),
-                Is.EqualTo("WasmTestProject Bff API"));
+                Is.EqualTo("Cloudstrap Demo Bff API"));
         }
 
         [Test]

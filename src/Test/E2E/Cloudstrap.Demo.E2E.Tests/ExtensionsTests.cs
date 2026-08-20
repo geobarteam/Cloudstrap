@@ -1,8 +1,8 @@
-namespace Cloudstrap.WasmTestProject.E2E.Tests
+namespace Cloudstrap.Demo.E2E.Tests
 {
     using System.Net;
     using System.Text.Json;
-    using Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure;
+    using Cloudstrap.Demo.E2E.Tests.Infrastructure;
     using NUnit.Framework;
 
     /// <summary>

@@ -1,6 +1,6 @@
-namespace Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure
+namespace Cloudstrap.Demo.E2E.Tests.Infrastructure
 {
-    using Cloudstrap.WasmTestProject.Host.IdentityProvider;
+    using Cloudstrap.Demo.IdentityProvider;
     using Microsoft.Playwright;
 
     /// <summary>

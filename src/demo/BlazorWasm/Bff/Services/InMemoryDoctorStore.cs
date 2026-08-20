@@ -1,6 +1,6 @@
-namespace Cloudstrap.WasmTestProject.Host.Bff.Services
+namespace Cloudstrap.Demo.BlazorWasm.Bff.Services
 {
-    using Cloudstrap.WasmTestProject.Contracts;
+    using Cloudstrap.Demo.Contracts;
 
     /// <summary>
     /// Seeded, thread-safe in-memory doctor store — the SUT takes no database dependency until

@@ -1,7 +1,7 @@
-namespace Cloudstrap.WasmTestProject.Host.Bff.Services
+namespace Cloudstrap.Demo.BlazorWasm.Bff.Services
 {
     using System.Net.Http.Json;
-    using Cloudstrap.WasmTestProject.Contracts;
+    using Cloudstrap.Demo.Contracts;
 
     /// <summary>
     /// The <see cref="ISelfApiClient"/> implementation. Its <see cref="HttpClient"/> is supplied by

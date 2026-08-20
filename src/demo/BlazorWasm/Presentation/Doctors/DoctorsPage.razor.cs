@@ -1,7 +1,7 @@
-namespace Cloudstrap.WasmTestProject.Presentation.Doctors
+namespace Cloudstrap.Demo.BlazorWasm.Presentation.Doctors
 {
     using System.Net.Http.Json;
-    using Cloudstrap.WasmTestProject.Contracts;
+    using Cloudstrap.Demo.Contracts;
     using Microsoft.AspNetCore.Components;
 
     /// <summary>

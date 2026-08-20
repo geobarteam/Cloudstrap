@@ -1,8 +1,8 @@
-namespace Cloudstrap.WasmTestProject.Host.Bff.Controllers
+namespace Cloudstrap.Demo.BlazorWasm.Bff.Controllers
 {
     using Asp.Versioning;
     using Cloudstrap.Core;
-    using Cloudstrap.WasmTestProject.Contracts;
+    using Cloudstrap.Demo.Contracts;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Options;
 

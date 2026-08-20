@@ -1,4 +1,4 @@
-namespace Cloudstrap.WasmTestProject.Contracts
+namespace Cloudstrap.Demo.Contracts
 {
     /// <summary>
     /// A doctor as served by the Bff API.

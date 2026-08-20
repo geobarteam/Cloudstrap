@@ -1,4 +1,4 @@
-namespace Cloudstrap.WasmTestProject.Host.Mvc.Controllers
+namespace Cloudstrap.Demo.Mvc.Controllers
 {
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc;

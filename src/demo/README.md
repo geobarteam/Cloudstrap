@@ -4,7 +4,7 @@ The Blazor WebAssembly **system-under-test** for the Cloudstrap suite. Every del
 Cloudstrap package demonstrates its headline behavior here, proven by an end-to-end test
 that drives the real running app in a real browser.
 
-Modeled on the source repo's `Test\WasmTestProject` (Bff + Wasm host split), rebuilt
+Modeled on the source repo's test apps (Bff + Wasm host split), rebuilt
 neutral and trimmed to what Cloudstrap has actually shipped — layers (auth, messaging,
 persistence, …) are added by the deliverable that demonstrates them.
 
@@ -12,15 +12,15 @@ persistence, …) are added by the deliverable that demonstrates them.
 
 ```
 src/
-├── Contracts/       Cloudstrap.WasmTestProject.Contracts        DTOs shared client/server
-├── Presentation/    Cloudstrap.WasmTestProject.Presentation     Razor Class Library (MudBlazor pages)
+├── Contracts/       Cloudstrap.Demo.Contracts        DTOs shared client/server
+├── Presentation/    Cloudstrap.Demo.BlazorWasm.Presentation     Razor Class Library (MudBlazor pages)
 └── Host/
-    ├── Wasm/        Cloudstrap.WasmTestProject.Host.Wasm        Blazor WebAssembly client
-    ├── Bff/         Cloudstrap.WasmTestProject.Host.Bff         ASP.NET Core server: serves the WASM app + API
-    ├── IdentityProvider/  Cloudstrap.WasmTestProject.Host.IdentityProvider  Demo IdP host (seeded test IdP on 5310)
-    └── Mvc/         Cloudstrap.WasmTestProject.Host.Mvc         Server-rendered MVC demo host (Cloudstrap.Mvc, 5320)
+    ├── Wasm/        Cloudstrap.Demo.BlazorWasm.Client        Blazor WebAssembly client
+    ├── Bff/         Cloudstrap.Demo.BlazorWasm.Bff         ASP.NET Core server: serves the WASM app + API
+    ├── IdentityProvider/  Cloudstrap.Demo.IdentityProvider  Demo IdP host (seeded test IdP on 5310)
+    └── Mvc/         Cloudstrap.Demo.Mvc         Server-rendered MVC demo host (Cloudstrap.Mvc, 5320)
 test/
-└── Cloudstrap.WasmTestProject.E2E.Tests                         NUnit 4 + Microsoft.Playwright (MTP executable)
+└── Cloudstrap.Demo.E2E.Tests                         NUnit 4 + Microsoft.Playwright (MTP executable)
 ```
 
 ## Running the app manually
@@ -30,9 +30,9 @@ one F5: the compound launch configuration **"WASM Test Project (full app + IdP)"
 session stops both). In a terminal:
 
 ```powershell
-dotnet run --project src/Test/WasmTestProject/src/Host/IdentityProvider  # the demo IdP: http://127.0.0.1:5310
-dotnet run --project src/Test/WasmTestProject/src/Host/Bff               # http profile: http://127.0.0.1:5300
-dotnet run --project src/Test/WasmTestProject/src/Host/Bff -lp https     # https://localhost:7200
+dotnet run --project src/demo/Shared/IdentityProvider    # the demo IdP: http://127.0.0.1:5310
+dotnet run --project src/demo/BlazorWasm/Bff              # http profile: http://127.0.0.1:5300
+dotnet run --project src/demo/BlazorWasm/Bff -lp https    # https://localhost:7200
 ```
 
 Then browse `/doctors` — login is auto-triggered at the IdP; sign in as `geobarteam` / `password`
@@ -44,7 +44,7 @@ serves every anonymous page, but any sign-in (and therefore `/doctors`) needs th
 One-time browser install (also required on CI agents):
 
 ```powershell
-pwsh src/Test/WasmTestProject/test/Cloudstrap.WasmTestProject.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
+pwsh src/Test/E2E/Cloudstrap.Demo.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
 ```
 
 Then build the solution (the fixture launches the Bff host with `--no-build`) and run the
@@ -52,7 +52,7 @@ test executable like any other MTP suite:
 
 ```powershell
 dotnet build src/Cloudstrap.sln
-src\Test\WasmTestProject\test\Cloudstrap.WasmTestProject.E2E.Tests\bin\Debug\net10.0\Cloudstrap.WasmTestProject.E2E.Tests.exe
+src\Test\E2E\Cloudstrap.Demo.E2E.Tests\bin\Debug\net10.0\Cloudstrap.Demo.E2E.Tests.exe
 ```
 
 Harness behavior (`E2eFixture` / `Infrastructure/`):
@@ -141,7 +141,7 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
 ### Harness notes for deliverable #10
 
 - **Interactive login is one call plus configuration.** `AddCloudstrapOpenIdConnect()` +
-  `Cloudstrap:OpenIdConnect` (client `wasmtestproject-web` at the same loopback IdP — no new port) and
+  `Cloudstrap:OpenIdConnect` (client `demo-web` at the same loopback IdP — no new port) and
   `MapCloudstrapAuthenticationEndpoints()` in the `ConfigureEndpoints` hook, mapped before the SPA
   fallback so the explicit routes win.
 - **`Cloudstrap:OpenIdConnect:RequireAuthenticatedEndpoints: false`** is D-6's documented
@@ -195,7 +195,7 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
   `Cloudstrap.TestIdentityProvider` the E2E fixture runs in-process, on the same port 5310, with
   placeholder credentials only. `TestIdentityProviderSeed` (in the IdP host project) is the single
   source of truth for clients/user — `E2eFixture` calls the same helper, so the two hosts cannot
-  drift. Redirect URIs derive from `WasmTestProject:ApplicationBaseAddresses` (defaults: the two
+  drift. Redirect URIs derive from `Demo:ApplicationBaseAddresses` (defaults: the two
   VS Code launch addresses), so a differently-ported Bff is one configuration override away —
   exactly what `SelfHostedIdentityProviderTests` does on ports 5311/5304. The fixture keeps its own
   loopback host for `IdentityProviderTokenRequestCount`; the demo host deliberately has no counters.

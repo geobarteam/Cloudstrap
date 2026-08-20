@@ -1,8 +1,8 @@
-namespace Cloudstrap.WasmTestProject.E2E.Tests
+namespace Cloudstrap.Demo.E2E.Tests
 {
     using System.Net;
     using System.Text.Json;
-    using Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure;
+    using Cloudstrap.Demo.E2E.Tests.Infrastructure;
     using Microsoft.Playwright;
     using NUnit.Framework;
 
@@ -18,7 +18,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
         private const string _mvcBaseUrl = "http://127.0.0.1:5320";
 
         private const string _mvcHostProjectPath =
-            "src/demo/Mvc/Cloudstrap.WasmTestProject.Host.Mvc.csproj";
+            "src/demo/Mvc/Cloudstrap.Demo.Mvc.csproj";
 
         private SutProcess? _mvcHost;
 

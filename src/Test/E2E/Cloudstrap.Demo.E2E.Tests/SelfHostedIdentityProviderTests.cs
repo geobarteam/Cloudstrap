@@ -1,6 +1,6 @@
-namespace Cloudstrap.WasmTestProject.E2E.Tests
+namespace Cloudstrap.Demo.E2E.Tests
 {
-    using Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure;
+    using Cloudstrap.Demo.E2E.Tests.Infrastructure;
     using Microsoft.Playwright;
     using NUnit.Framework;
 
@@ -18,7 +18,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
         private const string _bffBaseUrl = "http://127.0.0.1:5304";
 
         private const string _idpHostProjectPath =
-            "src/demo/Shared/IdentityProvider/Cloudstrap.WasmTestProject.Host.IdentityProvider.csproj";
+            "src/demo/Shared/IdentityProvider/Cloudstrap.Demo.IdentityProvider.csproj";
 
         [Test]
         public async Task SeparateIdpHost_FullBrowserLogin_AddsDoctorThroughTheUi()
@@ -27,7 +27,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
             // 5304 Bff through configuration alone
             using SutProcess idpHost = SutProcess.Start(
                 _idpBaseUrl,
-                ["--WasmTestProject:ApplicationBaseAddresses:0=" + _bffBaseUrl + "/"],
+                ["--Demo:ApplicationBaseAddresses:0=" + _bffBaseUrl + "/"],
                 _idpHostProjectPath);
             using HttpClient idpClient = new HttpClient { BaseAddress = new Uri(_idpBaseUrl) };
             await WaitUntilReadyAsync(idpClient, idpHost, ".well-known/openid-configuration");

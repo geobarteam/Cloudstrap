@@ -1,4 +1,4 @@
-namespace Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure
+namespace Cloudstrap.Demo.E2E.Tests.Infrastructure
 {
     using System.Diagnostics;
     using System.Reflection;
@@ -12,7 +12,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure
     internal sealed class SutProcess : IDisposable
     {
         private const string _bffProjectPath =
-            "src/demo/BlazorWasm/Bff/Cloudstrap.WasmTestProject.Host.Bff.csproj";
+            "src/demo/BlazorWasm/Bff/Cloudstrap.Demo.BlazorWasm.Bff.csproj";
 
         private readonly Process _process;
         private readonly StringBuilder _output = new StringBuilder();

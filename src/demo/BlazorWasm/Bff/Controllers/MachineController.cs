@@ -1,9 +1,9 @@
-namespace Cloudstrap.WasmTestProject.Host.Bff.Controllers
+namespace Cloudstrap.Demo.BlazorWasm.Bff.Controllers
 {
     using System.Security.Claims;
     using Asp.Versioning;
-    using Cloudstrap.WasmTestProject.Contracts;
-    using Cloudstrap.WasmTestProject.Host.Bff.Services;
+    using Cloudstrap.Demo.BlazorWasm.Bff.Services;
+    using Cloudstrap.Demo.Contracts;
     using Microsoft.AspNetCore.Authentication.JwtBearer;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;

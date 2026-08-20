@@ -1,5 +1,5 @@
 using Cloudstrap.Core;
-using Cloudstrap.WasmTestProject.Presentation;
+using Cloudstrap.Demo.BlazorWasm.Presentation;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;

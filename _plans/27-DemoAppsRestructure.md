@@ -162,7 +162,7 @@ taken by #6's MVC host since; recorded in the spec's Deliberate Behavior Changes
 
 ## Step 2 — Demo apps carry the `Cloudstrap.Demo.*` identity (rename commit B, D-A)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope** *(all layers touched by this slice)*:
 - Project renames (csproj filename = assembly name = root namespace; `git mv` per file):
@@ -221,11 +221,11 @@ green; repo sweep `Select-String -Pattern 'WasmTestProject'` over `src/demo/**`,
 
 *Executor: STOP here. Present the results of Step 2 and WAIT for user approval.*
 
-- [ ] Behavioral verification: full suite green under `Cloudstrap.Demo.*`; the `WasmTestProject` identifier sweep over the live trees is empty.
-- [ ] Code review: user reviews the **IdP seed diff** (auth-adjacent identifier renames `demo-bff`/`demo-web`/`demo-selfapi` — names only, no flow/secret/URI change) and spot-checks namespaces.
-- [ ] AC-DR10 spot check: `git log --follow src/demo/BlazorWasm/Bff/Cloudstrap.Demo.BlazorWasm.Bff.csproj` (and one E2E file) traces history back across commit B **and** commit A.
-- [ ] **Commit B lands here** (rename only), separate from commit A.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: full suite green under `Cloudstrap.Demo.*`; the `WasmTestProject` identifier sweep over the live trees is empty.
+- [x] Code review: user reviews the **IdP seed diff** (auth-adjacent identifier renames `demo-bff`/`demo-web`/`demo-selfapi` — names only, no flow/secret/URI change) and spot-checks namespaces.
+- [x] AC-DR10 spot check: `git log --follow src/demo/BlazorWasm/Bff/Cloudstrap.Demo.BlazorWasm.Bff.csproj` (and one E2E file) traces history back across commit B **and** commit A.
+- [x] **Commit B lands here** (rename only), separate from commit A.
+- [x] User approved — implementation may continue past this gate (2026-08-20)
 
 ---
 

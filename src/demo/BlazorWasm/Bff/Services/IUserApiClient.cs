@@ -1,6 +1,6 @@
-namespace Cloudstrap.WasmTestProject.Host.Bff.Services
+namespace Cloudstrap.Demo.BlazorWasm.Bff.Services
 {
-    using Cloudstrap.WasmTestProject.Contracts;
+    using Cloudstrap.Demo.Contracts;
 
     /// <summary>
     /// The deliverable #10 typed client: registered through <c>AddCloudstrapHttpServiceClient</c> and

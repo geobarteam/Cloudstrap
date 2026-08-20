@@ -1,10 +1,10 @@
-namespace Cloudstrap.WasmTestProject.E2E.Tests
+namespace Cloudstrap.Demo.E2E.Tests
 {
     using System.Net;
     using System.Net.Http.Json;
     using System.Text.Json;
-    using Cloudstrap.WasmTestProject.E2E.Tests.Infrastructure;
-    using Cloudstrap.WasmTestProject.Host.IdentityProvider;
+    using Cloudstrap.Demo.E2E.Tests.Infrastructure;
+    using Cloudstrap.Demo.IdentityProvider;
     using Microsoft.Playwright;
     using NUnit.Framework;
 
