@@ -52,8 +52,8 @@ namespace Cloudstrap.Demo.E2E.Tests
             // Arrange
             await SignInThroughBrowserAsync();
 
-            // Act — the in-app round trip: the user-flagged UserApi client drives the protected
-            // machine endpoint, which echoes who the caller was
+            // Act — the round trip: the user-flagged UserApi client drives the Api demo host's
+            // protected echo, which reports who the caller was (cross-process since #27)
             (int status, JsonElement json) = await FetchJsonInPageAsync("/api/v1/user/call");
 
             // Assert — the user's token, acquired through the interactive flow and validated by #5,
@@ -63,6 +63,27 @@ namespace Cloudstrap.Demo.E2E.Tests
                 Assert.That(status, Is.EqualTo((int)HttpStatusCode.OK));
                 Assert.That(json.GetProperty("subject").GetString(), Is.EqualTo(_username));
                 Assert.That(json.GetProperty("clientId").GetString(), Is.EqualTo("demo-web"));
+            });
+        }
+
+        [Test]
+        public async Task UserCall_SignedIn_ProvesTheApiHostValidatedTheUsersToken()
+        {
+            // Arrange
+            await SignInThroughBrowserAsync();
+
+            // Act — the relay now terminates on the separate Api demo host (deliverable #27): the
+            // user-flagged UserApi client crosses the process boundary to 5330
+            (int status, JsonElement json) = await FetchJsonInPageAsync("/api/v1/user/call");
+
+            // Assert — the downstream host's constant marker is the cross-process proof a
+            // same-shaped Bff echo cannot fake (AC-DR7 / carried AC-D9)
+            Assert.Multiple(() =>
+            {
+                Assert.That(status, Is.EqualTo((int)HttpStatusCode.OK));
+                Assert.That(json.GetProperty("subject").GetString(), Is.EqualTo(_username));
+                Assert.That(json.GetProperty("clientId").GetString(), Is.EqualTo("demo-web"));
+                Assert.That(json.GetProperty("host").GetString(), Is.EqualTo("demo-api"));
             });
         }
 

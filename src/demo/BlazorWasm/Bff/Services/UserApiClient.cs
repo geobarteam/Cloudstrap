@@ -24,17 +24,17 @@ namespace Cloudstrap.Demo.BlazorWasm.Bff.Services
         }
 
         /// <inheritdoc/>
-        public async Task<MachineStatusDto> GetMachineStatusAsync(CancellationToken cancellationToken)
+        public async Task<DownstreamWhoAmIDto> GetWhoAmIAsync(CancellationToken cancellationToken)
         {
             using HttpResponseMessage response = await _client.GetAsync(
-                new Uri("api/v1/machine/status", UriKind.Relative),
+                new Uri("api/v1/downstream/whoami", UriKind.Relative),
                 cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            MachineStatusDto? status =
-                await response.Content.ReadFromJsonAsync<MachineStatusDto>(cancellationToken);
+            DownstreamWhoAmIDto? whoAmI =
+                await response.Content.ReadFromJsonAsync<DownstreamWhoAmIDto>(cancellationToken);
 
-            return status ?? new MachineStatusDto(string.Empty, string.Empty, string.Empty);
+            return whoAmI ?? new DownstreamWhoAmIDto(string.Empty, string.Empty, string.Empty, string.Empty);
         }
     }
 }

@@ -49,16 +49,18 @@ namespace Cloudstrap.Demo.BlazorWasm.Bff.Controllers
         }
 
         /// <summary>
-        /// Invokes the protected machine endpoint through the user-flagged typed client and relays
-        /// what it validated — the in-app round trip proving the user's token reached the peer.
+        /// Invokes the Api demo host's protected echo through the user-flagged typed client and
+        /// relays what that host validated — since deliverable #27 a real cross-process round trip
+        /// proving the user's token reached a separate peer (its <c>demo-api</c> marker cannot be
+        /// faked by a same-shaped echo on this host).
         /// </summary>
         /// <param name="cancellationToken">Cancels the outbound request.</param>
-        /// <returns>The relayed caller identity.</returns>
+        /// <returns>The relayed caller identity, including the downstream host marker.</returns>
         [HttpGet("call")]
         [Authorize]
-        public async Task<ActionResult<MachineStatusDto>> GetCall(CancellationToken cancellationToken)
+        public async Task<ActionResult<DownstreamWhoAmIDto>> GetCall(CancellationToken cancellationToken)
         {
-            return Ok(await userApiClient.GetMachineStatusAsync(cancellationToken));
+            return Ok(await userApiClient.GetWhoAmIAsync(cancellationToken));
         }
     }
 }

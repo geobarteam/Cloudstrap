@@ -49,7 +49,10 @@ namespace Cloudstrap.Demo.IdentityProvider
                 ClientId = "demo-web",
                 ClientSecret = "local-e2e-placeholder-secret-web",
                 Scopes = { "selfapi" },
-                Audiences = { "demo-selfapi" },
+                // The signed-in user's token is valid at the Bff (demo-selfapi) AND the Api demo
+                // host (demo-api) — the cross-process user-token hop of deliverable #27. The
+                // machine client above deliberately stays Bff-only.
+                Audiences = { "demo-selfapi", "demo-api" },
             };
             foreach (Uri baseAddress in applicationBaseAddresses)
             {

@@ -231,7 +231,7 @@ green; repo sweep `Select-String -Pattern 'WasmTestProject'` over `src/demo/**`,
 
 ## Step 3 — The Api demo app enforces authenticated-by-default (new host, port 5330)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope** *(all layers touched by this slice)*:
 - `src/demo/Api/Cloudstrap.Demo.Api.csproj` *(create — `Microsoft.NET.Sdk.Web`; ProjectReferences:
@@ -297,7 +297,7 @@ fails loudly until the IdP listens (the lazy-metadata precedent, AC-DR3).
 
 ## Step 4 — User-token forwarding becomes a real cross-process hop (Bff → Api)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope** *(all layers touched by this slice)*:
 - `src/demo/BlazorWasm/Bff/appsettings.json` *(modify — `HttpClients:UserApi:BaseAddress` →
@@ -349,10 +349,10 @@ test's boot arguments — never a shipped-package change); full-suite check (Con
 
 *Executor: STOP here. Present the results of Steps 3–4 and WAIT for user approval.*
 
-- [ ] Behavioral verification: `ApiHost_AnonymousWhoAmI_Returns401`, `ApiHost_AnonymousHealthz_Returns200`, and `UserCall_SignedIn_ProvesTheApiHostValidatedTheUsersToken` pass (AC-DR6 + AC-DR7); full suite green with the three-process fixture.
-- [ ] ⚠️ Auth review: the seed diff (`demo-api` audience on the `demo-web` client — token blast radius reviewed), the Api host's hardened default left in place (no `RequireAuthenticatedEndpoints` key anywhere in `src/demo/Api`), placeholder-only credentials (AC-DR9 spot check on the diff).
-- [ ] Code review: Api `Program.cs` stays a minimal consumer example (shipped packages only — AC-DR13); `SelfApi`/`MachineController`/`MachineStatusDto` untouched.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: `ApiHost_AnonymousWhoAmI_Returns401`, `ApiHost_AnonymousHealthz_Returns200`, and `UserCall_SignedIn_ProvesTheApiHostValidatedTheUsersToken` pass (AC-DR6 + AC-DR7); full suite green with the three-process fixture.
+- [x] ⚠️ Auth review: the seed diff (`demo-api` audience on the `demo-web` client — token blast radius reviewed), the Api host's hardened default left in place (no `RequireAuthenticatedEndpoints` key anywhere in `src/demo/Api`), placeholder-only credentials (AC-DR9 spot check on the diff).
+- [x] Code review: Api `Program.cs` stays a minimal consumer example (shipped packages only — AC-DR13); `SelfApi`/`MachineController`/`MachineStatusDto` untouched.
+- [x] User approved — implementation may continue past this gate (2026-08-20)
 
 ---
 
