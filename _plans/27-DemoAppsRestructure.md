@@ -358,7 +358,7 @@ test's boot arguments — never a shipped-package change); full-suite check (Con
 
 ## Step 5 — A Blazor Server app signs in at the shared IdP and calls the Api (D-B, port 5340)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope** *(all layers touched by this slice)*:
 - `src/demo/BlazorServer/Cloudstrap.Demo.BlazorServer.csproj` *(create — `Microsoft.NET.Sdk.Web`;
@@ -429,10 +429,10 @@ listens — AC-DR3); Otlp mode boots with no collector running (spec matrix note
 
 *Executor: STOP here. Present the results of Step 5 and WAIT for user approval.*
 
-- [ ] Behavioral verification: `BlazorServer_SignInAndWhoAmI_RendersUserAndApiEcho_NoConsoleErrors` passes; full suite green. With this, OIDC login runs on two host styles, M2M on the Bff, the JWT API cross-process, and all three observability modes are exercised (Console/Api, Otlp/BlazorServer, AzureMonitor/Bff) — AC-DR5's feature walk is complete in E2E form.
-- [ ] ⚠️ Auth review: the new `demo-blazorserver` IdP client (redirect URIs, audiences, placeholder secret — AC-DR9 spot check).
-- [ ] Code review: no #12/#13 helper pre-implementation (AC-DR13 scope guard) — stock Blazor Server + shipped packages only.
-- [ ] User approved — implementation may continue past this gate
+- [x] Behavioral verification: `BlazorServer_SignInAndWhoAmI_RendersUserAndApiEcho_NoConsoleErrors` passes; full suite green. With this, OIDC login runs on two host styles, M2M on the Bff, the JWT API cross-process, and all three observability modes are exercised (Console/Api, Otlp/BlazorServer, AzureMonitor/Bff) — AC-DR5's feature walk is complete in E2E form.
+- [x] ⚠️ Auth review: the new `demo-blazorserver` IdP client (redirect URIs, audiences, placeholder secret — AC-DR9 spot check).
+- [x] Code review: no #12/#13 helper pre-implementation (AC-DR13 scope guard) — stock Blazor Server + shipped packages only.
+- [x] User approved — implementation may continue past this gate (2026-08-20)
 
 ---
 

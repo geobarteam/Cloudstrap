@@ -29,9 +29,14 @@ namespace Cloudstrap.Demo.IdentityProvider
         /// The base address(es) of the application(s) allowed to sign in — each contributes a
         /// <c>signin-oidc</c> redirect URI and a <c>signout-callback-oidc</c> post-logout URI.
         /// </param>
+        /// <param name="blazorServerBaseAddress">
+        /// The BlazorServer demo app's base address for the <c>demo-blazorserver</c> client's
+        /// redirect URIs; defaults to <c>http://127.0.0.1:5340/</c>.
+        /// </param>
         public static void Configure(
             TestIdentityProviderOptions options,
-            IReadOnlyCollection<Uri> applicationBaseAddresses)
+            IReadOnlyCollection<Uri> applicationBaseAddresses,
+            Uri? blazorServerBaseAddress = null)
         {
             ArgumentNullException.ThrowIfNull(options);
             ArgumentNullException.ThrowIfNull(applicationBaseAddresses);
@@ -61,6 +66,19 @@ namespace Cloudstrap.Demo.IdentityProvider
             }
 
             options.Clients.Add(webClient);
+
+            // The BlazorServer demo app's interactive client (deliverable #27, D-B): same scopes as
+            // the web client, tokens valid at the Api demo host only — it has no self-hosted API.
+            Uri blazorServerAddress = blazorServerBaseAddress ?? new Uri("http://127.0.0.1:5340/");
+            options.Clients.Add(new TestIdentityProviderClient
+            {
+                ClientId = "demo-blazorserver",
+                ClientSecret = "local-e2e-placeholder-secret-blazorserver",
+                Scopes = { "selfapi" },
+                Audiences = { "demo-api" },
+                RedirectUris = { new Uri(blazorServerAddress, "signin-oidc") },
+                PostLogoutRedirectUris = { new Uri(blazorServerAddress, "signout-callback-oidc") },
+            });
 
             options.Users.Add(new TestIdentityProviderUser
             {
