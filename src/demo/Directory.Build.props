@@ -1,0 +1,14 @@
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..'))" />
+
+  <!-- Demo-app defaults: never packed, XML-doc rules off -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- CA1848/CA1873: demo apps drive loggers with plain ILogger calls; LoggerMessage
+         delegates and IsEnabled guards add nothing here -->
+    <NoWarn>$(NoWarn);CS1591;CA1848;CA1873</NoWarn>
+  </PropertyGroup>
+
+</Project>

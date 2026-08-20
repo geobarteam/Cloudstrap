@@ -18,7 +18,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
         private const string _mvcBaseUrl = "http://127.0.0.1:5320";
 
         private const string _mvcHostProjectPath =
-            "src/Test/WasmTestProject/src/Host/Mvc/Cloudstrap.WasmTestProject.Host.Mvc.csproj";
+            "src/demo/Mvc/Cloudstrap.WasmTestProject.Host.Mvc.csproj";
 
         private SutProcess? _mvcHost;
 

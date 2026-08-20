@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\TestIdentityProvider\Cloudstrap.TestIdentityProvider\Cloudstrap.TestIdentityProvider.csproj" />
+    <ProjectReference Include="..\..\Cloudstrap.Mvc\Cloudstrap.Mvc.csproj" />
   </ItemGroup>
 
 </Project>

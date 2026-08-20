@@ -7,7 +7,7 @@
       "command": "dotnet",
       "args": [
         "build",
-        "${workspaceFolder}/src/Test/WasmTestProject/src/Host/Bff/Cloudstrap.WasmTestProject.Host.Bff.csproj"
+        "${workspaceFolder}/src/demo/BlazorWasm/Bff/Cloudstrap.WasmTestProject.Host.Bff.csproj"
       ],
       "problemMatcher": "$msCompile",
       "group": "build"
@@ -18,7 +18,7 @@
       "command": "dotnet",
       "args": [
         "build",
-        "${workspaceFolder}/src/Test/WasmTestProject/src/Host/IdentityProvider/Cloudstrap.WasmTestProject.Host.IdentityProvider.csproj"
+        "${workspaceFolder}/src/demo/Shared/IdentityProvider/Cloudstrap.WasmTestProject.Host.IdentityProvider.csproj"
       ],
       "problemMatcher": "$msCompile",
       "group": "build"

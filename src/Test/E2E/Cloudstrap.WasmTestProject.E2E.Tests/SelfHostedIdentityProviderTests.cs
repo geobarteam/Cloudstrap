@@ -18,7 +18,7 @@ namespace Cloudstrap.WasmTestProject.E2E.Tests
         private const string _bffBaseUrl = "http://127.0.0.1:5304";
 
         private const string _idpHostProjectPath =
-            "src/Test/WasmTestProject/src/Host/IdentityProvider/Cloudstrap.WasmTestProject.Host.IdentityProvider.csproj";
+            "src/demo/Shared/IdentityProvider/Cloudstrap.WasmTestProject.Host.IdentityProvider.csproj";
 
         [Test]
         public async Task SeparateIdpHost_FullBrowserLogin_AddsDoctorThroughTheUi()

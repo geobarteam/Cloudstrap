@@ -41,10 +41,10 @@ jobs:
       - name: Build (Release — analyzers enforce strictness)
         run: dotnet build src/Cloudstrap.sln -c Release -p:ContinuousIntegrationBuild=true -p:Version=${{ steps.gitversion.outputs.semVer }}
 
-      # The E2E suite (src/Test/WasmTestProject/test) drives headless Chromium; without this
+      # The E2E suite (src/Test/E2E) drives headless Chromium; without this
       # install the test leg fails loudly with Playwright's install instruction.
       - name: Install Playwright Chromium (E2E)
-        run: pwsh src/Test/WasmTestProject/test/Cloudstrap.WasmTestProject.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+        run: pwsh src/Test/E2E/Cloudstrap.WasmTestProject.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 
       - name: Run all MTP test executables
         run: |
