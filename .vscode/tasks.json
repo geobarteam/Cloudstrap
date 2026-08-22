@@ -57,6 +57,17 @@
       "group": "build"
     },
     {
+      "label": "build-demo-worker",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/demo/Worker/Cloudstrap.Demo.Worker.csproj"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
       "label": "build-solution",
       "type": "process",
       "command": "dotnet",

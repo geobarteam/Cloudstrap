@@ -99,6 +99,7 @@ src/
 │   ├── BlazorServer/                    #   Cloudstrap.Demo.BlazorServer — OIDC + user-token client (5340)
 │   ├── BlazorWasm/                      #   Bff (5300) + Client + Presentation — the WASM/BFF demo
 │   ├── Mvc/                             #   Cloudstrap.Demo.Mvc — two-call MVC example (5320)
+│   ├── Worker/                          #   Cloudstrap.Demo.Worker — headless worker + health listener (5350)
 │   └── Shared/                          #   Contracts (shared DTOs) + IdentityProvider (demo IdP host, 5310)
 │                                        #   Every deliverable demonstrates its feature here (workflow rule 9)
 └── Test/
@@ -237,7 +238,7 @@ src\Test\E2E\Cloudstrap.Demo.E2E.Tests\bin\Debug\net10.0\Cloudstrap.Demo.E2E.Tes
 6. **Code analysis every step** — after REFACTOR, fix all violations, then run the full test suite.
 7. **🛑 STOP at HUMAN GATE** — plans place gates at slice boundaries, not after every step; do not proceed past one until the user confirms.
 8. **Mark done** — check a step's `Done` box when its VERIFY passes; check a gate's boxes only after user approval. First unchecked `[ ]` in `_plans/<FeatureName>.md` = where to resume.
-9. **Demonstrate every migrated feature in the demo apps** — each deliverable's plan ends with a demonstration slice extending the appropriate app under `src/demo` (API/hosting features → `Cloudstrap.Demo.Api` · interactive/BFF/browser features → the BlazorWasm app · MVC features → `Cloudstrap.Demo.Mvc` · Blazor Server features → `Cloudstrap.Demo.BlazorServer` · worker/messaging features → the demo app their deliverable designates) plus ≥ 1 E2E test in `Cloudstrap.Demo.E2E.Tests` proving the behavior through the running app, before its final 🛑 gate (planner rule 15; precedents `_plans/25-WasmTestProjectSut.md`, `_plans/27-DemoAppsRestructure.md`).
+9. **Demonstrate every migrated feature in the demo apps** — each deliverable's plan ends with a demonstration slice extending the appropriate app under `src/demo` (API/hosting features → `Cloudstrap.Demo.Api` · interactive/BFF/browser features → the BlazorWasm app · MVC features → `Cloudstrap.Demo.Mvc` · Blazor Server features → `Cloudstrap.Demo.BlazorServer` · **worker / headless-hosting features → `Cloudstrap.Demo.Worker`** · messaging features → the demo app their deliverable designates) plus ≥ 1 E2E test in `Cloudstrap.Demo.E2E.Tests` proving the behavior through the running app, before its final 🛑 gate (planner rule 15; precedents `_plans/25-WasmTestProjectSut.md`, `_plans/27-DemoAppsRestructure.md`).
 
 ---
 

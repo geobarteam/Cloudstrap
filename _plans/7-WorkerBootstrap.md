@@ -505,7 +505,7 @@ exception type/message.
 
 ## Step 4 — The package is publishable and guarded forever: metadata, README (incl. the D-5 crash-flush guidance and the one-owner Aspire rule), contribute-mode composition proven, and tripwires on the surface, the closure and the forbidden identifiers (AC-WK8 composition half, AC-WK10, AC-ASP2, AC-A3)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Worker/Cloudstrap.Worker.csproj` *(modify)* — `<Description>` (worker-service
@@ -604,7 +604,7 @@ nupkg has no README/description/tags; recorded per the plan-2…6 precedent)*:
 
 ## Step 5 — The demo suite gains a running headless worker: `Cloudstrap.Demo.Worker` on health port 5350 with the five-line bootstrap, the D-5 crash-flush pattern and Console-mode observability — probes proven anonymously over real HTTP by a new E2E fixture while every existing E2E test stays green (AC-WK11 first half; demonstration slice, D-4)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/demo/Worker/Cloudstrap.Demo.Worker.csproj` *(create)* — `Microsoft.NET.Sdk` (a **generic host**,
@@ -691,7 +691,7 @@ existing test is disturbed, the executor reports it at the gate rather than weak
 
 ## Step 6 — The outage drill, live: a sentinel file flips `/ready` to 503 while `/healthz` stays 200 and recovery follows its removal, probe polling leaves no trace spans in the captured telemetry — and the demo-vehicle table gains its worker row (AC-WK4 live, AC-WK8 live, AC-WK11; the rule-9 doc addition)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/demo/Worker/DemoOutageHealthCheck.cs` *(create)* — the D-4 vehicle detail: `internal sealed :

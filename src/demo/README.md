@@ -45,6 +45,7 @@ calls with `PackageReference Cloudstrap.*` instead — nothing else changes.
 | 5320 | Mvc demo | `MvcHostTests` (or `dotnet run`) |
 | 5330 | Api demo | E2E fixture (or `dotnet run`) |
 | 5340 | BlazorServer demo | `BlazorServerTests` (or `dotnet run`) |
+| 5350 | Worker demo (health listener) | `WorkerHostTests` (or `dotnet run`) |
 | 59999 | dead-port test | `ExtensionsTests` |
 
 All ports are launch-profile/configuration defaults — override with `ASPNETCORE_URLS` and
@@ -62,6 +63,7 @@ src/demo/
 │   ├── Client/     Cloudstrap.Demo.BlazorWasm.Client   Blazor WebAssembly client
 │   └── Presentation/  …BlazorWasm.Presentation         Razor Class Library (MudBlazor pages)
 ├── Mvc/            Cloudstrap.Demo.Mvc                 two-call server-rendered MVC example (README inside)
+├── Worker/         Cloudstrap.Demo.Worker              headless worker + truthful health listener (README inside)
 └── Shared/
     ├── Contracts/  Cloudstrap.Demo.Contracts           DTOs shared across the demo apps
     └── IdentityProvider/  Cloudstrap.Demo.IdentityProvider  demo-only seeded IdP host (README inside)
@@ -82,6 +84,7 @@ app, in a terminal:
 dotnet run --project src/demo/Shared/IdentityProvider    # the demo IdP — start it first: 5310
 dotnet run --project src/demo/Api                        # 5330
 dotnet run --project src/demo/Mvc                        # 5320 (needs no other process)
+dotnet run --project src/demo/Worker                     # health on 5350 (needs no other process)
 dotnet run --project src/demo/BlazorServer               # 5340
 dotnet run --project src/demo/BlazorWasm/Bff             # 5300  (-lp https → https://localhost:7200)
 ```

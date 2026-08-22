@@ -75,6 +75,19 @@
       }
     },
     {
+      // The headless worker demo — health probes on 5350 (port from appsettings, not ASPNETCORE_URLS).
+      "name": "Demo Worker",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-demo-worker",
+      "program": "${workspaceFolder}/src/demo/Worker/bin/Debug/net10.0/Cloudstrap.Demo.Worker.dll",
+      "cwd": "${workspaceFolder}/src/demo/Worker",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    {
       // The BlazorServer demo on 5340 — OIDC at the shared IdP + user-token client to the Api.
       "name": "Demo BlazorServer",
       "type": "coreclr",
@@ -96,6 +109,7 @@
         "Demo IdP host",
         "Demo Api",
         "Demo Mvc",
+        "Demo Worker",
         "Demo BlazorServer",
         "Demo BlazorWasm (Bff server)"
       ],

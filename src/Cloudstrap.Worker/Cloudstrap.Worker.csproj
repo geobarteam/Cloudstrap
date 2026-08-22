@@ -6,6 +6,16 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Description>Worker-service bootstrap for the .NET generic host: validated Cloudstrap configuration (fail-fast at the call), correlation, additive health-check registration, and a minimal Kestrel health listener serving /healthz + /ready from the host's registered checks on a configurable port. One call and one Cloudstrap:Worker section.</Description>
+    <PackageTags>$(PackageTags);worker;backgroundservice;healthchecks;probes;generichost</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>

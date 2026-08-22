@@ -17,7 +17,8 @@ starts, or after a ⚠️ Risk Area step). Never attach a gate to every step.
 
 Demonstration slice (MANDATORY for extraction deliverables — planner rule 15): the LAST slice
 of the plan extends the appropriate demo app under src/demo (API/hosting → Api ·
-interactive/BFF/browser → BlazorWasm · MVC → Mvc · Blazor Server → BlazorServer) to exercise
+interactive/BFF/browser → BlazorWasm · MVC → Mvc · Blazor Server → BlazorServer ·
+worker/headless-hosting → Worker) to exercise
 the deliverable's headline behavior and adds ≥ 1 E2E test to
 src/Test/E2E/Cloudstrap.Demo.E2E.Tests/ proving it through the running app. Its RED
 failing-run command targets the E2E executable, e.g.:
