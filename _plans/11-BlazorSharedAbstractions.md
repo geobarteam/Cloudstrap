@@ -592,7 +592,7 @@ pre-existing E2E suite is the tripwire).
   MVVM frameworks/state containers, no `Microsoft.AspNetCore.Components` reference, zero `Aspire.*`,
   zero `Nihdi.*`) and that every De-NIHDI row is closed (`AddBlazorCommonForNihdi` →
   `AddCloudstrapBlazorCommon`, `NihdiWasmControls` gone, no company headers, neutral fixtures).
-- [ ] Docs review: `src/Cloudstrap.BlazorCommon/README.md` matches as-built behavior (quick start
+- [x] Docs review: `src/Cloudstrap.BlazorCommon/README.md` matches as-built behavior (quick start
   mirrors the demo Client composition, knob table, no-configuration statement, registration
   semantics, escape hatch, `IErrorHandler`/`IViewModel` postures, migration notes D-1…D-5);
   `src/demo/BlazorWasm/README.md` matrix row cites the real E2E test names;
@@ -600,4 +600,4 @@ pre-existing E2E suite is the tripwire).
   note. **User-owned follow-up (not in this plan, per the spec's Decision Log)**: apply the approved
   founding-spec package-map amendment in `_specs/Cloudstrap.md` and the matching CLAUDE.md
   project-structure comment — "Shared Blazor abstractions (ErrorHandler, ViewModel, convention scan)".
-- [ ] User approved — deliverable #11 done; project-manager flips the ROADMAP row to ✅.
+- [x] User approved — deliverable #11 done; project-manager flips the ROADMAP row to ✅.
