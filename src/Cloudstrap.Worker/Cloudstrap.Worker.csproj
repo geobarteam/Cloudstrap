@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
+    <ProjectReference Include="..\Cloudstrap.Observability\Cloudstrap.Observability.csproj" />
+    <ProjectReference Include="..\Cloudstrap.Extensions\Cloudstrap.Extensions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cloudstrap.Worker.Tests" />
+  </ItemGroup>
+
+</Project>

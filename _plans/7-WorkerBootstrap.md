@@ -221,7 +221,7 @@ await builder.Build().RunAsync();
 
 ## Step 1 — One call on a plain generic host wires the worker bootstrap: the `Cloudstrap` section validated eagerly and fail-fast, core + correlation registered idempotently, the stock health-check builder additive, the listener registered exactly once, `Cloudstrap:Worker` bound/validated with the callback winning — and the worker app itself carries no ASP.NET pipeline (AC-WK1; AC-WK2's default-port clause; AC-WK5's registration half)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Worker/Cloudstrap.Worker.csproj` *(create)* — Sdk project, `TargetFramework=net10.0`,
@@ -335,7 +335,7 @@ sibling-call convention, and the fail-fast posture.
 
 ## Step 2 — The worker answers container probes over real HTTP: #4's probe implementation live on the configured port and paths with the framework's semantics, exactly two endpoints (unknown paths 404), and zero probe-evaluation code of our own (AC-WK2, AC-WK3, AC-WK7) ⚠️ *(Risk Area: the D-1 transport implementation — mechanic (b))*
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Worker/WorkerHealthListener.cs` *(modify)* — the full mechanic (b) implementation:
@@ -398,7 +398,7 @@ probes share paths, tags, status mapping, `Enabled` gate and the anonymous/short
 
 ## Step 3 — Probes tell the truth and failure is loud: the readiness flip both directions under the tag contract, untagged checks served by neither, degraded stays passing, disabled means never bound, the loopback override with zero environment sniffing, and an occupied port fails the host naming it (AC-WK4, AC-WK5, AC-WK6, AC-WK9)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Worker/WorkerHealthListener.cs` *(modify — only if the Step 2 implementation needs
@@ -480,20 +480,22 @@ composed-address proof of the all-interfaces default (confirm, or direct a live-
 mechanics (i.1)/(i.2) executor reports — the framework writer bodies and the confirmed occupied-port
 exception type/message.
 
-- [ ] Behavioral verification: test exe output shows — the eager fail-fast at the call, the
+- [x] Behavioral verification: test exe output shows — the eager fail-fast at the call, the
   registration set with idempotence and the no-`IServer` proof, the bound defaults (9000/`"*"`) and
   the winning callback, the out-of-range fail-fast, the disabled no-registration (Step 1); both probes
   live over real HTTP with framework bodies through the bridged host registry, the port+path
   overrides, the single-port binding, the unknown-path 404 and the no-probe-logic sweep (Step 2); the
   503 flip both directions with tag separation, untagged-neither, degraded-200, disabled-never-bound,
   the loopback override + composed-default assertions, the no-sniffing sweep and the occupied-port
-  startup fault naming the port (Step 3).
-- [ ] Code review: entry-point/options signatures vs the spec sketch, verbatim; `internal` by default
+  startup fault naming the port (Step 3). *(Executor reports: mechanic (i.1) — framework writer bodies
+  `Healthy`/`Degraded` confirmed with Healthy/Degraded→200, Unhealthy→503; mechanic (i.2) — Kestrel's
+  stock bind exception names the address+port, no wrapper added.)*
+- [x] Code review: entry-point/options signatures vs the spec sketch, verbatim; `internal` by default
   (`WorkerHealthListener`, validator) + sealed + full XML docs;
   `dotnet list src/Cloudstrap.Worker/Cloudstrap.Worker.csproj package` → **zero package references**,
   three project references; the listener composes `MapCloudstrapHealthChecks` and owns no probe
   evaluation, no paths, no tags of its own.
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate (2026-08-22)
 
 ---
 
