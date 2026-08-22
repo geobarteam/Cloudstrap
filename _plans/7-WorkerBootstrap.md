@@ -773,13 +773,13 @@ the AC-ASP2 permanent guard · the **rule-9 vehicle-table edits** to CLAUDE.md /
 plan-template — instruction files, reviewed verbatim · mechanic (i.3)'s executor report (the console
 span shape behind the no-span assertion).
 
-- [ ] Behavioral verification: the four `WorkerHostTests` pass (probes anonymous + framework bodies,
+- [x] Behavioral verification: the four `WorkerHostTests` pass (probes anonymous + framework bodies,
   captured heartbeat telemetry, the sentinel 503/200 flip with recovery, the no-probe-spans proof);
   **all pre-existing E2E tests pass unchanged**; the composition pair and the four
   `PackageSurfaceTests` guards are green; the expanded Release `.nupkg` contents were reviewed; the
   identifier sweep is empty (self-referential hits only); the full-suite check (build + 10 unit exes
   + E2E exe + `dotnet format --verify-no-changes`) is green end to end.
-- [ ] Spec acceptance sign-off: walk **AC-WK1…AC-WK11 + AC-ASP2 + AC-A3** against the step evidence
+- [x] Spec acceptance sign-off: walk **AC-WK1…AC-WK11 + AC-ASP2 + AC-A3** against the step evidence
   using the Overview's AC coverage map — all met; confirm nothing from the spec's Drop /
   Out-of-Scope lists was resurrected (no config stash, no env sniffing, no `/health` aggregate path,
   no `HttpListener`, no crypto pin, no crash-flush API, no standalone listener entry point, no
@@ -787,11 +787,11 @@ span shape behind the no-span assertion).
   surfaces, zero `Aspire.*`, zero `Nihdi.*`) and that every De-NIHDI row is closed
   (`UseWorkerForNihdi` → `AddCloudstrapWorker`, three probe prefixes → the two standard configurable
   paths, `EnvironmentIsLocal()` → the explicit option, no company headers, neutral fixtures).
-- [ ] Docs review: `src/Cloudstrap.Worker/README.md` matches as-built behavior (quick start mirrors
+- [x] Docs review: `src/Cloudstrap.Worker/README.md` matches as-built behavior (quick start mirrors
   the demo `Program.cs` incl. the D-5 crash-flush pattern, settings tables, tag contract with the
   untagged-check note, one-owner Aspire rule, not-for-web-hosts and no-TLS warnings, migration
   notes); `src/demo/Worker/README.md` matrix rows cite the real E2E test names; `src/demo/README.md`
   port map (5350), layout and manual-run rows are accurate; the VS Code launch config + compound and
   the `build-demo-worker` task work (one F5 boots the worker with the rest); the CLAUDE.md rule-9 /
   planner rule-15 / plan-template worker rows read exactly as decided in D-4.
-- [ ] User approved — deliverable #7 done; project-manager flips the ROADMAP row to ✅.
+- [x] User approved — deliverable #7 done; project-manager flips the ROADMAP row to ✅.

@@ -84,7 +84,7 @@ Aspire and Cloudstrap sit on the same substrate — `Microsoft.Extensions.Config
 | Nihdi.Core.Configuration.OAuth | `Cloudstrap.Authentication.ClientCredentials` | Rebuilt on Duende ATM client-credentials. |
 | Nihdi.Core.Configuration.BlazorServer | `Cloudstrap.BlazorServer` | |
 | Nihdi.Core.Configuration.BlazorWasm | `Cloudstrap.BlazorWasm` | Already standalone; rename only. |
-| Nihdi.Core.Configuration.BlazorCommon | `Cloudstrap.BlazorCommon` | Already standalone; rename only. |
+| Nihdi.Core.Configuration.BlazorCommon | `Cloudstrap.BlazorCommon` | Shared Blazor abstractions (ErrorHandler, ViewModel, convention scan): `IErrorHandler` trimmed to `HandleError`/`ShowError`, Scrutor convention scan behind one composite `AddCloudstrapBlazorCommon`; navigation wrapper and `NihdiWasmControls` dropped (no production consumers; framework-native `AdditionalAssemblies` replaces the latter). *(amended 2026-08-22 — see `_specs/11-BlazorSharedAbstractions.md` Decision Log)* |
 | Nihdi.Core.Configuration.NServiceBus | `Cloudstrap.Messaging` | Wolverine-based; see Messaging Migration. |
 | Nihdi.Core.Configuration.Hangfire (+Proxy) | `Cloudstrap.Hangfire` (+`.Proxy`) | Free Hangfire tier only (LGPL noted in docs). |
 | Nihdi.Core.Configuration.Proxy | `Cloudstrap.Proxy` | YARP trusted-subsystem forwarder. |

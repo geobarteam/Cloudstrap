@@ -81,7 +81,7 @@ src/
 ├── Cloudstrap.Authentication.ClientCredentials/ # Client-credentials tokens (Duende ATM)
 ├── Cloudstrap.BlazorServer/             # Blazor Server helpers (tracing, typed HttpClient)
 ├── Cloudstrap.BlazorWasm/               # WebAssembly client helpers: cookie auth, XSRF, Refit
-├── Cloudstrap.BlazorCommon/             # Shared Blazor abstractions (ErrorHandler, Navigation, ViewModel)
+├── Cloudstrap.BlazorCommon/             # Shared Blazor abstractions (ErrorHandler, ViewModel, convention scan)
 ├── Cloudstrap.Messaging/                # Wolverine: transports, outbox, conventions
 ├── Cloudstrap.Messaging.AzureBlob/      # Blob claim-check middleware
 ├── Cloudstrap.Hangfire/                 # Hangfire scheduler + recurring-task discovery
