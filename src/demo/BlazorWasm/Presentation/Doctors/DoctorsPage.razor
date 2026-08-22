@@ -8,21 +8,21 @@
     <code>AddDoctor</code> business span (Cloudstrap.Observability).
 </MudText>
 
-@if (Doctors is null)
+@if (ViewModel.Doctors is null)
 {
     @* Covers both the auth-state probe and the auto-triggered login redirect — no sign-in button. *@
     <MudProgressCircular Indeterminate="true" />
 }
 else
 {
-    <MudText Class="mb-2" data-testid="doctors-user">Signed in as @SignedInName</MudText>
+    <MudText Class="mb-2" data-testid="doctors-user">Signed in as @ViewModel.SignedInName</MudText>
 
     <MudSimpleTable Dense="true" Style="max-width: 40rem;" data-testid="doctors-grid">
         <thead>
             <tr><th>Name</th><th>Specialty</th></tr>
         </thead>
         <tbody>
-            @foreach (DoctorDto doctor in Doctors)
+            @foreach (DoctorDto doctor in ViewModel.Doctors)
             {
                 <tr data-testid="doctor-row"><td>@doctor.Name</td><td>@doctor.Specialty</td></tr>
             }
@@ -30,8 +30,8 @@ else
     </MudSimpleTable>
 
     <MudText Typo="Typo.h6" Class="mt-6">Add doctor</MudText>
-    <MudTextField T="string" @bind-Value="NewName" Label="Name" data-testid="doctor-name-input" />
-    <MudTextField T="string" @bind-Value="NewSpecialty" Label="Specialty" data-testid="doctor-specialty-input" />
+    <MudTextField T="string" @bind-Value="ViewModel.NewName" Label="Name" data-testid="doctor-name-input" />
+    <MudTextField T="string" @bind-Value="ViewModel.NewSpecialty" Label="Specialty" data-testid="doctor-specialty-input" />
     <MudButton Color="Color.Primary" Variant="Variant.Filled" Class="mt-2" OnClick="AddDoctorAsync" data-testid="add-doctor-submit">
         Add
     </MudButton>

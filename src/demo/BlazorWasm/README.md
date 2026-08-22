@@ -21,6 +21,7 @@ outbound hops (machine-token self-call + user-token call to the Api demo host on
 | Cookie/bearer coexistence — browsers challenged, machine callers 401 (#10) | per-endpoint scheme pin | `AnonymousBrowser_IsChallengedWhileTheMachineEndpointStill401s` |
 | The user's token crosses to a separate JWT host (#27) | `UserApi` flagged `AddUserAccessToken` + `AddClientAccessToken`, base address → the Api demo host | `UserCall_SignedIn_ProvesTheApiHostValidatedTheUsersToken` |
 | Secured feature with auto-triggered login (`/doctors`) | class-level `[Authorize]` + SUT-local challenge shaping | `DoctorsPage_AnonymousNavigation_AutoTriggersLoginAndShowsDoctors` · `GetDoctors_AnonymousApiGet_Returns401` |
+| Convention-registered ViewModel + consumer-owned error handler (#11) | `AddCloudstrapBlazorCommon<IDoctorsViewModel>()` + explicit `IErrorHandler` registration | `AddDoctor_WithBlankName_ShowsTheConsumersErrorHandlerSnackbar` · `DoctorsPage_Loads_ShowsSeededDoctors` (the VM-rendered proof) |
 
 ## Harness notes
 
@@ -47,6 +48,11 @@ outbound hops (machine-token self-call + user-token call to the Api demo host on
   via the documented `CloudstrapOpenIdConnectConfigurator` hook (`Accept: text/html` heuristic);
   browser navigations keep redirecting, which powers the `/doctors` auto-trigger. This and the
   `UserStateDto`/`user/state` probe are placeholder code deliverable #13 replaces.
+- **The doctors page is the ViewModel-pattern demonstration (#11)**: `DoctorsViewModel` is
+  convention-registered by `AddCloudstrapBlazorCommon<IDoctorsViewModel>()` (the `ViewModel`
+  suffix), initialized through `IViewModel.InitializeAsync`, and routes failures to the consumer's
+  `SnackbarErrorHandler` (registered explicitly — its name ends in `Handler`, outside the scan).
+  Navigation stays in the page: it injects `NavigationManager` directly, the D-3 posture.
 - **Scalar assertions are shell-based** (the reference UI pulls its bundle from a CDN CI may not
   reach), so `ScalarPage_Loads_InTheBrowser` asserts the shell only.
 - **A manual `dotnet run` without peers still boots** — token acquisition and metadata retrieval

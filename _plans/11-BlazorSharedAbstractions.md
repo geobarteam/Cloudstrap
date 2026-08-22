@@ -177,7 +177,7 @@ builder.Services.AddScoped<IErrorHandler, SnackbarErrorHandler>();        // con
 
 ## Step 1 — One `AddCloudstrapBlazorCommon<TAssemblyMarker>()` call on a plain, configuration-free `ServiceCollection` registers every public concrete `*ViewModel`/`*Service` as its implemented interfaces (transient, distinct instances), excludes everything else, resolves identically on a server-style host builder, and ships the band's two contracts with their door-pinning signatures — while registering no `IErrorHandler` of its own (AC-BC1; AC-BC2's parity halves; AC-BC4's exclusions; AC-BC5's package half; AC-BC6's signature; AC-BC7)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Directory.Packages.props` *(modify)* — the new `Scrutor` 7.0.0 pin in its own `ItemGroup` with
@@ -288,7 +288,7 @@ package's entire surface).
 
 ## Step 2 — Every convention has an override: custom suffixes fully replace the defaults, the lifetime knob is honored, extra assemblies are scanned while the marker's boundary holds, an emptied suffix list is a legal no-op, invalid suffix entries fail loud, and repeated calls append by documented design (AC-BC3; AC-BC4's boundary; the spec's edge-case table)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.BlazorCommon/ServiceCollectionExtensions.cs` *(modify — only if Step 1's minimal
@@ -364,19 +364,19 @@ AC-BC2 reading (generic-host parity + Step 3 closure guard instead of a literal 
 test — confirm) · the append-on-repeat and match-once-per-suffix semantics (documented-not-fixed —
 confirm the spec's edge-case reading).
 
-- [ ] Behavioral verification: test exe output shows — one configuration-free call registering the
+- [x] Behavioral verification: test exe output shows — one configuration-free call registering the
   convention set as interfaces with transient distinct instances, `IViewModel` reachability, the
   exclusion cast (abstract/internal/non-matching/no-interface), host-builder parity, and no
   `IErrorHandler` registration (Step 1); the full-replacement suffix override, the lifetime knob, the
   additional-assemblies scan with the marker boundary both ways, the legal empty no-op, the loud
   whitespace failure, the documented append-on-repeat, and the once-per-suffix match (Step 2); plus
   the two contract-shape pins and the no-implementation guard.
-- [ ] Code review: the four public types vs the spec sketch, verbatim; `sealed` on
+- [x] Code review: the four public types vs the spec sketch, verbatim; `sealed` on
   `BlazorCommonOptions`, static extension class, full XML docs incl. the escape-hatch and
   append-semantics remarks; `Cloudstrap.BlazorCommon.csproj` → **zero project references, zero
   framework references**, exactly the two package references; `src/Directory.Packages.props` diff —
   the Scrutor pin and its license comment only.
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate
 
 ---
 
@@ -386,7 +386,7 @@ confirm the spec's edge-case reading).
 
 ## Step 3 — The package is publishable and guarded forever: metadata, README (quick start, knob table, escape hatch, migration notes D-1…D-5), permanent tripwires on the closure (no Aspire, no Nihdi, no `Microsoft.AspNetCore.*`, no `Microsoft.Extensions.Configuration.*`), the forbidden identifiers, the dropped-type resurrections — and the instruction-file drift closed (AC-BC2's no-Blazor-reference half, AC-BC7's guard, AC-BC8, AC-ASP2, AC-A3; mechanic (g))
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.BlazorCommon/Cloudstrap.BlazorCommon.csproj` *(modify)* — `<Description>` (shared
@@ -480,7 +480,7 @@ and the instruction file still describes the dropped surface; recorded per the #
 
 ## Step 4 — The flagship demo runs on the package: the doctors page is restructured to a convention-registered `DoctorsViewModel` (initialized through `IViewModel` with a real `CancellationToken`) whose failures surface through the consumer's own MudBlazor `IErrorHandler` — proven in the browser by a new E2E test while every pre-existing E2E test stays green (AC-BC5 live, AC-BC6 live, AC-BC9; demonstration slice — workflow rule 9)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/demo/BlazorWasm/Presentation/Cloudstrap.Demo.BlazorWasm.Presentation.csproj` *(modify)* —
@@ -577,14 +577,14 @@ BlazorCommon sections only) · the **demo-consumer changes** (the `DoctorControl
 and the Presentation restructure — no shared-contract or auth-surface change; the untouched
 pre-existing E2E suite is the tripwire).
 
-- [ ] Behavioral verification: the new
+- [x] Behavioral verification: the new
   `AddDoctor_WithBlankName_ShowsTheConsumersErrorHandlerSnackbar` E2E passes and **all pre-existing
   E2E tests pass unchanged** (the six `DoctorsTests` now running through the ViewModel wiring); the
   four `PackageSurfaceTests` guards and the two `ContractShapeTests` pins are green; the expanded
   Release nupkg contents were reviewed; the identifier sweep is empty (self-referential hits only);
   the full-suite check (build + 11 unit exes + E2E exe + `dotnet format --verify-no-changes`) is
   green end to end.
-- [ ] Spec acceptance sign-off: walk **AC-BC1…AC-BC9 + AC-ASP2 + AC-A3** against the step evidence
+- [x] Spec acceptance sign-off: walk **AC-BC1…AC-BC9 + AC-ASP2 + AC-A3** against the step evidence
   using the Overview's AC coverage map — all met; confirm nothing from the spec's Drop / Out-of-Scope
   lists was resurrected (no `INavigationService`/`NavigationService`/`AddNavigationService`, no
   `NihdiWasmControls` or assembly registry, no `ShowWarning`/`ShowSuccess`, no default `IErrorHandler`

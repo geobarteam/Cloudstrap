@@ -35,6 +35,15 @@ namespace Cloudstrap.Demo.BlazorWasm.Bff.Controllers
         [HttpPost]
         public ActionResult<DoctorDto> Add(AddDoctorDto doctor)
         {
+            // Deliverable #11 demo: the reachable error path — reject a blank name with a 400
+            // before opening the business span, so the ViewModel can route the failure to the
+            // consumer's IErrorHandler.
+            if (string.IsNullOrWhiteSpace(doctor.Name))
+            {
+                ModelState.AddModelError(nameof(doctor.Name), "A doctor name is required.");
+                return ValidationProblem(ModelState);
+            }
+
             // Operation and component stay low-cardinality per the IBusinessTrace contract —
             // the doctor's name goes in the payload, never in the span.
             using IBusinessTraceScope span = _businessTrace.StartSpan("AddDoctor", "DoctorStore");

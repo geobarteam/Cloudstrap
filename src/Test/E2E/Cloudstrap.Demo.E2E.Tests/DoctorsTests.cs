@@ -128,6 +128,30 @@ namespace Cloudstrap.Demo.E2E.Tests
         }
 
         [Test]
+        public async Task AddDoctor_WithBlankName_ShowsTheConsumersErrorHandlerSnackbar()
+        {
+            // Arrange — the ViewModel-pattern demonstration (deliverable #11): the Bff's 400 must
+            // travel controller → DoctorsViewModel → the consumer's SnackbarErrorHandler → the browser
+            await BrowserSignIn.SignInAsync(Page, BaseUrl, "/doctors");
+            await Assertions.Expect(Page.GetByTestId("doctors-grid"))
+                .ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 30_000 });
+            int rowsBefore = await Page.GetByTestId("doctor-row").CountAsync();
+
+            // Act — leave the name blank
+            await Page.GetByTestId("doctor-specialty-input").FillAsync("Blank Name Probe");
+            await Page.GetByTestId("add-doctor-submit").ClickAsync();
+
+            // Assert — the consumer's error handler surfaced the server's message; the grid gained
+            // no blank row. No ConsoleErrors assertion here: Chromium logs the failed 400 fetch as
+            // a console error by design.
+            await Assertions.Expect(Page.Locator(".mud-snackbar"))
+                .ToContainTextAsync(
+                    "A doctor name is required.",
+                    new LocatorAssertionsToContainTextOptions { Timeout = 10_000 });
+            Assert.That(await Page.GetByTestId("doctor-row").CountAsync(), Is.EqualTo(rowsBefore));
+        }
+
+        [Test]
         public async Task AddDoctor_EmitsBusinessTraceInConsoleTelemetry()
         {
             if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CLOUDSTRAP_E2E_BASEURL")))

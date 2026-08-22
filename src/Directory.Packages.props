@@ -93,6 +93,13 @@
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <!-- MIT (khellang/Scrutor) — assembly scanning for Microsoft.Extensions.DependencyInjection; powers
+         the Cloudstrap.BlazorCommon convention scan. Deliberately a public dependency of that package:
+         "call services.Scan(...) directly" is the documented escape hatch, so it is not wrapped behind
+         an abstraction. Version verified current on nuget.org (release 2025-11-24) at pin time (2026-08-22). -->
+    <PackageVersion Include="Scrutor" Version="7.0.0" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageVersion Include="NUnit" Version="4.6.1" />
     <PackageVersion Include="NUnit3TestAdapter" Version="6.2.0" />
     <PackageVersion Include="NUnit.Analyzers" Version="4.14.0" />
