@@ -1,0 +1,128 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // F5: run the BlazorWasm demo app — debugs the Bff (server) process and opens the browser.
+      "name": "Demo BlazorWasm (Bff server)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-demo",
+      "program": "${workspaceFolder}/src/demo/BlazorWasm/Bff/bin/Debug/net10.0/Cloudstrap.Demo.BlazorWasm.Bff.dll",
+      "cwd": "${workspaceFolder}/src/demo/BlazorWasm/Bff",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "https://localhost:7200;http://127.0.0.1:5300"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      }
+    },
+    {
+      // Debug the C# running INSIDE the browser (breakpoints in Presentation / Client).
+      // Launches the Bff as the host and attaches the WASM debugger to Chrome/Edge.
+      "name": "Demo BlazorWasm (client debug)",
+      "type": "blazorwasm",
+      "request": "launch",
+      "hosted": true,
+      "preLaunchTask": "build-demo",
+      "program": "${workspaceFolder}/src/demo/BlazorWasm/Bff/bin/Debug/net10.0/Cloudstrap.Demo.BlazorWasm.Bff.dll",
+      "cwd": "${workspaceFolder}/src/demo/BlazorWasm/Bff",
+      "url": "https://localhost:7200",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "https://localhost:7200;http://127.0.0.1:5300"
+      }
+    },
+    {
+      // The demo identity provider on 5310 — start it next to the Bff (or use the compound below)
+      // so sign-in works outside the E2E fixture.
+      "name": "Demo IdP host",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-demo-idp",
+      "program": "${workspaceFolder}/src/demo/Shared/IdentityProvider/bin/Debug/net10.0/Cloudstrap.Demo.IdentityProvider.dll",
+      "cwd": "${workspaceFolder}/src/demo/Shared/IdentityProvider",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://127.0.0.1:5310"
+      }
+    },
+    {
+      // The pure JWT Api demo host on 5330 — the downstream peer of the trusted-subsystem demo.
+      "name": "Demo Api",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-demo-api",
+      "program": "${workspaceFolder}/src/demo/Api/bin/Debug/net10.0/Cloudstrap.Demo.Api.dll",
+      "cwd": "${workspaceFolder}/src/demo/Api",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://127.0.0.1:5330"
+      }
+    },
+    {
+      // The two-call MVC demo host on 5320 — anonymous by design, needs no other process.
+      "name": "Demo Mvc",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-demo-mvc",
+      "program": "${workspaceFolder}/src/demo/Mvc/bin/Debug/net10.0/Cloudstrap.Demo.Mvc.dll",
+      "cwd": "${workspaceFolder}/src/demo/Mvc",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://127.0.0.1:5320"
+      }
+    },
+    {
+      // The headless worker demo — health probes on 5350 (port from appsettings, not ASPNETCORE_URLS).
+      "name": "Demo Worker",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-demo-worker",
+      "program": "${workspaceFolder}/src/demo/Worker/bin/Debug/net10.0/Cloudstrap.Demo.Worker.dll",
+      "cwd": "${workspaceFolder}/src/demo/Worker",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    {
+      // The BlazorServer demo on 5340 — OIDC at the shared IdP + user-token client to the Api.
+      "name": "Demo BlazorServer",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-demo-blazorserver",
+      "program": "${workspaceFolder}/src/demo/BlazorServer/bin/Debug/net10.0/Cloudstrap.Demo.BlazorServer.dll",
+      "cwd": "${workspaceFolder}/src/demo/BlazorServer",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://127.0.0.1:5340"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      // One F5 for the whole demo suite: the identity provider first, then every demo host.
+      "name": "Demo apps (all hosts + IdP)",
+      "configurations": [
+        "Demo IdP host",
+        "Demo Api",
+        "Demo Mvc",
+        "Demo Worker",
+        "Demo BlazorServer",
+        "Demo BlazorWasm (Bff server)"
+      ],
+      "stopAll": true
+    },
+    {
+      // The BlazorWasm demo alone: the identity provider plus the Bff server.
+      "name": "Demo BlazorWasm (full app + IdP)",
+      "configurations": [
+        "Demo IdP host",
+        "Demo BlazorWasm (Bff server)"
+      ],
+      "stopAll": true
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>Server-rendered MVC bootstrap for ASP.NET Core: controllers + views, hardened session state on stock Microsoft.AspNetCore.Session, content-negotiated error handling — an error page for browsers, RFC 9457 problem details for JSON clients — correlation, health probes, security headers, HSTS and CORS. Two calls and one Cloudstrap:Mvc section.</Description>
+    <PackageTags>$(PackageTags);mvc;session;errorhandling;problemdetails;aspnetcore</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
+    <ProjectReference Include="..\Cloudstrap.Observability\Cloudstrap.Observability.csproj" />
+    <ProjectReference Include="..\Cloudstrap.Extensions\Cloudstrap.Extensions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cloudstrap.Mvc.Tests" />
+  </ItemGroup>
+
+</Project>

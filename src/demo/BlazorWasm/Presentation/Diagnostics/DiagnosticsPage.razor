@@ -1,0 +1,26 @@
+@page "/diagnostics"
+
+<PageTitle>Diagnostics — Cloudstrap WASM Test Project</PageTitle>
+
+<MudText Typo="Typo.h4">Diagnostics</MudText>
+<MudText Class="mb-4">
+    Server-side <code>Cloudstrap</code> options as bound and validated by Cloudstrap.Core on the Bff host.
+</MudText>
+
+@if (Diagnostics is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudSimpleTable Dense="true" Style="max-width: 40rem;">
+        <tbody>
+            <tr><td>System name</td><td data-testid="server-system-name">@Diagnostics.SystemName</td></tr>
+            <tr><td>Subsystem</td><td data-testid="server-subsystem">@Diagnostics.SubsystemName (@Diagnostics.SubsystemType)</td></tr>
+            <tr><td>Workload name</td><td data-testid="server-workload">@Diagnostics.WorkloadName</td></tr>
+            <tr><td>Environment tier</td><td data-testid="server-environment-tier">@Diagnostics.EnvironmentTier</td></tr>
+            <tr><td>OpenTelemetry mode</td><td data-testid="server-otel-mode">@Diagnostics.OpenTelemetryMode</td></tr>
+            <tr><td>Correlation header</td><td data-testid="server-correlation-header">@Diagnostics.CorrelationHeaderName</td></tr>
+        </tbody>
+    </MudSimpleTable>
+}

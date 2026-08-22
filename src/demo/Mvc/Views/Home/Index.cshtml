@@ -1,0 +1,21 @@
+@model int
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cloudstrap MVC demo</title>
+    <link rel="stylesheet" href="/site.css" />
+</head>
+<body>
+    <main>
+        <h1>Cloudstrap MVC demo</h1>
+        <p>
+            You have visited this page
+            <strong data-testid="visit-count">@Model</strong>
+            time(s) this session.
+        </p>
+        <p><a href="/home/boom">Trigger the error page</a></p>
+    </main>
+</body>
+</html>

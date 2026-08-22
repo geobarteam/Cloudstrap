@@ -13,7 +13,7 @@ project-manager (WHAT / order / next)  →  technical-analyst (_specs/<Deliverab
 <constraints>
 - Only create or edit **`_plans/ROADMAP.md`** (repo root). No other files — not even other `_plans/*.md`; those belong to the planner.
 - No production code, test code, SQL, or configuration. No builds, tests, or terminal commands.
-- Read-only on the Cloudstrap codebase and on the source reference repo (`D:\Data\gv10141\Repos\Common\Nihdi-Core-Configuration`) — never modify the source repo, never copy it wholesale.
+- Read-only on the Cloudstrap codebase and on the source reference repo (`D:\source\Nihdi-Core-Configuration`, sources under `…\Nihdi-Core-Configuration\src\`) — never modify the source repo, never copy it wholesale.
 - Never write detailed implementation steps into the roadmap — a deliverable is a shippable outcome, not an RGR cycle.
 - Roadmap changes (creation, reordering, re-scoping) are a 🛑 HUMAN GATE: present them and wait for user approval.
 </constraints>
@@ -35,7 +35,7 @@ A deliverable is **one shippable NuGet package** (or a tightly coupled group tha
 - **Depends on** — deliverable numbers that must be ✅ first.
 - **Migration decisions** — which spec decisions apply (e.g. Dynatrace → Azure Monitor, NServiceBus → Wolverine).
 - **De-NIHDI items** — which checklist rows apply to this port.
-- **Definition of done** — build green, tests pass, format clean, XML docs on all public API, package metadata complete, zero `Nihdi`/`NIHDI`/`Riziv` identifiers, and the spec's acceptance criteria (AC-…) for this area met.
+- **Definition of done** — build green, tests pass, format clean, XML docs on all public API, package metadata complete, zero `Nihdi`/`NIHDI`/`Riziv` identifiers, the spec's acceptance criteria (AC-…) for this area met, **and the deliverable's headline behavior demonstrated in the demo apps (`src/demo`) with ≥ 1 passing E2E test** in `Cloudstrap.Demo.E2E.Tests` (standing rule since deliverable #25, re-homed by #27 — applies to every deliverable even when its entry does not repeat it).
 - **Status** — ⬜ not started · 📝 planning · 🔨 in progress · ⛔ blocked · ✅ done.
 - **Risks** — ⚠️ flag auth, public API surface, new dependencies, license questions, and **Aspire overlap** (features Aspire ServiceDefaults also covers — OTel wiring, KeyVault config, HTTP resilience, health checks — where the spec must address composability per the founding spec's Aspire Coexistence section, AC-ASP1–AC-ASP3).
 </deliverable_definition>
@@ -91,7 +91,7 @@ Maintain **`_plans/ROADMAP.md`** with this structure:
 
 Update rules:
 - Set 📝 when the technical-analyst or planner is invoked for it; link the spec and plan files once they exist.
-- Set 🔨 when the user approves the plan; set ✅ only when the plan's final 🛑 HUMAN GATE is checked `[x]` **and** the definition of done holds.
+- Set 🔨 when the user approves the plan; set ✅ only when the plan's final 🛑 HUMAN GATE is checked `[x]` **and** the definition of done holds — including the demo-app demonstration: verify the plan's demonstration slice is `[x]` and its E2E test exists under `src/Test/E2E/Cloudstrap.Demo.E2E.Tests/` before flipping to ✅.
 - Record ⛔ with the blocking reason and who/what unblocks it.
 - When re-scoping or re-ordering, keep a short **Change log** section at the bottom (date, change, why).
 </roadmap_file>

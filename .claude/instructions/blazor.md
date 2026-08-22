@@ -9,7 +9,7 @@ description: "Blazor conventions for BlazorWasm, BlazorServer, and BlazorCommon 
 
 | Project | Role | Dependencies |
 |---------|------|--------------|
-| **BlazorCommon** | Shared interfaces (`IErrorHandler`, `INavigationService`, `IViewModel`) | Scrutor only |
+| **BlazorCommon** | Shared contracts (`IErrorHandler`, `IViewModel`) + convention scan — Scrutor only | Scrutor only |
 | **BlazorServer** | SSR helpers, distributed tracing, typed HTTP clients | `Common` |
 | **BlazorWasm** | browser-based cookie auth, XSRF, Refit HTTP clients | Minimal (no project refs) |
 
@@ -30,10 +30,22 @@ description: "Blazor conventions for BlazorWasm, BlazorServer, and BlazorCommon 
 
 ## BlazorCommon — Shared Abstractions
 
-- **Interfaces only** — no heavy implementations.
-- `AddPresentationServices<TAssemblyMarker>()` uses **Scrutor** to auto-register classes ending in `ViewModel` or `Service` as their interfaces (transient).
-- `IErrorHandler`: consumers implement (e.g., MudBlazor toasts). Methods: `HandleError`, `ShowError`, `ShowWarning`, `ShowSuccess`.
-- `IViewModel.InitializeAsync()`: async component initialization pattern.
+> ⚠️ Drift note: the BlazorServer/BlazorWasm sections of this file still describe the source-repo
+> surface until deliverables #12/#13 ship. This BlazorCommon section is the shipped truth.
+
+- **Contracts + one entry point** — the package's whole public surface is four types (`IViewModel`,
+  `IErrorHandler`, `BlazorCommonOptions`, `ServiceCollectionExtensions`); no Blazor package
+  reference, no `Cloudstrap:` configuration section.
+- `AddCloudstrapBlazorCommon<TAssemblyMarker>(Action<BlazorCommonOptions>?)` uses **Scrutor** to
+  register public concrete classes ending in `ViewModel` or `Service` as their implemented
+  interfaces (transient). Three overridable knobs: `ConventionSuffixes`, `Lifetime`,
+  `AdditionalAssemblies`. Escape hatch: call `services.Scan(...)` directly — Scrutor is a public
+  dependency.
+- `IErrorHandler`: consumers implement and register it themselves (e.g., MudBlazor snackbar);
+  Cloudstrap ships no implementation. Methods: `HandleError(Exception)`, `ShowError(string)` only.
+- `IViewModel.InitializeAsync(CancellationToken cancellationToken = default)`: async page
+  initialization pattern; implementations own cancellation.
+- **No navigation abstraction** — pages inject `NavigationManager` directly (D-3).
 
 ## Patterns
 

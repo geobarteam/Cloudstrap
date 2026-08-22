@@ -49,6 +49,7 @@ The first five rules are the most important — they define what makes a good pl
 12. **Respect the dependency matrix** from copilot-instructions.md. Order steps so no step depends on a later step.
 13. **DB changes are SQL only** — `Database/Tables/`, user deploys via Schema Compare.
 14. **Keep the plan updatable** — the executor marks a step's `Done` checkbox `[x]` when its VERIFY passes, and marks 🛑 HUMAN GATE checkboxes `[x]` only after the user approves at that gate. First unchecked `[ ]` = where to resume: on a step → implement it; on a gate → stop and wait for user approval.
+15. **Demonstration slice — MANDATORY for every extraction deliverable.** Every `_plans/<N>-<Deliverable>.md` ends with a slice that **demonstrates the deliverable's headline behavior in the demo apps** (`src/demo` — a page, endpoint, or config change in the running app; pick the vehicle by feature type: API/hosting → `Cloudstrap.Demo.Api` · interactive/BFF/browser → the BlazorWasm app · MVC → `Cloudstrap.Demo.Mvc` · Blazor Server → `Cloudstrap.Demo.BlazorServer` · worker/headless-hosting → `Cloudstrap.Demo.Worker` · messaging → the demo app the deliverable designates) and adds **at least one E2E test** to `src/Test/E2E/Cloudstrap.Demo.E2E.Tests/` proving it through the real running app (NUnit 4 + Microsoft.Playwright; the `E2eFixture` boots the demo IdP, the Api host and the Bff, `PageTestBase` drives headless Chromium, `E2eFixture.CapturedSutOutput` supports console-telemetry assertions). The deliverable's final 🛑 HUMAN GATE covers the demo. Also update the feature matrix in the extended app's README under `src/demo`. Precedents: `_plans/25-WasmTestProjectSut.md` (Core + Observability demo slices), `_plans/27-DemoAppsRestructure.md` (the demo-apps restructure).
 
 ### Example — "Subscriptions" feature (two slices: list + create):
 
@@ -95,7 +96,7 @@ Before writing the plan, ensure you have answers to ALL of these. If any answer 
 6. **New Blazor components or modifications to existing ones?**
 7. **New API endpoints or middleware?**
 8. **DI registration + integration test for service resolution planned?**
-9. **Smoke-test coverage in a SUT/sample app needed?**
+9. **Demonstration slice defined?** *(mandatory for extraction deliverables — rule 15)*: which page/endpoint in which demo app under `src/demo` demonstrates the deliverable's headline behavior, and what does the new E2E test in `Cloudstrap.Demo.E2E.Tests` assert through the running app?
 </interview>
 
 <plan_template>
@@ -120,6 +121,7 @@ Before presenting the plan, validate it against these criteria:
 8. Risk Areas from copilot-instructions.md are flagged with ⚠️.
 9. The plan has at least 2 steps (single-step work does not need a plan).
 10. No assumptions are marked as "TBD" — all clarifying questions have been answered.
+11. For extraction deliverables: the plan ends with a demonstration slice (rule 15) extending the appropriate demo app under `src/demo` plus ≥ 1 E2E test in `Cloudstrap.Demo.E2E.Tests`, and a 🛑 HUMAN GATE covers it.
 
 If any violation is found, fix the plan before presenting it.
 </self_check>

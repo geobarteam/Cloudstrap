@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>Worker-service bootstrap for the .NET generic host: validated Cloudstrap configuration (fail-fast at the call), correlation, additive health-check registration, and a minimal Kestrel health listener serving /healthz + /ready from the host's registered checks on a configurable port. One call and one Cloudstrap:Worker section.</Description>
+    <PackageTags>$(PackageTags);worker;backgroundservice;healthchecks;probes;generichost</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
+    <ProjectReference Include="..\Cloudstrap.Observability\Cloudstrap.Observability.csproj" />
+    <ProjectReference Include="..\Cloudstrap.Extensions\Cloudstrap.Extensions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cloudstrap.Worker.Tests" />
+  </ItemGroup>
+
+</Project>

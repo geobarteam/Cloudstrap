@@ -1,0 +1,35 @@
+@page "/whoami"
+@attribute [Authorize]
+@inject IDemoApiClient DemoApi
+
+<PageTitle>Who am I</PageTitle>
+
+<h1>Signed in as <span data-testid="user-name">@_userName</span></h1>
+<p>
+    The Api demo host validated this user's token and answered from
+    <strong data-testid="api-host">@_whoAmI?.Host</strong>
+    for subject <strong data-testid="api-subject">@_whoAmI?.Subject</strong>.
+</p>
+<a href="/">Home</a>
+
+@code {
+    // Statically server-rendered on purpose: the request's HttpContext carries the cookie session,
+    // so the user-token handler can do its work with zero extra plumbing. Interactive-circuit token
+    // plumbing is exactly what deliverable #12 (Cloudstrap.BlazorServer) adds later.
+    private string _userName = string.Empty;
+    private DownstreamWhoAmIDto? _whoAmI;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState is not null)
+        {
+            AuthenticationState state = await AuthState;
+            _userName = state.User.Identity?.Name ?? string.Empty;
+        }
+
+        _whoAmI = await DemoApi.GetWhoAmIAsync(CancellationToken.None);
+    }
+}

@@ -1,0 +1,10 @@
+# Versioning contract (see _specs/0-RepoScaffolding.md):
+# - vX.Y.Z tags on main are the only source of stable versions -> that commit versions exactly X.Y.Z
+# - dev commits -> X.Y.Z-preview.N (N increments per commit since the last version anchor)
+# - untagged main commits compute a next-patch pre-release that is never published (workflow triggers)
+# - hotfix/* follows GitVersion's standard GitFlow handling
+workflow: GitFlow/v1
+tag-prefix: '[vV]?'
+branches:
+  develop:
+    label: preview

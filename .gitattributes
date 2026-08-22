@@ -1,0 +1,10 @@
+# Normalize text files in git storage; materialize CRLF in every checkout for the
+# file types whose end-of-line style src/.editorconfig enforces (dotnet format's
+# ENDOFLINE check on CI runs on Linux, where git would otherwise check out LF).
+* text=auto
+
+*.cs text eol=crlf
+*.vb text eol=crlf
+*.sln text eol=crlf
+
+*.png binary

@@ -26,7 +26,7 @@ The user specifies one of three levels. Default to **medium** if not specified.
 
 ```
 src/
-├── Cloudstrap.Core/                # CloudstrapConfiguration settings model, validation
+├── Cloudstrap.Core/                # CloudstrapOptions settings model, validation
 ├── Cloudstrap.Extensions/          # KeyVault config, typed HttpClients, hosting helpers
 ├── Cloudstrap.Observability/       # Serilog bootstrap, OpenTelemetry pipeline, correlation
 ├── Cloudstrap.Observability.AzureMonitor/  # Application Insights exporter wiring

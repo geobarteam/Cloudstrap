@@ -1,0 +1,12 @@
+@inject NavigationManager Navigation
+
+@code {
+    // Auto-triggers the OIDC challenge for protected pages: a full-load navigation to the #10
+    // opt-in login endpoint, returning to the page the user asked for.
+    protected override void OnInitialized()
+    {
+        Navigation.NavigateTo(
+            "account/login?returnUrl=/" + Navigation.ToBaseRelativePath(Navigation.Uri),
+            forceLoad: true);
+    }
+}

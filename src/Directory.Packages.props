@@ -1,7 +1,115 @@
 <Project>
+  <!-- Transitive pinning raises dependencies no Cloudstrap code references directly. It is enabled for the
+       security floor below; a direct PackageReference is not usable here, because the SDK prunes
+       framework-provided packages and rejects referencing them (NU1510).
+       System.Security.Cryptography.Xml — Azure.Extensions.AspNetCore.DataProtection.* resolve
+       Microsoft.AspNetCore.DataProtection 10.0.7, whose 10.0.7 XML dependency carries five high-severity
+       advisories (GHSA-cvvh-rhrc-wg4q, GHSA-g8r8-53c2-pm3f, GHSA-23rf-6693-g89p, GHSA-8q5v-6pqq-x66h,
+       GHSA-mmjf-rqrv-855v). 10.0.10 is the patched build. -->
+  <PropertyGroup>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.10" />
+  </ItemGroup>
+  <!-- Test-only: AC-ASP3 (a Cloudstrap typed client tolerates consumer resilience handlers) and real-HTTP
+       probe-endpoint tests — never referenced by a shipped package -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0" />
+  </ItemGroup>
+  <!-- Test identity provider only (src/Test/TestIdentityProvider) — never referenced by a shipped
+       package. Apache-2.0 (OpenIddict) + MIT (EF Core Sqlite).
+       SQLitePCLRaw.lib.e_sqlite3 — EF Core Sqlite 10.0.10 resolves 2.1.11, which carries the
+       high-severity advisory GHSA-2m69-gcr7-jv3q; 2.1.12 is the patched build (transitive-pinning
+       security floor, the System.Security.Cryptography.Xml precedent). -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+    <PackageVersion Include="OpenIddict.EntityFrameworkCore" Version="7.6.0" />
+    <PackageVersion Include="OpenIddict.Server.AspNetCore" Version="7.6.0" />
+    <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Apache-2.0 (Duende FOSS) — machine-to-machine token acquisition, caching and renewal; the
+         suite's first auth-stack runtime dependency (Cloudstrap.Authentication.ClientCredentials) -->
+    <PackageVersion Include="Duende.AccessTokenManagement" Version="4.2.0" />
+    <!-- Apache-2.0 (Duende FOSS) — the OIDC/user-token half of the same library and version:
+         transparent user-token refresh for Cloudstrap.Authentication.OpenIdConnect (deliverable #10).
+         Version verified current on nuget.org at pin time (2026-08-08). -->
+    <PackageVersion Include="Duende.AccessTokenManagement.OpenIdConnect" Version="4.2.0" />
+    <!-- MIT (dotnet) — the stock interactive OIDC protocol handler, pinned to the repo's 10.0.x family
+         (transitive of Duende.AccessTokenManagement.OpenIdConnect, which requires >= 10.0.4).
+         ⚠️ Its Microsoft.IdentityModel.Protocols.OpenIdConnect dependency must stay >= 8.0.1 < 9.0.0 —
+         the same Microsoft.IdentityModel 8.x family constraint #9 recorded for
+         System.IdentityModel.Tokens.Jwt; a future 9.x pin breaks restore. -->
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- MIT (dotnet org) — the .NET API versioning standard, one release train -->
+    <PackageVersion Include="Asp.Versioning.Mvc" Version="10.0.1" />
+    <PackageVersion Include="Asp.Versioning.Mvc.ApiExplorer" Version="10.0.1" />
+    <!-- The v10 bridge: one OpenAPI document per discovered API version, in the box -->
+    <PackageVersion Include="Asp.Versioning.OpenApi" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <!-- MIT (scalar/scalar) — the API reference UI rendered over the generated documents -->
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.17" />
+    <!-- Stock inbound JWT validation; replaces the internal enterprise authentication stack -->
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Apache-2.0 (Xabaril) — the canonical URI health check; replaces a bespoke liveness probe -->
+    <PackageVersion Include="AspNetCore.HealthChecks.Uris" Version="9.0.0" />
+    <PackageVersion Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.5.1" />
+    <PackageVersion Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" Version="1.5.3" />
+    <PackageVersion Include="Azure.Extensions.AspNetCore.DataProtection.Keys" Version="1.6.3" />
+    <PackageVersion Include="Azure.Identity" Version="1.21.0" />
+    <PackageVersion Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.8.3" />
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.29.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.InMemory" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.17.0" />
+    <PackageVersion Include="Serilog" Version="4.4.0" />
+    <PackageVersion Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- MIT (khellang/Scrutor) — assembly scanning for Microsoft.Extensions.DependencyInjection; powers
+         the Cloudstrap.BlazorCommon convention scan. Deliberately a public dependency of that package:
+         "call services.Scan(...) directly" is the documented escape hatch, so it is not wrapped behind
+         an abstraction. Version verified current on nuget.org (release 2025-11-24) at pin time (2026-08-22). -->
+    <PackageVersion Include="Scrutor" Version="7.0.0" />
+  </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="NUnit" Version="4.6.1" />
     <PackageVersion Include="NUnit3TestAdapter" Version="6.2.0" />
     <PackageVersion Include="NUnit.Analyzers" Version="4.14.0" />
+  </ItemGroup>
+  <!-- Demo apps + E2E only (src/demo, src/Test/E2E) — never referenced by shipped packages -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.61.0" />
+    <PackageVersion Include="MudBlazor" Version="9.7.0" />
   </ItemGroup>
 </Project>
