@@ -10,7 +10,7 @@ description: "Blazor conventions for BlazorWasm, BlazorServer, and BlazorCommon 
 | Project | Role | Dependencies |
 |---------|------|--------------|
 | **BlazorCommon** | Shared contracts (`IErrorHandler`, `IViewModel`) + convention scan — Scrutor only | Scrutor only |
-| **BlazorServer** | SSR helpers, distributed tracing, typed HTTP clients | `Common` |
+| **BlazorServer** | Hardened Blazor Server composite (`AddCloudstrapBlazorServer`/`UseCloudstrapBlazorServer<TRoot>`) + `IBlazorInteractionTrace` | `Cloudstrap.Extensions` only; **no `Cloudstrap.BlazorCommon` reference (D-13 — demo-level adoption only)** |
 | **BlazorWasm** | browser-based cookie auth, XSRF, Refit HTTP clients | Minimal (no project refs) |
 
 ## BlazorWasm — Browser Cookie Authentication
@@ -21,17 +21,31 @@ description: "Blazor conventions for BlazorWasm, BlazorServer, and BlazorCommon 
 - HTTP clients: `AddCloudstrapWasmHttpClient<TClient>()` returns `IHttpClientBuilder` for Refit chaining.
 - Default Refit settings: `System.Text.Json` with `CamelCase` naming policy.
 
-## BlazorServer — Distributed Tracing & HTTP Clients
+## BlazorServer — Composite Pipeline & Interaction Tracing
 
-- Entry point: `AddBlazorForCloudstrap()` / `UseBlazorForCloudstrap<TRootComponent>()`.
-- `IDistributedTraceService` is **scoped** (per-request). Has overloads for 1–5 generic type parameters.
-- `AddCloudstrapHttpServiceClient<TInterface, TImplementation>()` auto-adds `ActivitySourceDelegatingHandler` for trace propagation.
-- Depends on `Cloudstrap.Common` for shared infrastructure.
+- Two entry points: `AddCloudstrapBlazorServer(Action<CloudstrapBlazorServerConfigurator>?)` on the
+  builder and `UseCloudstrapBlazorServer<TRootComponent>(Action<BlazorServerPipelineOptions>?)` on
+  the app. The pipeline order is fixed; every hook (`BeforeRouting`, `BeforeAuthorization`,
+  `BeforeEndpoints`, `ConfigureComponentEndpoints`, `ConfigureEndpoints`) is an insertion point.
+- **Interactivity is decided once**, at registration time (`Configurator.Interactivity`:
+  `InteractiveServer` default, or `StaticServer`); the `Use` call follows it — there is no
+  render-mode knob on the pipeline options. `Use` without `Add` throws.
+- Registers **no authentication** (pair with `AddCloudstrapOpenIdConnect` or your own scheme —
+  middleware appears exactly when a scheme is registered) and **no observability pipeline**
+  (`UseCloudstrapObservability` is a separate call).
+- `IBlazorInteractionTrace` — a **singleton** with one method, `StartInteraction(name)`: starts a
+  detached root span per circuit interaction (the D-9 replacement for `IDistributedTraceService`
+  and its 1–5 generic overloads), points the ambient correlation id at it, restores on dispose.
+  Source constant: `BlazorServerActivitySources.Interaction`, contributed additively to any
+  DI-built tracer pipeline.
+- Typed HTTP clients are #4's `AddCloudstrapHttpServiceClient<TInterface, TImplementation>()`
+  unchanged — there is **no** BlazorServer client API and **no** auto-added
+  `ActivitySourceDelegatingHandler`; outbound tracing belongs to the OTel HTTP instrumentation.
 
 ## BlazorCommon — Shared Abstractions
 
-> ⚠️ Drift note: the BlazorServer/BlazorWasm sections of this file still describe the source-repo
-> surface until deliverables #12/#13 ship. This BlazorCommon section is the shipped truth.
+> ⚠️ Drift note: the BlazorWasm section of this file still describes the source-repo surface until
+> deliverable #13 ships. The BlazorServer and BlazorCommon sections are the shipped truth.
 
 - **Contracts + one entry point** — the package's whole public surface is four types (`IViewModel`,
   `IErrorHandler`, `BlazorCommonOptions`, `ServiceCollectionExtensions`); no Blazor package
@@ -49,6 +63,7 @@ description: "Blazor conventions for BlazorWasm, BlazorServer, and BlazorCommon 
 
 ## Patterns
 
-- Extension methods follow `Add<Feature>ForCloudstrap()` or `Use<Feature>ForCloudstrap()` naming.
+- BlazorWasm extension methods still follow the source repo's `Add<Feature>ForCloudstrap()` naming
+  until #13 ships; shipped packages use `AddCloudstrap<Feature>` / `UseCloudstrap<Feature>`.
 - HTTP client registration returns `IHttpClientBuilder` for Refit chaining.
 - No cross-references between BlazorWasm and BlazorServer — they are independent hosting models.

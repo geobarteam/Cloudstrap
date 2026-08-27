@@ -505,7 +505,7 @@ test project + the `TestComponents` RCL as the honest `AdditionalAssemblies` bou
 `MapStaticAssets` default-on left to the Step 6 demo/E2E where a real asset manifest exists —
 confirm) · the D-12 `X-Frame-Options: SAMEORIGIN` default observed live in the header tests.
 
-- [ ] Behavioral verification: test exe output shows — the two-call boot with Interactive Server
+- [x] Behavioral verification: test exe output shows — the two-call boot with Interactive Server
   prerender markers, anonymous `/healthz`+`/ready`, correlation echo, the honored `StaticServer`
   decision, double-`Use`/missing-`Add` throws (Step 1); the three set-if-absent headers with the
   frame-options switch and never-overwrite proof, hardened antiforgery + configurator final say,
@@ -513,12 +513,13 @@ confirm) · the D-12 `X-Frame-Options: SAMEORIGIN` default observed live in the 
   no-scheme/cookie-scheme/OIDC-pairing auth placement, hook order, path base both ways, the
   additional-assembly boundary both ways, the component-endpoint and RazorComponents hooks, the
   static-assets flag, and the no-correlation/no-CORS/no-forwarded-headers guard (Step 3).
-- [ ] Code review: pipeline order in `UseCloudstrapBlazorServer` against mechanic (b) / the spec's
+  *(2026-08-27: 34/34 tests green on the freshly built exe.)*
+- [x] Code review: pipeline order in `UseCloudstrapBlazorServer` against mechanic (b) / the spec's
   Redesign row, line by line; `sealed`/static on every public type, single namespace, full XML docs
   (fixed-order list, correlation-before-auth rationale, no-forwarded-headers paragraph);
   `Cloudstrap.BlazorServer.csproj` → exactly one ProjectReference + the FrameworkReference, zero
-  PackageReferences.
-- [ ] User approved — implementation may continue past this gate
+  PackageReferences. *(2026-08-27: verified — order matches mechanic (b) exactly; closure exact.)*
+- [x] User approved — implementation may continue past this gate *(2026-08-27)*
 
 ---
 
@@ -528,7 +529,7 @@ confirm) · the D-12 `X-Frame-Options: SAMEORIGIN` default observed live in the 
 
 ## Step 4 — A circuit event handler wrapped in `IBlazorInteractionTrace.StartInteraction(name)` produces an exported root span detached from the (dropped) hub trace, children and the ambient correlation id follow it, everything restores on dispose, it is a safe no-op without a listener — and the activity source reaches any DI-built tracer pipeline additively, with the package creating no pipeline and no exporter of its own (AC-BS5's unit halves; AC-BS6; D-9; mechanic (c))
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.BlazorServer/BlazorServerActivitySources.cs` *(create)* — static constants class,
@@ -611,7 +612,7 @@ confirm) · the D-12 `X-Frame-Options: SAMEORIGIN` default observed live in the 
 
 ## Step 5 — The package is publishable and guarded forever: metadata, README (quick start, options/hooks tables, data-protection and WASM-hook recipes, migration notes D-1…D-13), permanent tripwires on the closure and the dropped concepts, the forbidden-identifier sweep — and the `blazor.md` BlazorServer drift closed (AC-BS9; AC-ASP2; AC-ASP3's guard; AC-A3; D-13's doc half; hand-off constraint 5)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.BlazorServer/Cloudstrap.BlazorServer.csproj` *(modify)* — `<Description>` (Blazor
@@ -722,16 +723,19 @@ over adding a pin) · **the packaging check** — the expanded Release nupkg con
 list · **the instruction-file edit** (`.claude/instructions/blazor.md` — reviewed verbatim,
 BlazorServer content only).
 
-- [ ] Behavioral verification: test exe output shows — the detached root span under a fake hub
+- [x] Behavioral verification: test exe output shows — the detached root span under a fake hub
   activity, correlation id = interaction trace id with child parenting, full restore + double
   dispose, the no-listener no-op with a stable correlation id, the singleton registration, the
   no-pipeline/no-exporter proof, and the in-memory-exported root span through a host-owned pipeline
   (Step 4); the four permanent surface guards green, the expanded Release nupkg reviewed, the
-  identifier sweep empty (Step 5).
-- [ ] Code review: `BlazorInteractionTrace`/`BlazorInteractionScope` against mechanic (c) — no
+  identifier sweep empty (Step 5). *(2026-08-27: 47/47 green; nupkg inspected — ProjectReference
+  dependency list exactly Cloudstrap.Extensions, transitive flattening identical to shipped Mvc;
+  sweep hits only the self-referential guard patterns + README migration notes, Mvc precedent.)*
+- [x] Code review: `BlazorInteractionTrace`/`BlazorInteractionScope` against mechanic (c) — no
   static `ActivityListener`, no forced sampling, no DI scopes, no generic overloads;
   `Cloudstrap.BlazorServer/README.md` matches as-built behavior; `blazor.md` diff.
-- [ ] User approved — implementation may continue past this gate
+  *(2026-08-27: reviewed and approved with the planner-added `BlazorServerActivitySources` confirmed.)*
+- [x] User approved — implementation may continue past this gate *(2026-08-27)*
 
 ---
 

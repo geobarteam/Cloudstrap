@@ -6,6 +6,16 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Description>Blazor Server bootstrap for ASP.NET Core: one registration call and one fixed-order pipeline call — hardened antiforgery and security headers, HSTS, correlation, anonymous health probes, conditional auth placement, Interactive Server or static SSR decided once, and an interaction trace scope that makes circuit-originated work visible; pairs with Cloudstrap's OIDC login and typed HttpClients.</Description>
+    <PackageTags>$(PackageTags);blazor;blazorserver;pipeline;security;tracing;aspnetcore</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>

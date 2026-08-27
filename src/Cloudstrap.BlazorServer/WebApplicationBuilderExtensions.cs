@@ -8,6 +8,7 @@ namespace Cloudstrap.BlazorServer
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.DependencyInjection.Extensions;
     using Microsoft.Extensions.Options;
+    using OpenTelemetry.Trace;
 
     /// <summary>
     /// Registers the Cloudstrap Blazor Server services on a web application builder.
@@ -109,6 +110,14 @@ namespace Cloudstrap.BlazorServer
 
             // The once-made interactivity decision the pipeline call follows; first registration wins.
             services.TryAddSingleton(new BlazorServerRegistrationState(configurator.Interactivity));
+
+            services.TryAddSingleton<IBlazorInteractionTrace, BlazorInteractionTrace>();
+
+            // A deferred contribution, not a pipeline: the source reaches whatever tracer pipeline is built
+            // from this service collection — Cloudstrap-owned, contribute-mode or an Aspire-style host's —
+            // and registers no provider and no exporter of its own when none is.
+            services.ConfigureOpenTelemetryTracerProvider(tracing =>
+                tracing.AddSource(BlazorServerActivitySources.Interaction));
 
             // Last, so the hook always has the final say.
             configurator.RazorComponents?.Invoke(razorComponents);
