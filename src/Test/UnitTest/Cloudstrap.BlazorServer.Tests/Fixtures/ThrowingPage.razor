@@ -1,0 +1,8 @@
+@page "/throws"
+
+<p>never rendered</p>
+
+@code {
+    protected override void OnInitialized()
+        => throw new InvalidOperationException("fixture-throw");
+}

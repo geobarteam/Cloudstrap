@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!-- Deliberately named without the .Tests suffix, so the MTP test-runner wiring in
+       src/Test/Directory.Build.props ignores it: this is a fixture Razor class library, not a test
+       executable. It exists because the framework's assembly-boundary semantics make a second assembly
+       the only honest way to exercise AdditionalAssemblies in both directions. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+  </ItemGroup>
+
+</Project>

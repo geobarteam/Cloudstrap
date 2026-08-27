@@ -1,0 +1,9 @@
+@* AdditionalAssemblies mirrors the endpoint-side pipeline option: the Router must also see the extra
+   assembly for its pages to render. Endpoint routing decides reachability first, so the without-case
+   still 404s before this Router is consulted. *@
+<Router AppAssembly="typeof(App).Assembly"
+        AdditionalAssemblies="new[] { typeof(Cloudstrap.BlazorServer.TestComponents.ExtraPage).Assembly }">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" />
+    </Found>
+</Router>

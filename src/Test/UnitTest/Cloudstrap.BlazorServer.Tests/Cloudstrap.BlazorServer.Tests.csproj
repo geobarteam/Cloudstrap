@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Cloudstrap.BlazorServer\Cloudstrap.BlazorServer.csproj" />
+    <!-- Test-only: the AC-BS3 pairing proof. The package itself references no auth package. -->
+    <ProjectReference Include="..\..\..\Cloudstrap.Authentication.OpenIdConnect\Cloudstrap.Authentication.OpenIdConnect.csproj" />
+    <!-- The AdditionalAssemblies fixture boundary (plan mechanic (d)). -->
+    <ProjectReference Include="..\Cloudstrap.BlazorServer.TestComponents\Cloudstrap.BlazorServer.TestComponents.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+  </ItemGroup>
+
+</Project>
