@@ -1,12 +1,16 @@
 name: Release
 
-# Stable releases: pushing tag vX.Y.Z on main is the only path that publishes to nuget.org.
-# The pattern deliberately excludes prerelease-style tags (v0.1.0-preview.1) — previews are
-# published from dev pushes by ci.yml and are never tagged.
+# Two paths publish to nuget.org, both through this file (the Trusted Publishing policy is
+# bound to the workflow file name):
+# - Stable: pushing tag vX.Y.Z on main. The pattern deliberately excludes prerelease-style
+#   tags (v0.1.0-preview.1) — prereleases are never tagged.
+# - Preview: manual workflow_dispatch from dev publishes the computed X.Y.Z-preview.N.
+#   (Automatic dev pushes still publish previews to GitHub Packages via ci.yml.)
 on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -35,12 +39,22 @@ jobs:
         id: gitversion
         uses: gittools/actions/gitversion/execute@v4
 
-      # Belt and braces behind the tag-pattern trigger: a release build must be exactly X.Y.Z.
-      - name: Assert stable version
-        if: steps.gitversion.outputs.preReleaseTag != ''
+      # Belt and braces behind the triggers: a tag push must build exactly X.Y.Z, and a
+      # manual run must build a preview (i.e. be dispatched from dev), never a bare stable.
+      - name: Assert version matches trigger
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PRERELEASE_TAG: ${{ steps.gitversion.outputs.preReleaseTag }}
+          SEMVER: ${{ steps.gitversion.outputs.semVer }}
         run: |
-          echo "::error::Computed version '${{ steps.gitversion.outputs.semVer }}' is a pre-release — only vX.Y.Z tags on main publish to nuget.org."
-          exit 1
+          if [ "$EVENT_NAME" = "push" ] && [ -n "$PRERELEASE_TAG" ]; then
+            echo "::error::Computed version '$SEMVER' is a pre-release — only vX.Y.Z tags on main publish stable to nuget.org."
+            exit 1
+          fi
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -z "$PRERELEASE_TAG" ]; then
+            echo "::error::Computed version '$SEMVER' is stable — manual runs publish previews only; dispatch this workflow from dev."
+            exit 1
+          fi
 
       # A release never ships what CI didn't verify: repeat the full build/test/format gates.
       - name: Build (Release — analyzers enforce strictness)
@@ -83,7 +97,7 @@ jobs:
         with:
           user: ${{ secrets.NUGET_USER }}
 
-      - name: Publish stable packages to nuget.org
+      - name: Publish packages to nuget.org
         env:
           NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: |
