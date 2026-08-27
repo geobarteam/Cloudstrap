@@ -745,7 +745,7 @@ BlazorServer content only).
 
 ## Step 6 — The `Cloudstrap.Demo.BlazorServer` app is rewritten onto `AddCloudstrapBlazorServer` + `UseCloudstrapBlazorServer<App>` (resolving #27's D-B placeholder): OIDC login and the `DemoApi` user-token client stay green through the composite pipeline, the WhoAmI page runs on a convention-registered `IViewModel` (demo-level `AddCloudstrapBlazorCommon`, D-13) wrapping its call in `StartInteraction`, and new E2E tests prove probes, hardened headers and the live interaction span (AC-BS1/2/4/5 live; AC-BS10; demonstration slice — workflow rule 9) ⚠️ DEMO AUTH-SURFACE RISK AREA
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/demo/BlazorServer/Cloudstrap.Demo.BlazorServer.csproj` *(modify)* — add

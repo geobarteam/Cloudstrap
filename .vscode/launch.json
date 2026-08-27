@@ -98,6 +98,10 @@
       "env": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ASPNETCORE_URLS": "http://127.0.0.1:5340"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
       }
     }
   ],
@@ -121,6 +125,17 @@
       "configurations": [
         "Demo IdP host",
         "Demo BlazorWasm (Bff server)"
+      ],
+      "stopAll": true
+    },
+    {
+      // The BlazorServer demo alone: the identity provider (sign-in), the Api host (the WhoAmI
+      // echo) and the BlazorServer app — one F5 for the full /whoami flow.
+      "name": "Demo BlazorServer (full app + IdP + Api)",
+      "configurations": [
+        "Demo IdP host",
+        "Demo Api",
+        "Demo BlazorServer"
       ],
       "stopAll": true
     }
