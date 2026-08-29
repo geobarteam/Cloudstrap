@@ -851,12 +851,13 @@ login and the user-token round trip (the untouched pre-existing E2E test is the 
 demo restructure** — no shared-contract change (`Cloudstrap.Demo.Contracts` untouched), no IdP
 change; the BlazorCommon reference is demo-level only (D-13).
 
-- [ ] Behavioral verification: the two new E2E tests pass
+- [x] Behavioral verification: the two new E2E tests pass
   (`BlazorServer_CompositePipeline_ServesAnonymousProbesAndHardenedHeaders`,
   `BlazorServer_WhoAmI_EmitsAnInteractionRootSpanThroughTheCompositePipeline`) and **all
   pre-existing E2E tests pass unchanged**; the full-suite check (build + 12 unit exes + E2E exe +
-  `dotnet format --verify-no-changes`) is green end to end.
-- [ ] Spec acceptance sign-off: walk **AC-BS1…AC-BS10 + AC-ASP2 + AC-ASP3 + AC-A3** against the step
+  `dotnet format --verify-no-changes`) is green end to end. *(2026-08-29: 55/55 E2E, 671 unit,
+  format exit 0; plus a manual browser session through the new launch compound.)*
+- [x] Spec acceptance sign-off: walk **AC-BS1…AC-BS10 + AC-ASP2 + AC-ASP3 + AC-A3** against the step
   evidence using the Overview's AC coverage map — all met; confirm nothing from the spec's Drop /
   Out-of-Scope lists was resurrected (no `NihdiControls`/assembly registry, no
   `IDistributedTraceService`/`DistributedTrace`/`UseDistributedTrace<T1..T5>`/static
@@ -867,10 +868,10 @@ change; the BlazorCommon reference is demo-level only (D-13).
   `BlazorHubSampler` duplication, zero `Aspire.*`, zero `Nihdi.*`) and every De-NIHDI row is closed
   (`AddBlazorForNihdi`/`UseBlazorForNihdi` → the Cloudstrap names, `/probe`+`/probe.aspx` →
   `/healthz`+`/ready`, no `basepath`/`WorkloadName` sniffing, no company headers).
-- [ ] Docs review: `src/Cloudstrap.BlazorServer/README.md` matches as-built behavior;
+- [x] Docs review: `src/Cloudstrap.BlazorServer/README.md` matches as-built behavior;
   `src/demo/BlazorServer/README.md` intro/matrix/harness notes cite the real E2E test names and no
   longer promise circuit token plumbing; `.claude/instructions/blazor.md` BlazorServer content is
   the shipped truth with the drift note scoped to #13. **User-owned follow-up (not in this plan)**:
   none identified — the founding-spec package map already lists `Cloudstrap.BlazorServer` as
   shipped-shape; flag any wording drift noticed during review.
-- [ ] User approved — deliverable #12 done; project-manager flips the ROADMAP row to ✅.
+- [x] User approved — deliverable #12 done; project-manager flips the ROADMAP row to ✅. *(2026-08-29)*
