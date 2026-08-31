@@ -245,7 +245,7 @@ app.UseCloudstrapWebApi(pipeline => pipeline.ConfigureEndpoints = endpoints =>
 
 ## Step 1 — Every HTTP client registered through the package rides the cookie+XSRF pipeline: browser credentials always included, the *configured* XSRF header attached on mutating calls only (never on GET, never with an empty store, replacing any pre-set value), typed and Refit clients registered in one line against one shared token store (AC-BW2; AC-BW5; AC-BW3's shared-store half; AC-BW6's header/Refit halves; D-3, D-6; DL-3)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Directory.Packages.props` *(modify)* — the ⚠️ dependency-closure section's four pin changes:
@@ -360,7 +360,7 @@ the pre-seed/inspect note on `IAntiforgeryTokenStore`).
 
 ## Step 2 — One composite call gives the app BFF-driven Blazor auth state: the user endpoint is fetched once and cached, the principal is `BffCookie` with name and wire claims, every failure mode yields the anonymous principal without a throw, the XSRF token is captured into the shared store from the *configured* header, `ClearAuthenticationState()` drops-notifies-refetches, and every option binds from `Cloudstrap:BlazorWasm` with the delegate winning (AC-BW1; AC-BW3's capture half; AC-BW4; AC-BW6's client half; D-1, D-2, D-4, D-5, D-8; mechanics (a), (b), (d), (e))
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.BlazorWasm/IBffAuthenticationStateProvider.cs` *(create)* — the sketch verbatim:
@@ -450,7 +450,7 @@ delegate invocation, factory lambdas) must not reappear.
 
 ## Step 3 — The package is publishable and guarded forever: metadata, README (quick start, options table, wire contract, RedirectToLogin snippet, no-secrets statement, migration notes D-1…D-9), permanent tripwires on the WASM-linker-safe closure and the dropped concepts, the forbidden-identifier sweep — and the `blazor.md` + refit-skill doc drift closed (AC-BW8; AC-ASP2; AC-A3; the spec's doc-drift definition-of-done row)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.BlazorWasm/Cloudstrap.BlazorWasm.csproj` *(modify)* — `<Description>` (Blazor

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>Blazor WebAssembly client helpers for a BFF-hosted SPA: cookie-credentialed HTTP with automatic XSRF protection, Blazor authentication state driven by the BFF's session, and one-line typed/Refit API clients riding the same hardened pipeline — no token ever lives in the browser; pairs with Cloudstrap's OIDC BFF login.</Description>
+    <PackageTags>$(PackageTags);blazor;webassembly;wasm;bff;xsrf;refit;cookie-auth</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <!-- AC-BW8: zero ProjectReferences, zero FrameworkReference — the WASM-linker-safe closure. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Refit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cloudstrap.BlazorWasm.Tests" />
+  </ItemGroup>
+
+</Project>

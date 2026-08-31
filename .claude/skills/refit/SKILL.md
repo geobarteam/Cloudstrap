@@ -101,40 +101,25 @@ services.AddCloudstrapRefitClient<I<Feature>Client>("<Feature>");
 
 The `configSectionName` maps to an `appsettings.json` entry under `Cloudstrap.Common.HttpClient` which provides the base address, resilience policies, and token management.
 
-### BlazorWasm — `AddRefitClientWithCookies<T>`
+### BlazorWasm — `AddCloudstrapWasmRefitClient<T>`
 
-Register in the service-client registration entry point:
-
-```csharp
-private static readonly RefitSettings DefaultRefitSettings = new()
-{
-    ContentSerializer = new SystemTextJsonContentSerializer(
-        new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
-};
-
-private static IHttpClientBuilder AddRefitClientWithCookies<T>(
-    this IServiceCollection services,
-    string baseAddress)
-    where T : class
-{
-    var uri = new Uri(baseAddress);
-    return services
-        .AddRefitClient<T>(DefaultRefitSettings)
-        .ConfigureHttpClient(c => c.BaseAddress = new Uri(uri.GetLeftPart(UriPartial.Authority)))
-        .AddHttpMessageHandler<PathBaseDelegatingHandler>()
-        .AddHttpMessageHandler<CookieHandler>();
-}
-```
-
-Usage:
+The shipped helper from `Cloudstrap.BlazorWasm` — one line, no private extension needed:
 
 ```csharp
-services.AddRefitClientWithCookies<I<Feature>ServiceClient>(baseAddress);
+builder.Services.AddCloudstrapWasmRefitClient<I<Feature>ServiceClient>(
+    builder.HostEnvironment.BaseAddress);
 ```
+
+It registers the interface through the cookie+XSRF pipeline (`CookieHandler` + the shared
+`IAntiforgeryTokenStore`), returns `IHttpClientBuilder` for chaining, and defaults to
+System.Text.Json with camelCase + case-insensitive serialization; pass a `RefitSettings` to
+override per registration. Internally the client is built with `RestService.For` — **never**
+`Refit.HttpClientFactory`, which was compiled against `Microsoft.Extensions.Http` 9.x and throws
+`MissingMethodException` on .NET 10 WASM.
 
 The `CookieHandler` automatically:
-1. Sets `BrowserRequestCredentials.Include` on every request (sends `HttpOnly` session cookie).
-2. Adds `X-XSRF-TOKEN` header on mutating methods (POST, PUT, DELETE, PATCH).
+1. Sets `BrowserRequestCredentials.Include` on every request (sends the `HttpOnly` session cookie).
+2. Adds the configured XSRF header (default `X-XSRF-TOKEN`) on mutating methods (POST, PUT, DELETE, PATCH).
 
 ---
 
@@ -255,7 +240,7 @@ Task<List<<Feature>Dto>> SearchAsync(
 | Return DTOs from feature services | Map DTO → Model in the service layer |
 | Inject Refit clients into ViewModels | Inject the `I<Feature>Service` wrapper |
 | Create a new `HttpClient` manually | Use the registration helpers that configure resilience and auth |
-| Bypass `CookieHandler` (WASM) | All WASM Refit clients must go through `AddRefitClientWithCookies` |
+| Bypass `CookieHandler` (WASM) | All WASM Refit clients must go through `AddCloudstrapWasmRefitClient<T>` |
 | Store or forward tokens manually | `CookieHandler` + `IAntiforgeryTokenStore` handles XSRF (WASM) |
 | Use `Newtonsoft.Json` serialization | `RefitSettings` uses `SystemTextJsonContentSerializer` with camelCase |
 

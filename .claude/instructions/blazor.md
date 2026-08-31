@@ -11,15 +11,29 @@ description: "Blazor conventions for BlazorWasm, BlazorServer, and BlazorCommon 
 |---------|------|--------------|
 | **BlazorCommon** | Shared contracts (`IErrorHandler`, `IViewModel`) + convention scan — Scrutor only | Scrutor only |
 | **BlazorServer** | Hardened Blazor Server composite (`AddCloudstrapBlazorServer`/`UseCloudstrapBlazorServer<TRoot>`) + `IBlazorInteractionTrace` | `Cloudstrap.Extensions` only; **no `Cloudstrap.BlazorCommon` reference (D-13 — demo-level adoption only)** |
-| **BlazorWasm** | browser-based cookie auth, XSRF, Refit HTTP clients | Minimal (no project refs) |
+| **BlazorWasm** | BFF client composite (`AddCloudstrapBlazorWasm`) + cookie/XSRF pipeline + one-line typed/Refit clients | Four NuGet packages (`Components.WebAssembly`, `Components.Authorization`, `Extensions.Http`, `Refit`), no project refs; **no `Cloudstrap.BlazorCommon` reference (DL-1 — demo-level adoption only)** |
 
 ## BlazorWasm — Browser Cookie Authentication
 
-- Auth is **cookie-based** using `CookieHandler` which auto-attaches browser cookies and XSRF tokens.
-- XSRF token (`X-XSRF-TOKEN`) is sent on mutating HTTP methods (POST, PUT, DELETE, PATCH) via `AntiforgeryTokenStore`.
-- Entry point: `WebAssemblyHostBuilderExtensions.AddBlazorWasmForCloudstrap()`.
-- HTTP clients: `AddCloudstrapWasmHttpClient<TClient>()` returns `IHttpClientBuilder` for Refit chaining.
-- Default Refit settings: `System.Text.Json` with `CamelCase` naming policy.
+- Composite entry point: `AddCloudstrapBlazorWasm(Action<CloudstrapBlazorWasmOptions>?)` on
+  `WebAssemblyHostBuilder` — registers the shared `IAntiforgeryTokenStore`, the `CookieHandler`
+  (browser credentials always; the **configured** XSRF header attached on POST/PUT/DELETE/PATCH —
+  one option drives capture and attachment, D-3), the named BFF auth client, the BFF-driven
+  `AuthenticationStateProvider` (+ `IBffAuthenticationStateProvider.ClearAuthenticationState()`
+  refresh seam), `AddAuthorizationCore` and `AddCascadingAuthenticationState`. No localization, no
+  login/logout machinery (full-page navigations to the #10 `/account/*` endpoints).
+- Settings bind from `Cloudstrap:BlazorWasm` (`UserEndpointPath`=`bff/user`,
+  `XsrfHeaderName`=`X-XSRF-TOKEN`, `AuthHttpClientName`); the delegate wins; **no secrets** — the
+  section is publicly downloadable in `wwwroot/appsettings.json`.
+- Clients: `AddCloudstrapWasmHttpClient<TClient>(baseAddress)` and
+  `AddCloudstrapWasmRefitClient<TClient>(baseAddress, RefitSettings?)` — both return
+  `IHttpClientBuilder`, both ride the cookie+XSRF pipeline. Refit registers via `RestService.For`
+  (never `Refit.HttpClientFactory` — .NET 10 WASM `MissingMethodException`). Default serialization:
+  System.Text.Json, camelCase, case-insensitive.
+- Server pairing (DL-2): the Bff maps `MapCloudstrapBffUserEndpoint()` from
+  `Cloudstrap.Authentication.OpenIdConnect` — the wire contract + XSRF issuance; the consumer's
+  `AddAntiforgery(o => o.HeaderName = ...)` must match `XsrfHeaderName`, and mutating endpoints
+  validate with stock antiforgery.
 
 ## BlazorServer — Composite Pipeline & Interaction Tracing
 
@@ -44,9 +58,6 @@ description: "Blazor conventions for BlazorWasm, BlazorServer, and BlazorCommon 
 
 ## BlazorCommon — Shared Abstractions
 
-> ⚠️ Drift note: the BlazorWasm section of this file still describes the source-repo surface until
-> deliverable #13 ships. The BlazorServer and BlazorCommon sections are the shipped truth.
-
 - **Contracts + one entry point** — the package's whole public surface is four types (`IViewModel`,
   `IErrorHandler`, `BlazorCommonOptions`, `ServiceCollectionExtensions`); no Blazor package
   reference, no `Cloudstrap:` configuration section.
@@ -63,7 +74,6 @@ description: "Blazor conventions for BlazorWasm, BlazorServer, and BlazorCommon 
 
 ## Patterns
 
-- BlazorWasm extension methods still follow the source repo's `Add<Feature>ForCloudstrap()` naming
-  until #13 ships; shipped packages use `AddCloudstrap<Feature>` / `UseCloudstrap<Feature>`.
+- Extension methods follow `AddCloudstrap<Feature>` / `UseCloudstrap<Feature>` naming.
 - HTTP client registration returns `IHttpClientBuilder` for Refit chaining.
 - No cross-references between BlazorWasm and BlazorServer — they are independent hosting models.
