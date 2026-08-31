@@ -708,7 +708,7 @@ instruction — reviewed for correctness, incl. the anonymous-token/login-reload
 
 ## Step 5 — The `Cloudstrap.Demo.BlazorWasm` app is rewritten onto the package: the Client boots through `AddCloudstrapBlazorWasm()` + `AddCloudstrapWasmRefitClient<IDoctorServiceClient>`, `DoctorsViewModel` swaps its raw `HttpClient` and hand-rolled state probe for the Refit client and the package's auth state (BlazorCommon usage stays — band interop), the Bff maps `MapCloudstrapBffUserEndpoint()` and turns on real antiforgery validation for `POST api/doctor`, `AuthorizeView` renders the session — and new E2E tests prove the wire contract and the AC-BW7 rejection live while every pre-existing E2E test stays green unchanged (AC-BW1/2/3/5 live; AC-BW7 live; AC-BW9; mechanics (g), (h); demonstration slice — workflow rule 9) ⚠️ DEMO AUTH-SURFACE RISK AREA
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/demo/BlazorWasm/Client/Cloudstrap.Demo.BlazorWasm.Client.csproj` *(modify)* — add

@@ -161,12 +161,19 @@ theater:
 ```csharp
 builder.Services.AddAntiforgery(o => o.HeaderName = "X-XSRF-TOKEN");   // must match XsrfHeaderName
 
-// then validate mutating endpoints:
-[HttpPost]
-[ValidateAntiForgeryToken]
-public IActionResult Add(...) => ...;               // controllers
-// or, in minimal APIs: await antiforgery.ValidateRequestAsync(httpContext);
+// then validate mutating endpoints with IAntiforgery (works on every host flavor):
+public async Task<ActionResult> Add(AddDto dto, [FromServices] IAntiforgery antiforgery)
+{
+    try { await antiforgery.ValidateRequestAsync(HttpContext); }
+    catch (AntiforgeryValidationException) { return BadRequest(); }
+    ...
+}
 ```
+
+`[ValidateAntiForgeryToken]` works too, but **only** on hosts registering the MVC view features
+(`AddControllersWithViews`/`AddRazorPages`) — on a bare `AddControllers` API host (including
+`AddCloudstrapWebApi`) the attribute's filter service is not registered and every request fails
+with a 500; validate through `IAntiforgery.ValidateRequestAsync` there instead.
 
 Three names must agree: `XsrfHeaderName` here, the `AddAntiforgery` header name, and the WASM
 client's `Cloudstrap:BlazorWasm:XsrfHeaderName`. Note the anonymous-token edge case: a token issued

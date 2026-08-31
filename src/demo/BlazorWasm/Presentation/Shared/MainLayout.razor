@@ -12,6 +12,13 @@
     <MudAppBar Elevation="1">
         <MudText Typo="Typo.h6">Cloudstrap WASM Test Project</MudText>
         <MudSpacer />
+        @* The #13 composite's AddCascadingAuthenticationState makes AuthorizeView work with zero
+           extra wiring — the BFF-driven provider feeds it the session (deliverable #13 demo). *@
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.subtitle2" Class="mr-4" data-testid="auth-status">signed in: @context.User.Identity?.Name</MudText>
+            </Authorized>
+        </AuthorizeView>
         @* Rendered from options bound INSIDE the WASM client (wwwroot/appsettings.json) —
            proves Cloudstrap.Core is WASM-loadable. *@
         <MudText Typo="Typo.subtitle2" data-testid="client-workload">client: @ClientApplicationOptions.Value.WorkloadName</MudText>

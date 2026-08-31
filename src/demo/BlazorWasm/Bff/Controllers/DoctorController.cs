@@ -3,6 +3,7 @@ namespace Cloudstrap.Demo.BlazorWasm.Bff.Controllers
     using Cloudstrap.Demo.BlazorWasm.Bff.Services;
     using Cloudstrap.Demo.Contracts;
     using Cloudstrap.Observability;
+    using Microsoft.AspNetCore.Antiforgery;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
 
@@ -32,9 +33,25 @@ namespace Cloudstrap.Demo.BlazorWasm.Bff.Controllers
         [HttpGet]
         public ActionResult<IReadOnlyList<DoctorDto>> Get() => Ok(_store.GetAll());
 
+        // Deliverable #13 demo (AC-BW7): the mutating POST really validates the XSRF token the
+        // WASM client captured from /bff/user — a session-cookie-only forgery is rejected with 400.
+        // Validation goes through IAntiforgery.ValidateRequestAsync: this host is an API-controller
+        // app (AddCloudstrapWebApi → AddControllers), where the [ValidateAntiForgeryToken] filter
+        // service does not exist — that attribute needs AddControllersWithViews.
         [HttpPost]
-        public ActionResult<DoctorDto> Add(AddDoctorDto doctor)
+        public async Task<ActionResult<DoctorDto>> Add(
+            AddDoctorDto doctor,
+            [FromServices] IAntiforgery antiforgery)
         {
+            try
+            {
+                await antiforgery.ValidateRequestAsync(HttpContext);
+            }
+            catch (AntiforgeryValidationException)
+            {
+                return BadRequest("The XSRF token is missing or invalid.");
+            }
+
             // Deliverable #11 demo: the reachable error path — reject a blank name with a 400
             // before opening the business span, so the ViewModel can route the failure to the
             // consumer's IErrorHandler.

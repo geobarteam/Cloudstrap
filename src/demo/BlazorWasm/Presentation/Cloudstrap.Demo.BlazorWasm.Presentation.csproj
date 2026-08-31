@@ -15,6 +15,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Cloudstrap.BlazorCommon\Cloudstrap.BlazorCommon.csproj" />
+    <!-- Demo-level adoption (DL-1): the Refit interface, auth state and Refit attributes flow from
+         the #13 package — the package itself references no Cloudstrap project. -->
+    <ProjectReference Include="..\..\..\Cloudstrap.BlazorWasm\Cloudstrap.BlazorWasm.csproj" />
     <ProjectReference Include="..\..\..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
     <ProjectReference Include="..\..\Shared\Contracts\Cloudstrap.Demo.Contracts.csproj" />
   </ItemGroup>

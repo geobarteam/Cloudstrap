@@ -23,7 +23,8 @@ namespace Cloudstrap.Demo.BlazorWasm.Bff.Controllers
         /// <summary>
         /// Reports whether the caller has a signed-in cookie session — anonymous by design, always
         /// 200, so pages can probe auth state without any console-visible 401 noise. (SUT application
-        /// code for the demo — the BFF user-info contract is deliverable #13.)
+        /// code pinned by its own E2E test; the shipped BFF user-info contract is
+        /// <c>MapCloudstrapBffUserEndpoint</c>'s <c>/bff/user</c>, which the WASM client consumes.)
         /// </summary>
         /// <returns>The caller's auth state and display name.</returns>
         [HttpGet("state")]
@@ -36,7 +37,8 @@ namespace Cloudstrap.Demo.BlazorWasm.Bff.Controllers
 
         /// <summary>
         /// Echoes the signed-in user's identity from the cookie principal. (SUT application code for
-        /// the demo — the BFF user-info contract is deliverable #13.)
+        /// the demo; the shipped BFF user-info contract is <c>MapCloudstrapBffUserEndpoint</c>'s
+        /// <c>/bff/user</c>.)
         /// </summary>
         /// <returns>The signed-in user's <c>sub</c> and <c>name</c>.</returns>
         [HttpGet("whoami")]

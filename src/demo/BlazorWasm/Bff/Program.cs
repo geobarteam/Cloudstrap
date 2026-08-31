@@ -47,11 +47,12 @@ builder.Services.AddCloudstrapClientCredentials();
 // Interactive user login (deliverable #10 demo): one call registers the hardened cookie session and
 // the auth-code + PKCE challenge against the same test identity provider, coexisting with the JWT
 // bearer scheme above (bearer callers still get 401s, browsers get a login page). The WASM
-// auth-state UI arrives with deliverable #13.
-// The configurator installs SUT-local challenge shaping (replaced by deliverable #13): callers not
-// asking for text/html (API/XHR) get a bare 401 instead of a login redirect, while browser
-// navigations keep redirecting — which is what auto-triggers login on /doctors. Only the one event
-// property is assigned; the Events object stays Cloudstrap's (its sign-out wiring must survive).
+// auth-state UI is deliverable #13's client half (AddCloudstrapBlazorWasm in Client/Program.cs).
+// The configurator installs SUT-local challenge shaping (kept deliberately — it is what keeps
+// API/XHR callers on bare 401s, pinned by its own E2E tests): callers not asking for text/html get
+// a bare 401 instead of a login redirect, while browser navigations keep redirecting — which is
+// what auto-triggers login on /doctors. Only the one event property is assigned; the Events object
+// stays Cloudstrap's (its sign-out wiring must survive).
 builder.Services.AddCloudstrapOpenIdConnect(configure =>
     configure.OpenIdConnect = oidc =>
         oidc.Events.OnRedirectToIdentityProvider = context =>
@@ -64,6 +65,14 @@ builder.Services.AddCloudstrapOpenIdConnect(configure =>
 
             return Task.CompletedTask;
         });
+
+// The DL-2 both-sides contract in one visible place (deliverable #13 demo): the header name here
+// must match Cloudstrap:OpenIdConnect:XsrfHeaderName (the issuing side, default X-XSRF-TOKEN) and
+// the WASM client's Cloudstrap:BlazorWasm:XsrfHeaderName (the attaching side). Registration is the
+// consumer's stock wiring — MapCloudstrapBffUserEndpoint issues tokens, and the mutating endpoints
+// validate via IAntiforgery.ValidateRequestAsync (this API-controller host has no
+// [ValidateAntiForgeryToken] filter service — that attribute needs AddControllersWithViews).
+builder.Services.AddAntiforgery(options => options.HeaderName = "X-XSRF-TOKEN");
 
 // A typed client driven by Cloudstrap:HttpClients:SelfApi — config-bound base address and timeout, the
 // correlation handler in its pipeline, and a readiness check probing the peer's /healthz. It calls back
@@ -93,6 +102,12 @@ app.UseCloudstrapWebApi(pipeline =>
         // The #10 opt-in login/logout endpoints (D-5), mapped before the SPA fallback so the
         // explicit routes win.
         endpoints.MapCloudstrapAuthenticationEndpoints();
+
+        // The DL-2 opt-in server half (deliverable #13 demo): GET /bff/user answers the wire
+        // contract the WASM client's auth state provider consumes, and issues the XSRF request
+        // token in the X-XSRF-TOKEN response header.
+        endpoints.MapCloudstrapBffUserEndpoint();
+
         endpoints.MapFallbackToFile("index.html");
     };
 });

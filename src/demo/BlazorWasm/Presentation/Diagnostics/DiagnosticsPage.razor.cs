@@ -1,17 +1,16 @@
 namespace Cloudstrap.Demo.BlazorWasm.Presentation.Diagnostics
 {
-    using System.Net.Http.Json;
     using Cloudstrap.Demo.Contracts;
     using Microsoft.AspNetCore.Components;
 
     /// <summary>
     /// Shows the server-bound Cloudstrap options fetched from <c>api/diagnostics/options</c>
-    /// (deliverable #1 demo).
+    /// (deliverable #1 demo) — through the #13 typed client, so the fetch rides the package pipeline.
     /// </summary>
     public partial class DiagnosticsPage
     {
         [Inject]
-        public HttpClient Http { get; set; } = null!;
+        public DiagnosticsClient Client { get; set; } = null!;
 
         protected DiagnosticsDto? Diagnostics
         {
@@ -20,7 +19,7 @@ namespace Cloudstrap.Demo.BlazorWasm.Presentation.Diagnostics
 
         protected override async Task OnInitializedAsync()
         {
-            Diagnostics = await Http.GetFromJsonAsync<DiagnosticsDto>("api/diagnostics/options");
+            Diagnostics = await Client.GetOptionsAsync();
         }
     }
 }

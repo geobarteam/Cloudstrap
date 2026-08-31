@@ -1,28 +1,36 @@
 namespace Cloudstrap.Demo.BlazorWasm.Presentation.Doctors
 {
-    using System.Net.Http.Json;
     using System.Text.Json;
     using Cloudstrap.BlazorCommon;
     using Cloudstrap.Demo.Contracts;
+    using Microsoft.AspNetCore.Components.Authorization;
+    using Refit;
 
     /// <summary>
-    /// The doctors page's ViewModel: performs the auth-state probe and the doctors round-trip
-    /// against the Bff, and routes failures to the consumer-owned <see cref="IErrorHandler"/>.
+    /// The doctors page's ViewModel: reads auth state from the #13 package's BFF-driven provider
+    /// (the same call captures the XSRF token before any POST), drives the doctors round-trip
+    /// through the Refit client, and routes failures to the consumer-owned <see cref="IErrorHandler"/>.
     /// Registered by convention — <c>AddCloudstrapBlazorCommon</c> picks it up via the
     /// <c>ViewModel</c> suffix; navigation stays out (pages inject <c>NavigationManager</c>
     /// directly, the D-3 posture).
     /// </summary>
     public sealed class DoctorsViewModel : IDoctorsViewModel
     {
-        private readonly HttpClient _http;
+        private readonly IDoctorServiceClient _client;
+        private readonly AuthenticationStateProvider _authenticationStateProvider;
         private readonly IErrorHandler _errorHandler;
 
-        public DoctorsViewModel(HttpClient http, IErrorHandler errorHandler)
+        public DoctorsViewModel(
+            IDoctorServiceClient client,
+            AuthenticationStateProvider authenticationStateProvider,
+            IErrorHandler errorHandler)
         {
-            ArgumentNullException.ThrowIfNull(http);
+            ArgumentNullException.ThrowIfNull(client);
+            ArgumentNullException.ThrowIfNull(authenticationStateProvider);
             ArgumentNullException.ThrowIfNull(errorHandler);
 
-            _http = http;
+            _client = client;
+            _authenticationStateProvider = authenticationStateProvider;
             _errorHandler = errorHandler;
         }
 
@@ -44,18 +52,17 @@ namespace Cloudstrap.Demo.BlazorWasm.Presentation.Doctors
 
         public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
-            // The state probe runs first — an anonymous visitor performs exactly one anonymous 200
-            // fetch and the [Authorize]'d doctors fetch never runs signed out, so the browser
-            // console stays clean. The page decides what to do about a signed-out user.
-            UserStateDto? state = await _http.GetFromJsonAsync<UserStateDto>(
-                "api/v1/user/state", cancellationToken);
-            if (state is not { SignedIn: true })
+            // The package's cached BFF fetch: one anonymous-safe call answers the auth state AND
+            // captures the XSRF token into the shared store — so it always runs before any POST,
+            // and the [Authorize]'d doctors fetch never runs signed out (clean browser console).
+            AuthenticationState state = await _authenticationStateProvider.GetAuthenticationStateAsync();
+            if (state.User.Identity is not { IsAuthenticated: true })
             {
                 return;
             }
 
             SignedIn = true;
-            SignedInName = state.Name;
+            SignedInName = state.User.Identity.Name ?? string.Empty;
             await ReloadAsync(cancellationToken);
         }
 
@@ -63,17 +70,15 @@ namespace Cloudstrap.Demo.BlazorWasm.Presentation.Doctors
         {
             try
             {
-                using HttpResponseMessage response = await _http.PostAsJsonAsync(
-                    "api/doctor", new AddDoctorDto(NewName, NewSpecialty));
-                if (!response.IsSuccessStatusCode)
-                {
-                    _errorHandler.ShowError(await ReadServerMessageAsync(response));
-                    return;
-                }
+                await _client.AddDoctorAsync(new AddDoctorDto(NewName, NewSpecialty));
 
                 NewName = string.Empty;
                 NewSpecialty = string.Empty;
                 await ReloadAsync(CancellationToken.None);
+            }
+            catch (ApiException exception)
+            {
+                _errorHandler.ShowError(ReadServerMessage(exception));
             }
             catch (HttpRequestException exception)
             {
@@ -82,35 +87,38 @@ namespace Cloudstrap.Demo.BlazorWasm.Presentation.Doctors
         }
 
         private async Task ReloadAsync(CancellationToken cancellationToken) =>
-            Doctors = await _http.GetFromJsonAsync<List<DoctorDto>>("api/doctor", cancellationToken);
+            Doctors = await _client.GetDoctorsAsync(cancellationToken);
 
-        private static async Task<string> ReadServerMessageAsync(HttpResponseMessage response)
+        private static string ReadServerMessage(ApiException exception)
         {
             // ValidationProblem body shape: { "errors": { "Name": ["A doctor name is required."] } }
-            try
+            if (!string.IsNullOrWhiteSpace(exception.Content))
             {
-                using JsonDocument problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-                if (problem.RootElement.TryGetProperty("errors", out JsonElement errors))
+                try
                 {
-                    foreach (JsonProperty property in errors.EnumerateObject())
+                    using JsonDocument problem = JsonDocument.Parse(exception.Content);
+                    if (problem.RootElement.TryGetProperty("errors", out JsonElement errors))
                     {
-                        foreach (JsonElement message in property.Value.EnumerateArray())
+                        foreach (JsonProperty property in errors.EnumerateObject())
                         {
-                            string? text = message.GetString();
-                            if (!string.IsNullOrWhiteSpace(text))
+                            foreach (JsonElement message in property.Value.EnumerateArray())
                             {
-                                return text;
+                                string? text = message.GetString();
+                                if (!string.IsNullOrWhiteSpace(text))
+                                {
+                                    return text;
+                                }
                             }
                         }
                     }
                 }
-            }
-            catch (JsonException)
-            {
-                // Not a problem-details body — fall through to the generic message.
+                catch (JsonException)
+                {
+                    // Not a problem-details body — fall through to the generic message.
+                }
             }
 
-            return $"Adding the doctor failed ({(int)response.StatusCode}).";
+            return $"Adding the doctor failed ({(int)exception.StatusCode}).";
         }
     }
 }

@@ -22,6 +22,8 @@ outbound hops (machine-token self-call + user-token call to the Api demo host on
 | The user's token crosses to a separate JWT host (#27) | `UserApi` flagged `AddUserAccessToken` + `AddClientAccessToken`, base address → the Api demo host | `UserCall_SignedIn_ProvesTheApiHostValidatedTheUsersToken` |
 | Secured feature with auto-triggered login (`/doctors`) | class-level `[Authorize]` + SUT-local challenge shaping | `DoctorsPage_AnonymousNavigation_AutoTriggersLoginAndShowsDoctors` · `GetDoctors_AnonymousApiGet_Returns401` |
 | Convention-registered ViewModel + consumer-owned error handler (#11) | `AddCloudstrapBlazorCommon<IDoctorsViewModel>()` + explicit `IErrorHandler` registration | `AddDoctor_WithBlankName_ShowsTheConsumersErrorHandlerSnackbar` · `DoctorsPage_Loads_ShowsSeededDoctors` (the VM-rendered proof) |
+| The WASM composite: cookie+XSRF pipeline, BFF-driven auth state, `AuthorizeView` (#13) | `AddCloudstrapBlazorWasm()` + `MapCloudstrapBffUserEndpoint()` | `BffUserEndpoint_AnonymousApiGet_ReturnsTheWireContractWithTheXsrfHeader` |
+| One-line Refit client + the validated two-sided XSRF contract (#13, AC-BW7) | `AddCloudstrapWasmRefitClient<IDoctorServiceClient>` + `IAntiforgery.ValidateRequestAsync` on `POST api/doctor` | `AddDoctor_SignedInPostWithoutTheXsrfHeader_IsRejected_WhileTheFormFlowSucceeds` |
 
 ## Harness notes
 
@@ -46,13 +48,20 @@ outbound hops (machine-token self-call + user-token call to the Api demo host on
   asserts in Development; one test boots a second instance with the switch flipped.
 - **Anonymous API callers get a bare 401, never a login redirect** — SUT-local challenge shaping
   via the documented `CloudstrapOpenIdConnectConfigurator` hook (`Accept: text/html` heuristic);
-  browser navigations keep redirecting, which powers the `/doctors` auto-trigger. This and the
-  `UserStateDto`/`user/state` probe are placeholder code deliverable #13 replaces.
-- **The doctors page is the ViewModel-pattern demonstration (#11)**: `DoctorsViewModel` is
+  browser navigations keep redirecting, which powers the `/doctors` auto-trigger. The shaping and
+  the `user/state` probe stay as SUT application code pinned by their own E2E tests; the shipped
+  #13 contract is `MapCloudstrapBffUserEndpoint`'s `/bff/user`, which the WASM client consumes.
+- **The doctors page is the ViewModel-pattern demonstration (#11 + #13)**: `DoctorsViewModel` is
   convention-registered by `AddCloudstrapBlazorCommon<IDoctorsViewModel>()` (the `ViewModel`
-  suffix), initialized through `IViewModel.InitializeAsync`, and routes failures to the consumer's
-  `SnackbarErrorHandler` (registered explicitly — its name ends in `Handler`, outside the scan).
-  Navigation stays in the page: it injects `NavigationManager` directly, the D-3 posture.
+  suffix), reads auth state from the #13 package's BFF provider (the same call captures the XSRF
+  token before any POST), drives the round-trip through the one-line Refit client, and routes
+  failures to the consumer's `SnackbarErrorHandler` (registered explicitly — its name ends in
+  `Handler`, outside the scan). Navigation stays in the page: it injects `NavigationManager`
+  directly, the D-3 posture.
+- **XSRF validation on this host goes through `IAntiforgery.ValidateRequestAsync`** — the Bff is
+  an API-controller app (`AddCloudstrapWebApi` → `AddControllers`), where the
+  `[ValidateAntiForgeryToken]` filter service does not exist (it needs `AddControllersWithViews`);
+  the #10 README documents both recipes.
 - **Scalar assertions are shell-based** (the reference UI pulls its bundle from a CDN CI may not
   reach), so `ScalarPage_Loads_InTheBrowser` asserts the shell only.
 - **A manual `dotnet run` without peers still boots** — token acquisition and metadata retrieval

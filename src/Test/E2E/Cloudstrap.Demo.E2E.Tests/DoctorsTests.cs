@@ -68,6 +68,66 @@ namespace Cloudstrap.Demo.E2E.Tests
         }
 
         [Test]
+        public async Task BffUserEndpoint_AnonymousApiGet_ReturnsTheWireContractWithTheXsrfHeader()
+        {
+            // Arrange — a plain anonymous API caller against the DL-2 server half
+            using HttpClient client = new HttpClient { BaseAddress = new Uri(E2eFixture.BaseUrl) };
+
+            // Act
+            using HttpResponseMessage response = await client.GetAsync(new Uri("bff/user", UriKind.Relative));
+            string body = await response.Content.ReadAsStringAsync();
+
+            // Assert — 200 always, camelCase on the raw body, the XSRF token already issued
+            Assert.Multiple(() =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(body, Does.Contain("\"isAuthenticated\":false"));
+                Assert.That(response.Headers.GetValues("X-XSRF-TOKEN").Single(), Is.Not.Empty);
+            });
+        }
+
+        [Test]
+        public async Task AddDoctor_SignedInPostWithoutTheXsrfHeader_IsRejected_WhileTheFormFlowSucceeds()
+        {
+            // Arrange — the AC-BW7 live proof through the real browser
+            await BrowserSignIn.SignInAsync(Page, BaseUrl, "/doctors");
+            await Assertions.Expect(Page.GetByTestId("doctors-grid"))
+                .ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 30_000 });
+            int rowsBefore = await Page.GetByTestId("doctor-row").CountAsync();
+
+            // Act (1) — a CSRF-shaped call: the session cookie rides along, no XSRF header
+            int forgedStatus = await Page.EvaluateAsync<int>(
+                """
+                async () => {
+                    const response = await fetch('api/doctor', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: 'Dr. Csrf Probe', specialty: 'Should Not Exist' })
+                    });
+                    return response.status;
+                }
+                """);
+
+            // Act (2) — the real form add: the package attached the captured token
+            await Page.GetByTestId("doctor-name-input").FillAsync("Dr. Xsrf Proven");
+            await Page.GetByTestId("doctor-specialty-input").FillAsync("Validated");
+            await Page.GetByTestId("add-doctor-submit").ClickAsync();
+
+            // Assert — rejection is real, the token-carrying flow succeeds, and the cascading auth
+            // state renders the signed-in name (AC-BW1 live). No ConsoleErrors assertion around the
+            // deliberate 400 — the AddDoctor_WithBlankName precedent.
+            await Assertions.Expect(Page.GetByTestId("doctors-grid"))
+                .ToContainTextAsync("Dr. Xsrf Proven", new LocatorAssertionsToContainTextOptions { Timeout = 10_000 });
+            Assert.Multiple(async () =>
+            {
+                Assert.That(forgedStatus, Is.EqualTo(400));
+                Assert.That(await Page.GetByTestId("doctors-grid").TextContentAsync(), Does.Not.Contain("Dr. Csrf Probe"));
+                await Assertions.Expect(Page.GetByTestId("auth-status"))
+                    .ToContainTextAsync(TestIdentityProviderSeed.DisplayName);
+            });
+        }
+
+        [Test]
         public async Task DoctorsPage_AnonymousNavigation_AutoTriggersLoginAndShowsDoctors()
         {
             // Act — an anonymous navigation must land on the provider's login form with no click
