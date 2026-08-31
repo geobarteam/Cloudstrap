@@ -567,7 +567,7 @@ the demo-only group; the expanded Release nupkg's dependency list · mechanic (a
 builder wrapper is proven live in Step 5 — confirm) · the two instruction-file edits reviewed
 verbatim.
 
-- [ ] Behavioral verification: test exe output shows — credentials-Include on every request, the
+- [x] Behavioral verification: test exe output shows — credentials-Include on every request, the
   mutating-only/configured-name/replace/empty-store XSRF attachment matrix incl. the D-3
   overridden-header proof, the wired typed-client and Refit pipelines with camelCase defaults and
   per-call override, the one shared store (Step 1); the `BffCookie` principal with claims, the
@@ -575,11 +575,13 @@ verbatim.
   one-HTTP-call cache and the exactly-two-calls clear-notify-refetch, config binding with the
   delegate winning, the no-localization and TryAdd-idempotence proofs (Step 2); the four permanent
   surface guards green, the expanded Release nupkg reviewed, the identifier sweep empty (Step 3).
-- [ ] Code review: the registration code against mechanics (b)/(d)/(e) — the finding-5 defects
+  *(2026-08-31: 41/41 + 13 suites + 55 E2E green.)*
+- [x] Code review: the registration code against mechanics (b)/(d)/(e) — the finding-5 defects
   (double-invoked delegate, factory lambdas) absent; `sealed`/static/internal per D-8; single
   namespace; full XML docs incl. the no-secrets configuration statement; the csproj → four
-  PackageReferences, zero ProjectReferences, zero FrameworkReference.
-- [ ] User approved — implementation may continue past this gate
+  PackageReferences, zero ProjectReferences, zero FrameworkReference. *(2026-08-31: mechanic (e)
+  realized as the internal `AuthHttpClientConfigurator` + `BlazorWasmRegistrationState` — approved.)*
+- [x] User approved — implementation may continue past this gate *(2026-08-31)*
 
 ---
 
@@ -589,7 +591,7 @@ verbatim.
 
 ## Step 4 — A Bff calling `MapCloudstrapBffUserEndpoint()` serves the documented wire contract at the configured path (anonymous-safe, 200 always) with the XSRF request token in the configured response header — and a browser-style client that signed in through #10's real login can make a mutating call that **passes** stock antiforgery validation with the header and is **rejected** without it (AC-BW7's unit round trip; AC-BW6's server halves; DL-2; D-7; mechanic (f))
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Authentication.OpenIdConnect/CloudstrapOpenIdConnectOptions.cs` *(modify)* —
@@ -686,15 +688,17 @@ home — **confirm** `CloudstrapOpenIdConnectOptions` over a separate options ty
 remark's supersession wording · the README's validation recipe (the security-relevant consumer
 instruction — reviewed for correctness, incl. the anonymous-token/login-reload note).
 
-- [ ] Behavioral verification: test exe output shows — the anonymous 200 wire contract with the
+- [x] Behavioral verification: test exe output shows — the anonymous 200 wire contract with the
   issued header, the signed-in principal round trip through the real #10 login, the
   token-passes/header-less-rejected validation pair (AC-BW7's unit proof), the configured
   path/header override, the not-mapped 404, and the fail-loud throw; the full #10 suite green
-  unchanged.
-- [ ] Code review: wire-contract JSON shape against the spec's Behaviors row verbatim (camelCase,
+  unchanged. *(2026-08-31: 66/66 — 60 pre-existing unchanged + 6 new; the not-mapped tests set
+  RequireAuthenticatedEndpoints=false because the shipped fallback policy challenges unmapped
+  paths — reported and approved.)*
+- [x] Code review: wire-contract JSON shape against the spec's Behaviors row verbatim (camelCase,
   200 always, claims 1:1); no antiforgery service registration smuggled into `Add`; XML docs
-  complete.
-- [ ] User approved — implementation may continue past this gate
+  complete. *(2026-08-31: mechanic (f)'s option home on `CloudstrapOpenIdConnectOptions` confirmed.)*
+- [x] User approved — implementation may continue past this gate *(2026-08-31)*
 
 ---
 

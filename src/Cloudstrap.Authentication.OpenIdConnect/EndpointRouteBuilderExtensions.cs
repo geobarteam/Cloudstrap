@@ -1,5 +1,6 @@
 namespace Cloudstrap.Authentication.OpenIdConnect
 {
+    using Microsoft.AspNetCore.Antiforgery;
     using Microsoft.AspNetCore.Authentication;
     using Microsoft.AspNetCore.Authentication.OpenIdConnect;
     using Microsoft.AspNetCore.Builder;
@@ -32,8 +33,10 @@ namespace Cloudstrap.Authentication.OpenIdConnect
         /// </para>
         /// <para>
         /// A caller-supplied <c>returnUrl</c> is honored only when it is local; anything else falls
-        /// back to <c>/</c>. No user-info endpoint, no front-/back-channel logout, and no consent,
-        /// registration or account pages are mapped — deliberately.
+        /// back to <c>/</c>. No front-/back-channel logout, and no consent, registration or account
+        /// pages are mapped — deliberately. The BFF user-info endpoint is its own opt-in:
+        /// <see cref="MapCloudstrapBffUserEndpoint"/> (DL-2 — superseding this method's original
+        /// "no user-info endpoint" posture).
         /// </para>
         /// </remarks>
         public static IEndpointRouteBuilder MapCloudstrapAuthenticationEndpoints(this IEndpointRouteBuilder endpoints)
@@ -53,6 +56,57 @@ namespace Cloudstrap.Authentication.OpenIdConnect
         }
 
         /// <summary>
+        /// Maps the opt-in BFF user endpoint: <c>GET {UserEndpointPath}</c> (default <c>/bff/user</c>),
+        /// which answers the browser client's session probe — 200 always, anonymous-safe — and issues
+        /// the XSRF request token in the <c>{XsrfHeaderName}</c> response header.
+        /// </summary>
+        /// <param name="endpoints">The endpoint route builder to map into.</param>
+        /// <returns>The endpoint route builder, so further mappings can be chained.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="endpoints"/> is <see langword="null"/>.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// The antiforgery services are not registered — the endpoint would issue tokens nothing
+        /// validates, so the omission fails loud at map time.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// The wire contract is camelCase JSON, <c>200</c> always:
+        /// <c>{ "isAuthenticated": bool, "userName": string?, "claims": [{ "type", "value" }]? }</c> —
+        /// <c>userName</c> and <c>claims</c> are present only for a signed-in session, and the claims
+        /// mirror the cookie principal 1:1. <c>Cloudstrap.BlazorWasm</c>'s authentication state
+        /// provider consumes exactly this shape.
+        /// </para>
+        /// <para>
+        /// Token <em>issuance</em> lives here; <em>validation</em> stays the consumer's stock wiring:
+        /// register <c>AddAntiforgery(options =&gt; options.HeaderName = ...)</c> with a header name
+        /// matching <c>Cloudstrap:OpenIdConnect:XsrfHeaderName</c> and validate mutating endpoints
+        /// (for example <c>[ValidateAntiForgeryToken]</c> on controllers, or
+        /// <c>IAntiforgery.ValidateRequestAsync</c> in minimal APIs). A token issued to an anonymous
+        /// session does not validate for the later signed-in user — the full-page login navigation
+        /// reloads the client, which refetches this endpoint and picks up a fresh token.
+        /// </para>
+        /// </remarks>
+        public static IEndpointRouteBuilder MapCloudstrapBffUserEndpoint(this IEndpointRouteBuilder endpoints)
+        {
+            ArgumentNullException.ThrowIfNull(endpoints);
+
+            if (endpoints.ServiceProvider.GetService<IAntiforgery>() is null)
+            {
+                throw new InvalidOperationException(
+                    $"{nameof(MapCloudstrapBffUserEndpoint)} requires the antiforgery services: call "
+                    + "services.AddAntiforgery(options => options.HeaderName = \"...\") — with a header "
+                    + "name matching 'Cloudstrap:OpenIdConnect:XsrfHeaderName' — before building the "
+                    + "application. Issuing tokens nothing validates would be security theater.");
+            }
+
+            CloudstrapOpenIdConnectOptions options = endpoints.ServiceProvider
+                .GetRequiredService<IOptions<CloudstrapOpenIdConnectOptions>>().Value;
+
+            endpoints.MapGet(options.UserEndpointPath, HandleUser).AllowAnonymous();
+
+            return endpoints;
+        }
+
+        /// <summary>
         /// Challenges to the identity provider, returning the signed-in user to the caller's
         /// <c>returnUrl</c> when it is local and to <c>/</c> otherwise.
         /// </summary>
@@ -65,6 +119,36 @@ namespace Cloudstrap.Authentication.OpenIdConnect
                 "/");
 
             return Results.Challenge(new AuthenticationProperties { RedirectUri = redirectUri });
+        }
+
+        /// <summary>
+        /// Answers the session probe from the cookie principal and issues the XSRF request token as
+        /// the configured response header.
+        /// </summary>
+        /// <param name="context">The HTTP context.</param>
+        /// <returns>The wire-contract JSON, 200 always.</returns>
+        private static IResult HandleUser(HttpContext context)
+        {
+            CloudstrapOpenIdConnectOptions options = context.RequestServices
+                .GetRequiredService<IOptions<CloudstrapOpenIdConnectOptions>>().Value;
+            IAntiforgery antiforgery = context.RequestServices.GetRequiredService<IAntiforgery>();
+
+            AntiforgeryTokenSet tokens = antiforgery.GetAndStoreTokens(context);
+            if (tokens.RequestToken is not null)
+            {
+                context.Response.Headers[options.XsrfHeaderName] = tokens.RequestToken;
+            }
+
+            bool isAuthenticated = context.User.Identity?.IsAuthenticated ?? false;
+
+            BffUserInfo payload = isAuthenticated
+                ? new BffUserInfo(
+                    IsAuthenticated: true,
+                    UserName: context.User.Identity!.Name,
+                    Claims: [.. context.User.Claims.Select(claim => new BffUserClaim(claim.Type, claim.Value))])
+                : new BffUserInfo(IsAuthenticated: false, UserName: null, Claims: null);
+
+            return Results.Json(payload);
         }
 
         /// <summary>
@@ -135,5 +219,21 @@ namespace Cloudstrap.Authentication.OpenIdConnect
 
             return false;
         }
+
+        /// <summary>
+        /// The user endpoint's wire contract — serialized with the application's JSON defaults
+        /// (camelCase), consumed by <c>Cloudstrap.BlazorWasm</c>.
+        /// </summary>
+        /// <param name="IsAuthenticated">Whether the session is signed in.</param>
+        /// <param name="UserName">The signed-in identity's name; absent when anonymous.</param>
+        /// <param name="Claims">The cookie principal's claims 1:1; absent when anonymous.</param>
+        private sealed record BffUserInfo(bool IsAuthenticated, string? UserName, List<BffUserClaim>? Claims);
+
+        /// <summary>
+        /// One claim on the wire contract.
+        /// </summary>
+        /// <param name="Type">The claim type.</param>
+        /// <param name="Value">The claim value.</param>
+        private sealed record BffUserClaim(string Type, string Value);
     }
 }

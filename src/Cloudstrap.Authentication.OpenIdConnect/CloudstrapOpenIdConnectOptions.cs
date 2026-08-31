@@ -130,6 +130,30 @@ namespace Cloudstrap.Authentication.OpenIdConnect
         public string LogoutPath { get; set; } = "/account/logout";
 
         /// <summary>
+        /// Gets or sets the path of the opt-in BFF user endpoint mapped by
+        /// <c>MapCloudstrapBffUserEndpoint</c>.
+        /// </summary>
+        /// <value>The user endpoint path. Defaults to <c>/bff/user</c> (DL-2).</value>
+        /// <remarks>
+        /// Pair it with the WASM client's <c>Cloudstrap:BlazorWasm:UserEndpointPath</c>
+        /// (<c>Cloudstrap.BlazorWasm</c>) — both sides must agree.
+        /// </remarks>
+        public string UserEndpointPath { get; set; } = "/bff/user";
+
+        /// <summary>
+        /// Gets or sets the response header <c>MapCloudstrapBffUserEndpoint</c> carries the XSRF
+        /// request token in.
+        /// </summary>
+        /// <value>The XSRF header name. Defaults to <c>X-XSRF-TOKEN</c> (DL-2).</value>
+        /// <remarks>
+        /// Three names must agree: this option, the consumer's
+        /// <c>AddAntiforgery(options =&gt; options.HeaderName = ...)</c> registration that validates
+        /// mutating requests, and the WASM client's <c>Cloudstrap:BlazorWasm:XsrfHeaderName</c>
+        /// (<c>Cloudstrap.BlazorWasm</c>).
+        /// </remarks>
+        public string XsrfHeaderName { get; set; } = "X-XSRF-TOKEN";
+
+        /// <summary>
         /// Gets or sets a value indicating whether registering interactive login also requires every
         /// endpoint to be authenticated.
         /// </summary>

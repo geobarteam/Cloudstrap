@@ -139,6 +139,40 @@ unqualified, because the stock scheme names are kept: the default scheme is the 
 challenge and sign-out scheme is OpenID Connect — and signing out of the OpenID Connect scheme also
 ends the cookie session, so a bare `SignOut()` ends both.
 
+## BFF user endpoint + XSRF
+
+`MapCloudstrapBffUserEndpoint()` is a second, separate opt-in for BFF hosts serving a browser
+client (the `Cloudstrap.BlazorWasm` pairing). It maps `GET /bff/user`
+(`Cloudstrap:OpenIdConnect:UserEndpointPath`) — anonymous-safe, `200` always — answering the wire
+contract in camelCase JSON:
+
+```json
+{ "isAuthenticated": true, "userName": "alice", "claims": [ { "type": "sub", "value": "u-1" } ] }
+```
+
+with `userName`/`claims` present only for a signed-in session (claims mirror the cookie principal
+1:1), and carrying the XSRF **request token** in the `X-XSRF-TOKEN` response header
+(`Cloudstrap:OpenIdConnect:XsrfHeaderName`).
+
+The endpoint *issues* tokens; **validation is your stock wiring**, and the mapper throws at map
+time if antiforgery services are missing — issuing tokens nothing validates would be security
+theater:
+
+```csharp
+builder.Services.AddAntiforgery(o => o.HeaderName = "X-XSRF-TOKEN");   // must match XsrfHeaderName
+
+// then validate mutating endpoints:
+[HttpPost]
+[ValidateAntiForgeryToken]
+public IActionResult Add(...) => ...;               // controllers
+// or, in minimal APIs: await antiforgery.ValidateRequestAsync(httpContext);
+```
+
+Three names must agree: `XsrfHeaderName` here, the `AddAntiforgery` header name, and the WASM
+client's `Cloudstrap:BlazorWasm:XsrfHeaderName`. Note the anonymous-token edge case: a token issued
+to an anonymous session does not validate for the later signed-in user — the full-page login
+navigation reloads the client, which refetches the endpoint and picks up a fresh token.
+
 ## User tokens on typed clients
 
 Flag any Cloudstrap typed client, and its requests carry the **signed-in user's** access token:
@@ -205,8 +239,8 @@ it.
 
 ## What is deliberately not here
 
-- **User-info endpoint / browser auth state** — the WASM/BFF contract arrives with
-  `Cloudstrap.BlazorWasm`.
+- **Browser auth state** — the client half of the BFF contract lives in `Cloudstrap.BlazorWasm`;
+  this package's `MapCloudstrapBffUserEndpoint()` is the server half.
 - **Blazor Server circuit token store** — arrives with `Cloudstrap.BlazorServer`.
 - **Front-/back-channel logout endpoints** — demand-driven; not yet shipped.
 - **Server-side session or distributed token stores** — the session cookie is the storage; advanced
