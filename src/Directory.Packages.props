@@ -118,6 +118,28 @@
          WASM — registration goes through RestService.For instead (owned once by the library). -->
     <PackageVersion Include="Refit" Version="11.2.0" />
   </ItemGroup>
+  <!-- Cloudstrap.Messaging (deliverable #14) — the Wolverine engine family, all MIT (JasperFx; versions
+       verified on nuget.org at spec time 2026-08-31, release 2026-08-30). Replaces NServiceBus per the founding
+       spec. Disclosed transitive footprint: WolverineFx.AzureServiceBus brings Azure.Messaging.ServiceBus +
+       Azure.Identity (MIT) and WolverineFx.Newtonsoft → Newtonsoft.Json (MIT); WolverineFx.SqlServer brings
+       Weasel.SqlServer (JasperFx, MIT); WolverineFx.EntityFrameworkCore brings Microsoft.EntityFrameworkCore
+       ≥ 10.0.4 (MIT, in-box per spec D-4). Wolverine performs runtime code generation through its JasperFx
+       toolchain (MIT) — new to this suite, normal for server workloads. -->
+  <ItemGroup>
+    <PackageVersion Include="WolverineFx" Version="6.31.0" />
+    <PackageVersion Include="WolverineFx.AzureServiceBus" Version="6.31.0" />
+    <PackageVersion Include="WolverineFx.SqlServer" Version="6.31.0" />
+    <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="6.31.0" />
+    <!-- The Roslyn runtime compiler Wolverine 6.x no longer ships in its core package (GH-2876): without it a
+         node cannot execute a single handler. Shipped so that "one call, zero configuration" holds on a fresh
+         clone (AC-MSG1); brings Microsoft.CodeAnalysis.CSharp (MIT). -->
+    <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="6.31.0" />
+    <!-- Family-floor pins (transitive pinning, the System.Security.Cryptography.Xml precedent): Wolverine's
+         EF Core floor is 10.0.4; the repo's Microsoft.* family is 10.0.10. Core and Relational are pinned
+         together so the EF family stays one version. -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.10" />
+  </ItemGroup>
   <!-- Demo apps + E2E only (src/demo, src/Test/E2E) — never referenced by shipped packages -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.10" />

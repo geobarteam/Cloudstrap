@@ -826,12 +826,12 @@ spec's "resolving the placeholder" wording · **mechanic (h)** — the Presentat
 `Cloudstrap.BlazorWasm` reference and the `AuthenticationStateProvider`-injecting ViewModel ·
 no shared-contract change (`Cloudstrap.Demo.Contracts` untouched), no IdP change.
 
-- [ ] Behavioral verification: the two new E2E tests pass
+- [x] Behavioral verification: the two new E2E tests pass
   (`BffUserEndpoint_AnonymousApiGet_ReturnsTheWireContractWithTheXsrfHeader`,
   `AddDoctor_SignedInPostWithoutTheXsrfHeader_IsRejected_WhileTheFormFlowSucceeds`) and **all
   pre-existing E2E tests pass unchanged** (every `DoctorsTests` flow in particular); the full-suite
   check (build + 13 unit exes + E2E exe + `dotnet format --verify-no-changes`) is green end to end.
-- [ ] Spec acceptance sign-off: walk **AC-BW1…AC-BW9 + AC-ASP2 + AC-A3** against the step evidence
+- [x] Spec acceptance sign-off: walk **AC-BW1…AC-BW9 + AC-ASP2 + AC-A3** against the step evidence
   using the Overview's AC coverage map — all met; confirm nothing from the spec's Drop /
   Out-of-Scope lists was resurrected (no `BlazorWasmOptions` wrapper, no hidden `AddLocalization`,
   no `ApplyStoredCultureAsync`/culture/JS-interop code — DL-4, no
@@ -841,11 +841,11 @@ no shared-contract change (`Cloudstrap.Demo.Contracts` untouched), no IdP change
   BlazorServer cross-reference, zero `Aspire.*`, zero `Nihdi.*`, zero FrameworkReference in the
   package closure) and every De-NIHDI row is closed (`AddBlazorWasmForNihdi`/`AddNihdiWasm*` → the
   Cloudstrap names, `api/user` → `bff/user`, no company headers, no `Cfe` identifiers).
-- [ ] Docs review: `src/Cloudstrap.BlazorWasm/README.md` and the #10 README's user-endpoint section
+- [x] Docs review: `src/Cloudstrap.BlazorWasm/README.md` and the #10 README's user-endpoint section
   match as-built behavior (incl. the no-secrets statement and the both-sides `XsrfHeaderName`
   contract); `src/demo/BlazorWasm/README.md` matrix/harness notes cite the real E2E test names and
   no longer call the kept endpoints placeholders; `blazor.md` + the refit skill carry the shipped
   truth with the band drift note gone. **User-owned follow-ups (not in this plan)**: the DL-1
   founding-spec Package Map amendment (`_specs/Cloudstrap.md` is user-amended only — wording in the
   spec's Decision Log); #24 inherits `ApplyStoredCultureAsync` per DL-4.
-- [ ] User approved — deliverable #13 done; project-manager flips the ROADMAP row to ✅.
+- [x] User approved (2026-08-31) — deliverable #13 done; project-manager flips the ROADMAP row to ✅.
