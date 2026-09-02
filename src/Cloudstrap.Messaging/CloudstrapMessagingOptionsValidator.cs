@@ -50,9 +50,27 @@ namespace Cloudstrap.Messaging
                 ValidateAzureServiceBus(options.AzureServiceBus, failures);
             }
 
+            if (options.Transport == MessagingTransport.SqlServer)
+            {
+                ValidateSqlServer(options.SqlTransport, failures);
+            }
+
             return failures.Count == 0
                 ? ValidateOptionsResult.Success
                 : ValidateOptionsResult.Fail(failures);
+        }
+
+        private void ValidateSqlServer(SqlTransportOptions sqlTransport, List<string> failures)
+        {
+            const string key = $"{CloudstrapMessagingOptions.SectionName}:SqlTransport:ConnectionStringName";
+
+            if (string.IsNullOrWhiteSpace(sqlTransport.ConnectionStringName)
+                || string.IsNullOrWhiteSpace(_configuration.GetConnectionString(sqlTransport.ConnectionStringName)))
+            {
+                failures.Add(
+                    $"'{key}' names a connection string that does not resolve: add a " +
+                    $"'ConnectionStrings:{sqlTransport.ConnectionStringName}' entry to the configuration.");
+            }
         }
 
         private void ValidateAzureServiceBus(AzureServiceBusOptions serviceBus, List<string> failures)

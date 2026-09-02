@@ -78,13 +78,15 @@ namespace Cloudstrap.Messaging
                 $"{CloudstrapMessagingOptions.SectionName}:SqlTransport:ConnectionStringName");
             options.UseSqlServerPersistenceAndTransport(
                 connectionString,
-                schema: state.Messaging.Durability.SchemaName ?? SchemaNames.Sanitize(state.Application.WorkloadName),
+                schema: state.DurabilitySchemaName,
                 transportSchema: state.Messaging.SqlTransport.SchemaName);
             options.ListenToSqlServerQueue(state.EndpointName);
             foreach (SqlServerTransport transport in options.Transports.OfType<SqlServerTransport>())
             {
                 transport.AutoProvision = state.AutoProvision;
             }
+
+            state.MessageStore = $"SQL Server (schema '{state.DurabilitySchemaName}', the transport's database)";
         }
 
         private static void ApplyAzureServiceBus(WolverineOptions options, MessagingRegistrationState state, IConfiguration configuration)

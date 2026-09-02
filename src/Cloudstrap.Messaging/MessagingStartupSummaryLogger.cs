@@ -42,8 +42,10 @@ namespace Cloudstrap.Messaging
             string destinations = messaging.Destinations.Count == 0
                 ? "(none)"
                 : string.Join(", ", messaging.Destinations.Select(entry => $"{entry.Key} -> {entry.Value}"));
-            string durability = DescribeDurability(messaging.Transport);
-            string deadLetter = DescribeDeadLetter(messaging.Transport, _state.DeadLetterQueueName);
+            string durability = _state.MessageStore ?? "none (buffered, non-durable)";
+            string deadLetter = _state.MessageStore is null
+                ? DescribeDeadLetter(messaging.Transport, _state.DeadLetterQueueName)
+                : "message store dead-letter table";
             LogSummary(_wolverine.ServiceName, messaging.Transport, destinations, durability, deadLetter, _state.AutoProvision);
 
             return Task.CompletedTask;
@@ -55,21 +57,11 @@ namespace Cloudstrap.Messaging
             return Task.CompletedTask;
         }
 
-        private static string DescribeDurability(MessagingTransport transport)
-        {
-            return transport == MessagingTransport.SqlServer
-                ? "SQL Server message store"
-                : "none (buffered, non-durable)";
-        }
-
         private static string DescribeDeadLetter(MessagingTransport transport, string errorQueueName)
         {
-            return transport switch
-            {
-                MessagingTransport.Local => "in-process",
-                MessagingTransport.SqlServer => "message store dead-letter table",
-                _ => $"transport error queue '{errorQueueName}'",
-            };
+            return transport == MessagingTransport.Local
+                ? "in-process"
+                : $"transport error queue '{errorQueueName}'";
         }
 
         [LoggerMessage(

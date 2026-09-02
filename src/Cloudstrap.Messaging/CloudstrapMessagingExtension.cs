@@ -29,6 +29,16 @@ namespace Cloudstrap.Messaging
         {
             ArgumentNullException.ThrowIfNull(options);
 
+            // The transactional EF integration needs a durable store; the check runs here, at startup, so
+            // UseSqlServer() may be called before or after AddCloudstrapTransactionalMessaging().
+            if (_state.TransactionalDbContexts.Count > 0 && _state.DurabilityProvider is null)
+            {
+                string contexts = string.Join(", ", _state.TransactionalDbContexts.Select(type => type.Name));
+                throw new InvalidOperationException(
+                    $"AddCloudstrapTransactionalMessaging<{contexts}> requires a durability provider: call " +
+                    $"UseSqlServer() on the {nameof(CloudstrapMessagingBuilder)} returned by AddCloudstrapMessaging().");
+            }
+
             // The consumer's escape hatch: final say over identity, transport, conventions and policies.
             _state.Configurator.Wolverine?.Invoke(options);
 

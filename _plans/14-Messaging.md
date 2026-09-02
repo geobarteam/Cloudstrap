@@ -567,7 +567,7 @@ D-1 topology one-way door** — queue/topic/subscription names are cloud resourc
 before anything ships · mechanic (d)'s `IWolverineExtension` deferred-configuration seam and any
 Wolverine-API deviations the executor logged under mechanic (d)'s caveat.
 
-- [ ] Behavioral verification: test exe output shows — the zero-config local node round trip,
+- [x] Behavioral verification: test exe output shows — the zero-config local node round trip,
   endpoint identity = workload name, the duplicate-call and unknown-transport fail-fasts (Step 1);
   suffix classification with dependency-free contracts, `Destinations` routing, the
   override/replace hooks, the mechanic-(e) ordering proof and the one-line startup summary
@@ -575,11 +575,11 @@ Wolverine-API deviations the executor logged under mechanic (d)'s caveat.
   with its logged effective value, and additive-only OTel (Step 3); the ASB validation failures
   naming exact keys with no values echoed, `DefaultAzureCredential` with no secret-bearing
   setting, and the D-1 topology assertions (Step 4).
-- [ ] Code review: options/validator code against the #1 pattern (keys named, values never
+- [x] Code review: options/validator code against the #1 pattern (keys named, values never
   echoed); `sealed`/static/internal-by-default; single namespace `Cloudstrap.Messaging`; full XML
   docs; the csproj → four PackageReferences + two ProjectReferences, nothing else; no Drop-listed
   concept resurrected.
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate
 
 ---
 
@@ -589,7 +589,7 @@ Wolverine-API deviations the executor logged under mechanic (d)'s caveat.
 
 ## Step 5 — `UseSqlServer()` turns the node durable: Wolverine's inbox/outbox and dead-letter tables land in a workload-derived, sanitized schema (`contoso-orders-worker` → `contoso_orders_worker`; `Durability:SchemaName` overrides) so N workloads share one database; a poison message exhausts the retry ladder into the store's queryable dead-letter table with type+id logged and never the payload; the SqlServer transport moves real messages between two hosts on one database; an unresolvable connection string fails startup naming the key (AC-MSG13; AC-MSG6; AC-MSG5's dead-letter tail; AC-MSG2's `UseSqlServer` clause; D-2; D-3; mechanic (g)) ⚠️ first SQL-backed tests
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Messaging/CloudstrapMessagingBuilder.cs` *(modify)* — the sketch's
@@ -658,7 +658,7 @@ repo-owned SQL scripts exist or are added.
 
 ## Step 6 — Entity writes and messages become atomic: `AddCloudstrapTransactionalMessaging<TDbContext>()` wires the handler's `DbContext` into Wolverine's shared-transaction EF integration — a handler that throws after staging an entity and a message commits neither (AC-M2), a succeeding handler commits row + outbox record in one transaction with dispatch only after commit (AC-MSG7), non-handler HTTP code gets the same guarantee via `IDbContextOutbox<TDbContext>` with crash-recovery delivery (AC-MSG8), and calling it without a durability provider fails fast naming `UseSqlServer` (AC-M2; AC-MSG7; AC-MSG8; D-4)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Messaging/CloudstrapMessagingBuilder.cs` *(modify)* — the sketch's

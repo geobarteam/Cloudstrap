@@ -68,10 +68,41 @@ namespace Cloudstrap.Messaging
         public string DeadLetterQueueName => Messaging.DeadLetter.QueueName ?? $"{Application.SystemName}-error";
 
         /// <summary>
+        /// Gets the schema the durable message store lives in: the configured <c>Durability:SchemaName</c> or
+        /// the sanitized workload name.
+        /// </summary>
+        public string DurabilitySchemaName => Messaging.Durability.SchemaName ?? SchemaNames.Sanitize(Application.WorkloadName);
+
+        /// <summary>
         /// Gets or sets the engine's options instance, captured when the engine is registered so later
         /// builder calls — which may register services — can still shape it before the host is built.
         /// </summary>
         public WolverineOptions? Wolverine
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Gets or sets the durability provider chosen on the builder (<c>UseSqlServer</c>), or
+        /// <see langword="null"/> while none has been chosen.
+        /// </summary>
+        public string? DurabilityProvider
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Gets the <c>DbContext</c> types registered through <c>AddCloudstrapTransactionalMessaging</c>; each
+        /// needs a durability provider by the time the host starts.
+        /// </summary>
+        public List<Type> TransactionalDbContexts { get; } = [];
+
+        /// <summary>
+        /// Gets or sets the description of the message store in force — set by the SQL Server transport
+        /// (which carries a store) and by a durability provider — or <see langword="null"/> when the node
+        /// runs buffered and non-durable.
+        /// </summary>
+        public string? MessageStore
         {
             get; set;
         }

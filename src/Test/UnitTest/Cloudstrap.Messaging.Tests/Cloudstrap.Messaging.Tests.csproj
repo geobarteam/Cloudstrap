@@ -14,6 +14,8 @@
     <!-- AC-MSG11: the host owns its OpenTelemetry pipeline; the tests collect Wolverine's spans from it -->
     <PackageReference Include="OpenTelemetry.Exporter.InMemory" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <!-- AC-M2 / AC-MSG7 / AC-MSG8: the transactional-outbox tests' EF Core provider (LocalDB, spec D-3) -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
   </ItemGroup>
 
 </Project>

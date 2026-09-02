@@ -15,7 +15,8 @@ namespace Cloudstrap.Messaging
 
         /// <summary>
         /// Gets or sets the schema holding the inbox, outbox and dead-letter tables. Each workload gets its own
-        /// schema, so several workloads share one database without collision.
+        /// schema, so several workloads share one database without collision — the isolation unit is a schema,
+        /// not a table-name prefix.
         /// </summary>
         /// <value>
         /// The schema name, or <see langword="null"/> to derive it from the workload name (lowercased, every

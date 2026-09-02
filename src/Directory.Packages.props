@@ -140,6 +140,11 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.10" />
   </ItemGroup>
+  <!-- Test/demo only — never referenced by a shipped package: the EF Core SQL Server provider behind the
+       AC-M2-class transactional-outbox tests and the demo hosts' DbContexts (MIT, the repo's 10.0.x family). -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+  </ItemGroup>
   <!-- Demo apps + E2E only (src/demo, src/Test/E2E) — never referenced by shipped packages -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.10" />
