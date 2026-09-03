@@ -30,11 +30,21 @@ namespace Cloudstrap.Demo.E2E.Tests
                 $"cloudstrap-demo-outage-{Guid.NewGuid():N}.sentinel");
 
             // A generic host ignores ASPNETCORE_URLS — the port must arrive as configuration; the
-            // baseUrl parameter only feeds the fixture's own readiness poller.
-            _workerHost = SutProcess.Start(
-                _workerBaseUrl,
-                ["--Cloudstrap:Worker:HealthPort=5350", "--Demo:OutageSentinelPath=" + _sentinelPath],
-                _workerProjectPath);
+            // baseUrl parameter only feeds the fixture's own readiness poller. Since deliverable #14
+            // the Worker is a SQL Server messaging node: the SQL override (spec D-3) is forwarded when
+            // set, exactly as the fixture forwards it to the Api.
+            List<string> arguments =
+            [
+                "--Cloudstrap:Worker:HealthPort=5350",
+                "--Demo:OutageSentinelPath=" + _sentinelPath,
+            ];
+            string? sqlOverride = Environment.GetEnvironmentVariable("CLOUDSTRAP_TEST_SQL");
+            if (!string.IsNullOrWhiteSpace(sqlOverride))
+            {
+                arguments.Add("--ConnectionStrings:DefaultConnection=" + sqlOverride);
+            }
+
+            _workerHost = SutProcess.Start(_workerBaseUrl, arguments, _workerProjectPath);
             _client = new HttpClient { BaseAddress = new Uri(_workerBaseUrl) };
             await WaitUntilReadyAsync(_client, _workerHost);
         }
