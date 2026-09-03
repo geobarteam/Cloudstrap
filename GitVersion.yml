@@ -3,6 +3,9 @@
 # - dev commits -> X.Y.Z-preview.N (N increments per commit since the last version anchor)
 # - untagged main commits compute a next-patch pre-release that is never published (workflow triggers)
 # - hotfix/* follows GitVersion's standard GitFlow handling
+# - main carries no vX.Y.Z tag yet: next-version anchors dev previews to the line already
+#   published on nuget.org (0.2.0-preview.N). Remove it once main gets its first tag.
+next-version: 0.2.0
 workflow: GitFlow/v1
 tag-prefix: '[vV]?'
 branches:
