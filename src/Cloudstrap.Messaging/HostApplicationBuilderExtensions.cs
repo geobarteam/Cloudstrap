@@ -2,6 +2,7 @@ namespace Cloudstrap.Messaging
 {
     using System.Reflection;
     using Cloudstrap.Core;
+    using Cloudstrap.Observability.Correlation;
     using JasperFx;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
@@ -85,8 +86,10 @@ namespace Cloudstrap.Messaging
             // Eager reads, the suite's fail-fast convention: the identity and the messaging section are bound
             // and validated at the call. Transports and durability register services, which Wolverine only
             // allows while the service collection is still open — so the engine is shaped here, not at startup.
-            ApplicationOptions application = builder.Configuration.GetCloudstrapOptions().Application;
+            CloudstrapOptions cloudstrap = builder.Configuration.GetCloudstrapOptions();
+            ApplicationOptions application = cloudstrap.Application;
             CloudstrapMessagingOptions messaging = BindAndValidate(builder.Configuration);
+            CorrelationEnforcementRegistry enforcement = new();
 
             MessageConventions conventions = MessageConventions.CreateDefault(messaging);
             configurator.Conventions?.Invoke(conventions);
@@ -98,7 +101,11 @@ namespace Cloudstrap.Messaging
             builder.Services.AddSingleton(state);
             builder.Services.AddSingleton(conventions);
 
+            // Core binds Cloudstrap:Correlation (header name + the Message enforcement block) and the
+            // correlation services supply the ambient accessor — #2's vocabulary, redefined nowhere.
             builder.Services.AddCloudstrapCore();
+            builder.Services.AddCloudstrapCorrelation();
+            builder.Services.AddSingleton(enforcement);
             builder.Services.AddOptions<CloudstrapMessagingOptions>()
                 .Bind(builder.Configuration.GetSection(CloudstrapMessagingOptions.SectionName))
                 .ValidateOnStart();
@@ -126,6 +133,11 @@ namespace Cloudstrap.Messaging
 
                 // Routing by convention over the (possibly consumer-adjusted) MessageConventions.
                 options.RouteWith(new CloudstrapRoutingConvention(conventions, messaging.Transport, state.EndpointName));
+
+                // Receive-side correlation on every handler: header → accessor, and the enforcement rule
+                // decided once per handler chain at bootstrap.
+                options.Policies.Add(new CorrelationEnforcementPolicy(enforcement, cloudstrap.Correlation.Message));
+                options.Policies.AddMiddleware(typeof(CorrelationMiddleware));
             });
 
             // The deferred tail: applied when the host starts, after every builder call — the consumer's

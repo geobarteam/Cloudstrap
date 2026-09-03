@@ -725,17 +725,17 @@ against the test evidence line by line · the D-3 LocalDB test posture in practi
 flakiness, `CLOUDSTRAP_TEST_SQL` override honored) · the new test/demo-only CPM pins
 (`Microsoft.EntityFrameworkCore.SqlServer`, possibly `Microsoft.Data.SqlClient`).
 
-- [ ] Behavioral verification: test exe output shows — sanitized workload-schema isolation with
+- [x] Behavioral verification: test exe output shows — sanitized workload-schema isolation with
   two workloads in one database, the override, the naming-the-key connection-string failure, the
   poison message in a queryable dead-letter table with type+id-only logging, and the two-host SQL
   transport exchange (Step 5); the AC-M2 both-halves atomicity, dispatch-after-commit, the
   `IDbContextOutbox` HTTP pattern and the crash-recovery delivery, and the fail-fast without a
   provider (Step 6).
-- [ ] Code review: `UseSqlServer` + `AddCloudstrapTransactionalMessaging<TDbContext>` signatures
+- [x] Code review: `UseSqlServer` + `AddCloudstrapTransactionalMessaging<TDbContext>` signatures
   === the spec sketch; the mechanic-(d) extension seam (order-free builder calls); no
   payload/connection-string ever logged; XML docs complete incl. the schema-vs-table-prefix
   deliberate-change note (Deliberate Behavior Change 2).
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate
 
 ---
 
@@ -745,7 +745,7 @@ flakiness, `CLOUDSTRAP_TEST_SQL` override honored) · the new test/demo-only CPM
 
 ## Step 7 — The business correlation id flows across nodes and is enforceable: the configured header (`Cloudstrap:Correlation:HeaderName`) is stamped on every outgoing envelope from `ICorrelationContextAccessor` and populates the accessor on receive (so a remote handler sees the original inbound value, with W3C `traceparent` flowing independently); enforcement per Core's shipped `Cloudstrap:Correlation:Message` options + #2's `CorrelationRequired`/`AllowNoCorrelation` attribute walk blocks handling with a typed, logged error naming header and handler — and #2's attribute XML docs gain the message-handler wording (doc-only, D-5) (AC-MSG9; AC-MSG10; D-5; mechanic (i))
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Messaging/Correlation/CorrelationEnvelopeMiddleware.cs` *(create — internal; one
@@ -821,7 +821,7 @@ correlation types beyond the two internal middleware/policy classes** (mechanic 
 
 ## Step 8 — The package is publishable and guarded forever: metadata, README (quick start, options table, D-1 topology and D-2 dead-letter posture, both outbox patterns, the AC-M1 manual ASB verification procedure, the TLS/encryption-at-rest baseline, the `Destinations` binder caveat, migration notes on all nine Deliberate Behavior Changes), permanent tripwires on the closure and the dropped concepts, and the forbidden-identifier sweep (AC-MSG15; AC-A3; AC-ASP2; AC-M1's documented procedure)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Messaging/Cloudstrap.Messaging.csproj` *(modify)* — `<Description>` (durable

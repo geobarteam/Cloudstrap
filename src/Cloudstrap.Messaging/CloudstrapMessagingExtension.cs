@@ -1,6 +1,10 @@
 namespace Cloudstrap.Messaging
 {
+    using Cloudstrap.Core;
+    using Cloudstrap.Observability.Correlation;
+    using Microsoft.Extensions.Options;
     using Wolverine;
+    using Wolverine.ErrorHandling;
 
     /// <summary>
     /// The deferred tail of the bootstrap: a Wolverine extension the engine applies to its
@@ -16,12 +20,21 @@ namespace Cloudstrap.Messaging
     internal sealed class CloudstrapMessagingExtension : IWolverineExtension
     {
         private readonly MessagingRegistrationState _state;
+        private readonly ICorrelationContextAccessor _correlation;
+        private readonly IOptions<CorrelationOptions> _correlationOptions;
 
-        public CloudstrapMessagingExtension(MessagingRegistrationState state)
+        public CloudstrapMessagingExtension(
+            MessagingRegistrationState state,
+            ICorrelationContextAccessor correlation,
+            IOptions<CorrelationOptions> correlationOptions)
         {
             ArgumentNullException.ThrowIfNull(state);
+            ArgumentNullException.ThrowIfNull(correlation);
+            ArgumentNullException.ThrowIfNull(correlationOptions);
 
             _state = state;
+            _correlation = correlation;
+            _correlationOptions = correlationOptions;
         }
 
         /// <inheritdoc />
@@ -38,6 +51,11 @@ namespace Cloudstrap.Messaging
                     $"AddCloudstrapTransactionalMessaging<{contexts}> requires a durability provider: call " +
                     $"UseSqlServer() on the {nameof(CloudstrapMessagingBuilder)} returned by AddCloudstrapMessaging().");
             }
+
+            // Send-side correlation: stamp the configured header on every outgoing envelope; a blocked
+            // handler is dead-lettered without retries — the failure is deterministic.
+            options.MetadataRules.Add(new CorrelationEnvelopeRule(_correlation, _correlationOptions));
+            options.Policies.OnException<CorrelationRequiredException>().MoveToErrorQueue();
 
             // The consumer's escape hatch: final say over identity, transport, conventions and policies.
             _state.Configurator.Wolverine?.Invoke(options);

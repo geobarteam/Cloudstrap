@@ -6,6 +6,16 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Description>A durable Wolverine messaging node in one call: local, Azure Service Bus and SQL Server transports selected by configuration, suffix conventions and workload routing for dependency-free contracts, a transactional EF Core inbox/outbox, bounded retries and dead-lettering, business correlation and additive OpenTelemetry — no hand-assembled bus, no lost or duplicated messages.</Description>
+    <PackageTags>$(PackageTags);messaging;wolverine;outbox;inbox;azureservicebus;sqlserver;transactional;correlation</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
     <ProjectReference Include="..\Cloudstrap.Observability\Cloudstrap.Observability.csproj" />
