@@ -1046,13 +1046,13 @@ new machine client (`demo-machine`, audience `demo-api`) reviewed; no shipped pa
 mechanic (k)'s demo topology (shared `demo_transport` schema by explicit config — a demo
 decision, not a package opinion — and per-host DbContexts over one table) — **confirm**.
 
-- [ ] Behavioral verification: the three new E2E tests pass
+- [x] Behavioral verification: the three new E2E tests pass
   (`Messaging_OrderPlacedThroughTheApiOutbox_IsProcessedByTheWorker_WithTheCorrelationIdObserved`,
   `Messaging_WorkerLogsTheHandledCommandTypeAndId_NeverThePayload`,
   `Messaging_AnonymousOrdersPost_Returns401`) and **all pre-existing E2E tests pass unchanged**;
   the full-suite check (build + 14 unit exes + E2E exe + `dotnet format --verify-no-changes`) is
   green end to end.
-- [ ] Spec acceptance sign-off: walk **AC-M1 (procedure documented, not automated), AC-M2, AC-M3,
+- [x] Spec acceptance sign-off: walk **AC-M1 (procedure documented, not automated), AC-M2, AC-M3,
   AC-A3, AC-ASP2, AC-MSG1…AC-MSG16** against the step evidence using the Overview's AC coverage
   map — all met; confirm nothing from the spec's Drop / Out-of-Scope lists was resurrected (no
   blob claim-check pre-build for #15, no encryption, no Bridge/migration topology, no
@@ -1061,10 +1061,10 @@ decision, not a package opinion — and per-host DbContexts over one table) — 
   (`UseNServiceBusForNihdi` → `AddCloudstrapMessaging`, `nihdi-default-bundle` gone, license
   paths/`PARTICULARSOFTWARE_LICENSE`/`\\riziv.*` UNC paths gone, `BusinessSystemName` →
   `SystemName`, neutral fixtures throughout).
-- [ ] Docs review: `src/Cloudstrap.Messaging/README.md` matches as-built behavior (incl. the
+- [x] Docs review: `src/Cloudstrap.Messaging/README.md` matches as-built behavior (incl. the
   AC-M1 manual procedure and both outbox patterns); the Api/Worker demo READMEs cite the real E2E
   test names and the LocalDB prerequisite; the #2 attribute doc amendment shipped as approved at
   Gate 3. **Recorded follow-ups (not in this plan)**: the `configure-wolverine` skill
   (CLAUDE.md's pending-artefacts list — authored post-deliverable), deliverable #15 (blob
   claim-check) builds on this package, #19/#20 build against the D-2 dead-letter posture.
-- [ ] User approved — deliverable #14 done; project-manager flips the ROADMAP row to ✅.
+- [x] User approved — deliverable #14 done; project-manager flips the ROADMAP row to ✅.
