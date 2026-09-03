@@ -65,7 +65,16 @@ namespace Cloudstrap.Demo.E2E.Tests
             // The Api demo host boots after the IdP (it validates tokens against 5310) and before
             // the Bff (whose UserApi readiness check probes the Api's /healthz). Fixture-owned in
             // attach mode too, like the IdP.
-            _api = SutProcess.Start(ApiBaseUrl, projectRelativePath: _apiProjectPath);
+            // Since deliverable #14 the Api is a SQL Server messaging node: it needs LocalDB (or the
+            // CLOUDSTRAP_TEST_SQL override, forwarded here as its connection string — spec D-3) at startup.
+            List<string> apiArguments = [];
+            string? sqlOverride = Environment.GetEnvironmentVariable("CLOUDSTRAP_TEST_SQL");
+            if (!string.IsNullOrWhiteSpace(sqlOverride))
+            {
+                apiArguments.Add("--ConnectionStrings:DefaultConnection=" + sqlOverride);
+            }
+
+            _api = SutProcess.Start(ApiBaseUrl, apiArguments, _apiProjectPath);
             await WaitUntilReadyAsync(ApiBaseUrl + "/healthz", () => _api, "Api demo host");
 
             string? externalBaseUrl = Environment.GetEnvironmentVariable("CLOUDSTRAP_E2E_BASEURL");

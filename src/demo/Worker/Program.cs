@@ -1,7 +1,11 @@
 using Cloudstrap.Core;
 using Cloudstrap.Demo.Worker;
+using Cloudstrap.Demo.Worker.Data;
+using Cloudstrap.Messaging;
 using Cloudstrap.Observability;
 using Cloudstrap.Worker;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
@@ -34,6 +38,15 @@ builder.UseCloudstrapObservability();
 // /ready from the checks registered below, on Cloudstrap:Worker:HealthPort.
 builder.AddCloudstrapWorker();
 
+// The messaging node (#14): this host is the designated consumer. It listens on its own workload
+// queue (demo-application-worker — no listener configuration needed) over the SQL Server
+// transport, with a durable inbox/outbox in its own schema, and PlaceOrderCommandHandler is a plain
+// Wolverine handler made transactional by taking WorkerDbContext.
+builder.AddCloudstrapMessaging()
+    .UseSqlServer()
+    .AddCloudstrapTransactionalMessaging<WorkerDbContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddHostedService<PeriodicWorker>();
 builder.Services.AddHealthChecks()
     .AddCheck(
@@ -46,7 +59,16 @@ builder.Services.AddHealthChecks()
 
 try
 {
-    await builder.Build().RunAsync();
+    IHost host = builder.Build();
+
+    // Demo-only: the LocalDB database and the demo.Orders table exist before the node starts and
+    // auto-provisions its own schemas (AutoProvision is on in Development). Production: IaC + migrations.
+    if (builder.Environment.IsDevelopment())
+    {
+        WorkerDbContext.EnsureCreated(host.Services);
+    }
+
+    await host.RunAsync();
     return 0;
 }
 catch (Exception exception)

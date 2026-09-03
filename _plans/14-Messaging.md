@@ -921,15 +921,15 @@ Observability suite green unchanged is the tripwire) · **public API frozen** �
 Release nupkg (metadata + dependency list) reviewed · the README's security-relevant consumer
 instructions (outbox patterns, AC-M1 procedure, no-secrets rules) reviewed for correctness.
 
-- [ ] Behavioral verification: test exe output shows — the cross-node correlation round trip on
+- [x] Behavioral verification: test exe output shows — the cross-node correlation round trip on
   the default and configured header, `traceparent` independence, the fresh-scope off-path, the
   full enforcement matrix (require-all, attribute walk, both exemptions, the send-side block) and
   the Core-options binding proof (Step 7); the four permanent guards green, the expanded Release
   nupkg reviewed, the identifier sweep clean (Step 8).
-- [ ] Code review: the middleware/policy internals against finding 5 (five types collapsed to
+- [x] Code review: the middleware/policy internals against finding 5 (five types collapsed to
   one rule + one middleware pair); #2's surface consumed, never duplicated; README accuracy
   against as-built behavior (options table, topology, both outbox patterns, AC-M1 procedure).
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate
 
 ---
 
@@ -939,7 +939,7 @@ instructions (outbox patterns, AC-M1 procedure, no-secrets rules) reviewed for c
 
 ## Step 9 — The demo apps run the package (workflow rule 9; AC-MSG16; D-3's demo design verbatim): `Cloudstrap.Demo.Api` registers `AddCloudstrapMessaging().UseSqlServer().AddCloudstrapTransactionalMessaging<DemoDbContext>()` and its new `POST api/v1/orders` stages an `Order` row + sends `PlaceOrderCommand` via `IDbContextOutbox` (AC-MSG8 live); `Cloudstrap.Demo.Worker` becomes a real messaging node whose transactional handler marks the order processed and records the flowed correlation id (AC-MSG7/AC-MSG9 live); a new E2E test drives the whole thing through the running processes and every pre-existing E2E test stays green ⚠️ DEMO SQL/IDP-SEED RISK AREA
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/demo/Shared/Contracts/PlaceOrderCommand.cs` *(create)* — `public sealed record

@@ -8,7 +8,13 @@
     <ProjectReference Include="..\..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
     <ProjectReference Include="..\..\Cloudstrap.Observability\Cloudstrap.Observability.csproj" />
     <ProjectReference Include="..\..\Cloudstrap.WebApi\Cloudstrap.WebApi.csproj" />
+    <ProjectReference Include="..\..\Cloudstrap.Messaging\Cloudstrap.Messaging.csproj" />
     <ProjectReference Include="..\Shared\Contracts\Cloudstrap.Demo.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Demo-only: the EF Core provider behind DemoDbContext (deliverable #14) -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
   </ItemGroup>
 
 </Project>

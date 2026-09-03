@@ -49,6 +49,17 @@ namespace Cloudstrap.Demo.IdentityProvider
                 Audiences = { "demo-selfapi" },
             });
 
+            // The machine client of the messaging demo (deliverable #14): the E2E MessagingTests fixture
+            // calls the hardened Api demo host's orders endpoint with a client-credentials token that is
+            // valid at the Api (demo-api) only.
+            options.Clients.Add(new TestIdentityProviderClient
+            {
+                ClientId = "demo-machine",
+                ClientSecret = "local-e2e-placeholder-secret-machine",
+                Scopes = { "selfapi" },
+                Audiences = { "demo-api" },
+            });
+
             TestIdentityProviderClient webClient = new TestIdentityProviderClient
             {
                 ClientId = "demo-web",
