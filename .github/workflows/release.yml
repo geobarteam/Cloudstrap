@@ -19,6 +19,22 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # Same SQL Server stand-in as ci.yml: deliverable #14 made SQL Server a test-time prerequisite
+    # (spec D-3) and Linux runners have no LocalDB. The password is CI-local and never leaves this job.
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: Cloudstrap_CI_P4ssw0rd!
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Cloudstrap_CI_P4ssw0rd!' -Q 'SELECT 1' -b -o /dev/null"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+          --health-start-period 20s
     steps:
       - name: Checkout (full history for GitVersion)
         uses: actions/checkout@v5
@@ -66,6 +82,9 @@ jobs:
         run: pwsh src/Test/E2E/Cloudstrap.Demo.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 
       - name: Run all MTP test executables
+        env:
+          # Honored by the Messaging SQL fixtures and the E2E fixture (spec D-3); the demo hosts create the database.
+          CLOUDSTRAP_TEST_SQL: "Server=localhost,1433;Database=CloudstrapCi;User Id=sa;Password=Cloudstrap_CI_P4ssw0rd!;TrustServerCertificate=true;"
         run: |
           shopt -s globstar nullglob
           status=0
