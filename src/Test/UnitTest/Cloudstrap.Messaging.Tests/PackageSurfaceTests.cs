@@ -116,6 +116,33 @@ namespace Cloudstrap.Messaging.Tests
         }
 
         [Test]
+        public void CloudstrapMessagingBuilder_PublicMembers_AreExactlyTheApprovedSet()
+        {
+            // Arrange — the builder is the leaf-extension seam (#14 Gate 1; #15 DL-8 adds ConfigureEngine): its
+            // public instance surface is frozen here so a new member is a deliberate, reviewed decision.
+            string[] approvedMembers =
+            [
+                "HostBuilder",
+                "UseSqlServer",
+                "AddCloudstrapTransactionalMessaging",
+                "ConfigureEngine",
+            ];
+
+            // Act
+            string[] members =
+            [
+                .. typeof(CloudstrapMessagingBuilder)
+                    .GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                    .Where(member => member is not MethodInfo { IsSpecialName: true })
+                    .Select(member => member.Name)
+                    .Distinct(StringComparer.Ordinal),
+            ];
+
+            // Assert
+            Assert.That(members, Is.EquivalentTo(approvedMembers));
+        }
+
+        [Test]
         public void PublicTypes_ContainNoForbiddenIdentifiers()
         {
             // Arrange

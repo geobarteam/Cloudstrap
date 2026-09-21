@@ -98,6 +98,13 @@ namespace Cloudstrap.Messaging
         public List<Type> TransactionalDbContexts { get; } = [];
 
         /// <summary>
+        /// Gets the engine contributions registered through <c>ConfigureEngine</c>, in registration order;
+        /// the deferred bootstrap applies them before the consumer's <c>Wolverine</c> delegate and before the
+        /// retry ladder.
+        /// </summary>
+        public List<Action<IServiceProvider, WolverineOptions>> EngineContributions { get; } = [];
+
+        /// <summary>
         /// Gets or sets the description of the message store in force — set by the SQL Server transport
         /// (which carries a store) and by a durability provider — or <see langword="null"/> when the node
         /// runs buffered and non-durable.

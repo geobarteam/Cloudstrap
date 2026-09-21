@@ -118,22 +118,32 @@
          WASM — registration goes through RestService.For instead (owned once by the library). -->
     <PackageVersion Include="Refit" Version="11.2.0" />
   </ItemGroup>
-  <!-- Cloudstrap.Messaging (deliverable #14) — the Wolverine engine family, all MIT (JasperFx; versions
-       verified on nuget.org at spec time 2026-08-31, release 2026-08-30). Replaces NServiceBus per the founding
+  <!-- Cloudstrap.Messaging (deliverable #14) + Cloudstrap.Messaging.AzureBlob (deliverable #15) — the Wolverine
+       engine family, all MIT (JasperFx), pinned in lockstep. First pinned at 6.31.0 (verified on nuget.org at
+       spec time 2026-08-31); moved to 6.39.1 for #15 (DL-7; verified on nuget.org via the v3 flat container +
+       the GitHub releases page at pin time 2026-09-21, release 2026-09-19). ⚠️ 6.33.0+ requires Weasel ≥ 9.30.0,
+       whose schema comparison now checks character lengths in both directions and corrects an existing table
+       in place (ALTER TABLE) at AutoProvision CreateOrUpdate — expected on persistent dev databases such as
+       the demo's CloudstrapDemo. Replaces NServiceBus per the founding
        spec. Disclosed transitive footprint: WolverineFx.AzureServiceBus brings Azure.Messaging.ServiceBus +
        Azure.Identity (MIT) and WolverineFx.Newtonsoft → Newtonsoft.Json (MIT); WolverineFx.SqlServer brings
        Weasel.SqlServer (JasperFx, MIT); WolverineFx.EntityFrameworkCore brings Microsoft.EntityFrameworkCore
        ≥ 10.0.4 (MIT, in-box per spec D-4). Wolverine performs runtime code generation through its JasperFx
        toolchain (MIT) — new to this suite, normal for server workloads. -->
   <ItemGroup>
-    <PackageVersion Include="WolverineFx" Version="6.31.0" />
-    <PackageVersion Include="WolverineFx.AzureServiceBus" Version="6.31.0" />
-    <PackageVersion Include="WolverineFx.SqlServer" Version="6.31.0" />
-    <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="6.31.0" />
+    <PackageVersion Include="WolverineFx" Version="6.39.1" />
+    <PackageVersion Include="WolverineFx.AzureServiceBus" Version="6.39.1" />
+    <PackageVersion Include="WolverineFx.SqlServer" Version="6.39.1" />
+    <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="6.39.1" />
     <!-- The Roslyn runtime compiler Wolverine 6.x no longer ships in its core package (GH-2876): without it a
          node cannot execute a single handler. Shipped so that "one call, zero configuration" holds on a fresh
          clone (AC-MSG1); brings Microsoft.CodeAnalysis.CSharp (MIT). -->
-    <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="6.31.0" />
+    <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="6.39.1" />
+    <!-- MIT (JasperFx) — the consolidated Azure Blob Storage package (claim-check store + document/saga
+         persistence) that superseded WolverineFx.ClaimCheck.AzureBlobStorage in 6.32.0; that older package is
+         never referenced (ambiguous-type errors when both are present). Brings Azure.Storage.Blobs (MIT;
+         ≥ 12.27.0 — the suite pins 12.29.1). Referenced by Cloudstrap.Messaging.AzureBlob (deliverable #15). -->
+    <PackageVersion Include="WolverineFx.AzureBlobStorage" Version="6.39.1" />
     <!-- Family-floor pins (transitive pinning, the System.Security.Cryptography.Xml precedent): Wolverine's
          EF Core floor is 10.0.4; the repo's Microsoft.* family is 10.0.10. Core and Relational are pinned
          together so the EF family stays one version. -->

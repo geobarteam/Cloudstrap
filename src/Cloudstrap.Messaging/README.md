@@ -136,6 +136,30 @@ durability, dead-letter posture and the effective `AutoProvision` value.
 EF Core's `EnsureCreated` is a no-op once Wolverine's tables exist in a database: create your own
 tables through migrations, or before the node starts.
 
+## Extending the engine from a leaf package
+
+`CloudstrapMessagingBuilder.ConfigureEngine(Action<IServiceProvider, WolverineOptions>)` is the one
+door a leaf package (`Cloudstrap.Messaging.AzureBlob`, a future PostgreSQL durability provider) walks
+through to shape the engine at bootstrap without touching this package's internals:
+
+```csharp
+public static CloudstrapMessagingBuilder UseMyLeafFeature(this CloudstrapMessagingBuilder builder)
+    => builder.ConfigureEngine((services, options) =>
+    {
+        var client = services.GetRequiredService<SomeClient>();            // what the host registered
+        options.Policies.OnException<SomeDeterministicException>().MoveToErrorQueue();
+    });
+```
+
+Ordering contract, fixed: the Cloudstrap defaults and the correlation rule → **the contributions, in
+registration order** → the consumer's `configurator.Wolverine` delegate (final say) → the retry ladder
+(last). A contribution's exception-specific failure rule therefore matches ahead of the catch-all
+ladder, and anything a contribution sets can still be overridden by the consumer. Each call appends —
+the method is not idempotent by design. Wolverine forbids service registrations at this point: a
+contribution adjusts options only, and resolves what it needs from the provider it receives (register
+it on `builder.HostBuilder.Services` at registration time). The documented consumer door remains
+`configurator.Wolverine`.
+
 ## Correlation
 
 The business correlation id flows on the configured header from the ambient

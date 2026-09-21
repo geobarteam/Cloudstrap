@@ -13,7 +13,9 @@ namespace Cloudstrap.Messaging
     /// <remarks>
     /// This type is public and sealed on purpose: a future durability provider (PostgreSQL, for example) arrives
     /// as an extension method on this builder from its own leaf package — additively, with no signature change
-    /// here. Builder calls run at registration time, before the host is built, and compose in any order.
+    /// here. Builder calls run at registration time, before the host is built, and compose in any order. A leaf
+    /// package shapes the engine itself through <see cref="ConfigureEngine"/>, the one door into the deferred
+    /// bootstrap.
     /// </remarks>
     public sealed class CloudstrapMessagingBuilder
     {
@@ -152,6 +154,43 @@ namespace Cloudstrap.Messaging
             options.Policies.AutoApplyTransactions();
 
             State.TransactionalDbContexts.Add(typeof(TDbContext));
+            return this;
+        }
+
+        /// <summary>
+        /// Registers an engine contribution: a delegate a leaf package (the Azure Blob claim check, a future
+        /// PostgreSQL durability provider) uses to shape the engine's <see cref="WolverineOptions"/> at
+        /// bootstrap without reaching into this package's internals.
+        /// </summary>
+        /// <param name="contribution">
+        /// The contribution. It receives the host's root <see cref="IServiceProvider"/> — so it can resolve what
+        /// the host registered, a blob client for example — and the engine options to shape.
+        /// </param>
+        /// <returns>The same builder, so calls can be chained.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="contribution"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// <para>
+        /// Ordering contract: contributions run when the host starts, in registration order, after the
+        /// Cloudstrap defaults and the correlation rule, <em>before</em> the consumer's
+        /// <see cref="CloudstrapMessagingConfigurator.Wolverine"/> delegate and <em>before</em> the default
+        /// retry ladder. A contribution's exception-specific failure rule therefore matches ahead of the
+        /// catch-all ladder, and the consumer keeps final say over everything a contribution set.
+        /// </para>
+        /// <para>
+        /// Not idempotent by design: each call appends another contribution. The documented consumer door
+        /// remains <see cref="CloudstrapMessagingConfigurator.Wolverine"/>, which runs after all contributions.
+        /// </para>
+        /// <para>
+        /// Wolverine forbids service registrations at this point of the bootstrap: a contribution adjusts the
+        /// options only. Register services on the <see cref="HostBuilder"/> service collection at registration
+        /// time instead, and resolve them from the provider the contribution receives.
+        /// </para>
+        /// </remarks>
+        public CloudstrapMessagingBuilder ConfigureEngine(Action<IServiceProvider, WolverineOptions> contribution)
+        {
+            ArgumentNullException.ThrowIfNull(contribution);
+
+            State.EngineContributions.Add(contribution);
             return this;
         }
     }

@@ -9,9 +9,10 @@ namespace Cloudstrap.Messaging
     /// <summary>
     /// The deferred tail of the bootstrap: a Wolverine extension the engine applies to its
     /// <see cref="WolverineOptions"/> when the host starts, after every registration-time default and every
-    /// builder call — so the consumer's <c>Wolverine</c> delegate runs last, with final say. The one thing
-    /// appended after it is the default retry ladder, deliberately the last global failure rule so the
-    /// delegate's exception-specific rules match first.
+    /// builder call. The order inside is fixed: the correlation rule, then the engine contributions leaf
+    /// packages registered through <c>ConfigureEngine</c> (in registration order), then the consumer's
+    /// <c>Wolverine</c> delegate with final say, and last the default retry ladder — deliberately the last
+    /// global failure rule so the contributions' and the delegate's exception-specific rules match first.
     /// </summary>
     /// <remarks>
     /// Wolverine forbids container-registered extensions from altering service registrations, which is why
@@ -22,19 +23,23 @@ namespace Cloudstrap.Messaging
         private readonly MessagingRegistrationState _state;
         private readonly ICorrelationContextAccessor _correlation;
         private readonly IOptions<CorrelationOptions> _correlationOptions;
+        private readonly IServiceProvider _services;
 
         public CloudstrapMessagingExtension(
             MessagingRegistrationState state,
             ICorrelationContextAccessor correlation,
-            IOptions<CorrelationOptions> correlationOptions)
+            IOptions<CorrelationOptions> correlationOptions,
+            IServiceProvider services)
         {
             ArgumentNullException.ThrowIfNull(state);
             ArgumentNullException.ThrowIfNull(correlation);
             ArgumentNullException.ThrowIfNull(correlationOptions);
+            ArgumentNullException.ThrowIfNull(services);
 
             _state = state;
             _correlation = correlation;
             _correlationOptions = correlationOptions;
+            _services = services;
         }
 
         /// <inheritdoc />
@@ -56,6 +61,13 @@ namespace Cloudstrap.Messaging
             // handler is dead-lettered without retries — the failure is deterministic.
             options.MetadataRules.Add(new CorrelationEnvelopeRule(_correlation, _correlationOptions));
             options.Policies.OnException<CorrelationRequiredException>().MoveToErrorQueue();
+
+            // The leaf-extension door: contributions in registration order, before the consumer's delegate so
+            // the consumer keeps final say, and before the ladder so their failure rules match first.
+            foreach (Action<IServiceProvider, WolverineOptions> contribution in _state.EngineContributions)
+            {
+                contribution(_services, options);
+            }
 
             // The consumer's escape hatch: final say over identity, transport, conventions and policies.
             _state.Configurator.Wolverine?.Invoke(options);
