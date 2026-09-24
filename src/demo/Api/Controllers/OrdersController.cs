@@ -33,7 +33,8 @@ namespace Cloudstrap.Demo.Api.Controllers
 
             // The three-line pattern: stage the entity, stage the message, save + flush as one unit.
             outbox.DbContext.Orders.Add(order);
-            await outbox.SendAsync(new PlaceOrderCommand(order.Id));
+            // The notes ride the command, never the row: above the claim-check threshold they travel as a blob (#15).
+            await outbox.SendAsync(new PlaceOrderCommand(order.Id, dto.Notes));
             await outbox.SaveChangesAndFlushMessagesAsync(cancellationToken);
 
             return Accepted($"/api/v1/orders/{order.Id}", new OrderAcceptedDto(order.Id));
@@ -52,7 +53,7 @@ namespace Cloudstrap.Demo.Api.Controllers
             Order? order = await db.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
             return order is null
                 ? NotFound()
-                : Ok(new OrderDto(order.Id, order.Status, order.ProcessedCorrelationId));
+                : Ok(new OrderDto(order.Id, order.Status, order.ProcessedCorrelationId, order.NotesLength, order.NotesSha256));
         }
     }
 }

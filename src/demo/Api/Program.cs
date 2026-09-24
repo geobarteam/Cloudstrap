@@ -2,6 +2,7 @@ using Cloudstrap.Core;
 using Cloudstrap.Demo.Api.Data;
 using Cloudstrap.Extensions;
 using Cloudstrap.Messaging;
+using Cloudstrap.Messaging.AzureBlob;
 using Cloudstrap.Observability;
 using Cloudstrap.WebApi;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,11 @@ builder.AddCloudstrapWebApi();
 // except the probe carve-out demands a validated token via the fallback policy.
 builder.AddCloudstrapJwtBearer();
 
+// The blob registration (#4): account + credential from Cloudstrap:Storage — the demo points it at
+// Azurite (UseDevelopmentStorage=true); a real deployment sets BlobServiceUri + DefaultAzureCredential.
+// The claim check below reuses this client: no second account, no second credential.
+builder.AddCloudstrapBlobStorage();
+
 // The messaging node (#14): the SQL Server transport and durable store from Cloudstrap:Messaging
 // (this host's workload queue, a workload-derived durability schema, the shared demo_transport
 // queue schema), plus the transactional EF Core integration so OrdersController's row and its
@@ -38,7 +44,11 @@ builder.AddCloudstrapJwtBearer();
 builder.AddCloudstrapMessaging()
     .UseSqlServer()
     .AddCloudstrapTransactionalMessaging<DemoDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")))
+    // The Azure Blob claim check (#15): a PlaceOrderCommand whose Notes push the body over 200 KiB is
+    // stored in the demo-claimcheck container and only a reference travels through the SQL transport;
+    // the Worker lands on the same container by convention ({SystemName}-claimcheck).
+    .UseAzureBlobClaimCheck();
 
 builder.Services.AddHealthChecks()
     .AddCheck(

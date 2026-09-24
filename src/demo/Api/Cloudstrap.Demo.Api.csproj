@@ -9,6 +9,7 @@
     <ProjectReference Include="..\..\Cloudstrap.Observability\Cloudstrap.Observability.csproj" />
     <ProjectReference Include="..\..\Cloudstrap.WebApi\Cloudstrap.WebApi.csproj" />
     <ProjectReference Include="..\..\Cloudstrap.Messaging\Cloudstrap.Messaging.csproj" />
+    <ProjectReference Include="..\..\Cloudstrap.Messaging.AzureBlob\Cloudstrap.Messaging.AzureBlob.csproj" />
     <ProjectReference Include="..\Shared\Contracts\Cloudstrap.Demo.Contracts.csproj" />
   </ItemGroup>
 

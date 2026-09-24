@@ -3,23 +3,28 @@ namespace Cloudstrap.Demo.E2E.Tests
     using System.Net;
     using System.Net.Http.Headers;
     using System.Net.Http.Json;
+    using System.Security.Cryptography;
+    using System.Text;
     using System.Text.Json;
+    using Azure.Storage.Blobs;
     using Cloudstrap.Demo.E2E.Tests.Infrastructure;
     using NUnit.Framework;
 
     /// <summary>
-    /// Deliverable #14 live (AC-MSG16): the Api demo host stages an order and sends
-    /// <c>PlaceOrderCommand</c> through the transactional outbox, the Worker demo host consumes it over
-    /// the SQL Server transport on one LocalDB database, marks the order processed and records the flowed
-    /// correlation id — proven through the running processes, with the Worker's stdout captured. The Worker
-    /// is self-booted here on health port 5351 (5350 belongs to <see cref="WorkerHostTests"/>).
+    /// Deliverable #15 live (AC-CK12, AC-CK10): an order whose notes exceed the claim-check threshold
+    /// crosses from the Api demo host to the Worker demo host as one blob in the <c>demo-claimcheck</c>
+    /// container on Azurite while the Worker records the notes' length and SHA-256; a small order adds no
+    /// blob; the Api's startup posture line names container, threshold and client source and never the
+    /// connection string. The Worker is self-booted here on health port 5352 (5350 belongs to
+    /// <see cref="WorkerHostTests"/>, 5351 to <see cref="MessagingTests"/>).
     /// </summary>
     [TestFixture]
-    public sealed class MessagingTests
+    public sealed class ClaimCheckTests
     {
-        private const string _workerBaseUrl = "http://127.0.0.1:5351";
+        private const string _workerBaseUrl = "http://127.0.0.1:5352";
         private const string _workerProjectPath = "src/demo/Worker/Cloudstrap.Demo.Worker.csproj";
         private const string _tokenEndpoint = "http://127.0.0.1:5310/connect/token";
+        private const string _claimCheckContainer = "demo-claimcheck";
         private static readonly TimeSpan _deadline = TimeSpan.FromSeconds(30);
 
         private SutProcess? _workerHost;
@@ -29,13 +34,11 @@ namespace Cloudstrap.Demo.E2E.Tests
         [OneTimeSetUp]
         public async Task StartWorkerHostAsync()
         {
-            _sentinelPath = Path.Combine(Path.GetTempPath(), $"cloudstrap-demo-messaging-{Guid.NewGuid():N}.sentinel");
+            _sentinelPath = Path.Combine(Path.GetTempPath(), $"cloudstrap-demo-claimcheck-{Guid.NewGuid():N}.sentinel");
 
-            // A generic host ignores ASPNETCORE_URLS — the port arrives as configuration. The SQL override
-            // (spec D-3) is forwarded when set, exactly as the fixture forwards it to the Api.
             List<string> arguments =
             [
-                "--Cloudstrap:Worker:HealthPort=5351",
+                "--Cloudstrap:Worker:HealthPort=5352",
                 "--Demo:OutageSentinelPath=" + _sentinelPath,
             ];
             string? sqlOverride = Environment.GetEnvironmentVariable("CLOUDSTRAP_TEST_SQL");
@@ -44,8 +47,6 @@ namespace Cloudstrap.Demo.E2E.Tests
                 arguments.Add("--ConnectionStrings:DefaultConnection=" + sqlOverride);
             }
 
-            // Since deliverable #15 the Worker carries the Azure Blob claim check: the blob override
-            // (DL-10) is forwarded when set, exactly as the fixture forwards it to the Api.
             string? blobOverride = Environment.GetEnvironmentVariable(AzuriteProcess.EnvironmentVariable);
             if (!string.IsNullOrWhiteSpace(blobOverride))
             {
@@ -72,75 +73,100 @@ namespace Cloudstrap.Demo.E2E.Tests
         }
 
         [Test]
-        public async Task Messaging_OrderPlacedThroughTheApiOutbox_IsProcessedByTheWorker_WithTheCorrelationIdObserved()
+        public async Task ClaimCheck_OrderWithNotesAboveTheThreshold_IsProcessedByTheWorker_WithLengthAndHashRecorded_AndExactlyOneNewBlobInTheClaimCheckContainer()
         {
-            // Arrange — a business correlation id on the HTTP request, the way a real caller sets one.
-            string correlationId = $"e2e-{Guid.NewGuid():N}";
-            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, new Uri("/api/v1/orders", UriKind.Relative))
-            {
-                Content = JsonContent.Create(new { description = "e2e order" }),
-            };
-            request.Headers.Add("X-Correlation-ID", correlationId);
+            // Arrange — 300 000 ASCII characters of notes carrying a sentinel that must never be logged.
+            const string sentinel = "notes-sentinel-never-logged-7b2e";
+            string notes = string.Concat(Enumerable.Repeat(sentinel + " ", 300_000 / (sentinel.Length + 1) + 1))[..300_000];
+            int blobsBefore = await CountClaimCheckBlobsAsync();
 
-            // Act — 202 + id from the outbox path; then poll the query endpoint until the Worker processed it.
-            using HttpResponseMessage accepted = await _api.SendAsync(request);
-            Assert.That(accepted.StatusCode, Is.EqualTo(HttpStatusCode.Accepted));
-            Guid orderId = (await accepted.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+            // Act
+            Guid orderId = await PlaceOrderAsync("e2e large order", notes);
             JsonElement order = await WaitForStatusAsync(orderId, "Processed");
+            int blobsAfter = await CountClaimCheckBlobsAsync();
 
-            // Assert — the command crossed processes over SQL Server, dispatched after the commit, and the
-            // correlation id survived the hop into the Worker's handler.
+            // Assert — processed whole (length + hash), one blob crossed the wire, the notes never hit a log.
             Assert.Multiple(() =>
             {
-                Assert.That(order.GetProperty("status").GetString(), Is.EqualTo("Processed"));
-                Assert.That(order.GetProperty("processedCorrelationId").GetString(), Is.EqualTo(correlationId));
+                Assert.That(order.GetProperty("notesLength").GetInt32(), Is.EqualTo(300_000));
+                Assert.That(order.GetProperty("notesSha256").GetString(), Is.EqualTo(Sha256Hex(notes)).IgnoreCase);
+                Assert.That(blobsAfter, Is.EqualTo(blobsBefore + 1), "exactly one new blob in the claim-check container");
+                Assert.That(_workerHost!.CapturedOutput, Does.Not.Contain(sentinel));
+                Assert.That(E2eFixture.CapturedApiOutput, Does.Not.Contain(sentinel));
             });
         }
 
         [Test]
-        public async Task Messaging_WorkerLogsTheHandledCommandTypeAndId_NeverThePayload()
+        public async Task ClaimCheck_OrderWithNotesBelowTheThreshold_IsProcessed_AndAddsNoBlob()
         {
-            // Arrange — a sentinel description that must never reach the Worker's output.
-            const string sentinel = "sentinel-description-never-logged-9f3c";
+            // Arrange — 1 024 characters: far under the 200 KiB threshold.
+            string notes = new string('n', 1024);
+            int blobsBefore = await CountClaimCheckBlobsAsync();
+
+            // Act
+            Guid orderId = await PlaceOrderAsync("e2e small order", notes);
+            JsonElement order = await WaitForStatusAsync(orderId, "Processed");
+            int blobsAfter = await CountClaimCheckBlobsAsync();
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(order.GetProperty("notesLength").GetInt32(), Is.EqualTo(1024));
+                Assert.That(order.GetProperty("notesSha256").GetString(), Is.EqualTo(Sha256Hex(notes)).IgnoreCase);
+                Assert.That(blobsAfter, Is.EqualTo(blobsBefore), "no blob for a small body");
+            });
+        }
+
+        [Test]
+        public void ClaimCheck_ApiStartupPostureLine_NamesContainerThresholdAndClientSource_NeverTheConnectionString()
+        {
+            // Arrange
+            string output = E2eFixture.CapturedApiOutput;
+
+            // Assert — AC-CK10 live, through the Api's console pipeline.
+            Assert.Multiple(() =>
+            {
+                Assert.That(output, Does.Contain(_claimCheckContainer));
+                Assert.That(output, Does.Contain("204800"));
+                Assert.That(output, Does.Contain("AddCloudstrapBlobStorage"));
+                Assert.That(output, Does.Not.Contain("UseDevelopmentStorage"));
+                Assert.That(output, Does.Not.Contain("devstoreaccount1"));
+            });
+        }
+
+        private static string Sha256Hex(string text)
+        {
+            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
+        }
+
+        private static async Task<int> CountClaimCheckBlobsAsync()
+        {
+            BlobContainerClient container = new BlobContainerClient(E2eFixture.BlobConnectionString, _claimCheckContainer);
+            if (!await container.ExistsAsync())
+            {
+                return 0;
+            }
+
+            int count = 0;
+            await foreach (Azure.Storage.Blobs.Models.BlobItem _ in container.GetBlobsAsync())
+            {
+                count++;
+            }
+
+            return count;
+        }
+
+        private async Task<Guid> PlaceOrderAsync(string description, string notes)
+        {
             using HttpResponseMessage accepted = await _api.PostAsJsonAsync(
                 new Uri("/api/v1/orders", UriKind.Relative),
                 new
                 {
-                    description = sentinel
+                    description,
+                    notes,
                 });
             Assert.That(accepted.StatusCode, Is.EqualTo(HttpStatusCode.Accepted));
-            Guid orderId = (await accepted.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-            await WaitForStatusAsync(orderId, "Processed");
-
-            // Act — the Worker's captured stdout after handling.
-            string output = await WaitForOutputAsync(
-                () => _workerHost!.CapturedOutput,
-                text => text.Contains("PlaceOrderCommand", StringComparison.Ordinal));
-
-            // Assert — type (and id) logged, payload never (the AC-MSG6 posture, live).
-            Assert.Multiple(() =>
-            {
-                Assert.That(output, Does.Contain("PlaceOrderCommand"));
-                Assert.That(output, Does.Not.Contain(sentinel));
-            });
-        }
-
-        [Test]
-        public async Task Messaging_AnonymousOrdersPost_Returns401()
-        {
-            // Arrange — no bearer token at all.
-            using HttpClient anonymous = new HttpClient { BaseAddress = new Uri(E2eFixture.ApiBaseUrl) };
-
-            // Act
-            using HttpResponseMessage response = await anonymous.PostAsJsonAsync(
-                new Uri("/api/v1/orders", UriKind.Relative),
-                new
-                {
-                    description = "anonymous"
-                });
-
-            // Assert — the hardened default still gates the new endpoint.
-            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+            return (await accepted.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
         }
 
         private async Task<JsonElement> WaitForStatusAsync(Guid orderId, string expected)
@@ -180,19 +206,6 @@ namespace Cloudstrap.Demo.E2E.Tests
             string body = await response.Content.ReadAsStringAsync();
             Assert.That(response.IsSuccessStatusCode, Is.True, $"token request failed: {body}");
             return JsonDocument.Parse(body).RootElement.GetProperty("access_token").GetString()!;
-        }
-
-        private static async Task<string> WaitForOutputAsync(Func<string> captured, Func<string, bool> ready)
-        {
-            DateTime deadline = DateTime.UtcNow + _deadline;
-            string output = captured();
-            while (!ready(output) && DateTime.UtcNow < deadline)
-            {
-                await Task.Delay(250);
-                output = captured();
-            }
-
-            return output;
         }
 
         private static async Task WaitUntilReadyAsync(HttpClient client, SutProcess process)

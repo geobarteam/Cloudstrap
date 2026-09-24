@@ -160,6 +160,15 @@ contribution adjusts options only, and resolves what it needs from the provider 
 it on `builder.HostBuilder.Services` at registration time). The documented consumer door remains
 `configurator.Wolverine`.
 
+## Large payloads
+
+Bodies larger than a broker's message limit are the job of the leaf package
+**`Cloudstrap.Messaging.AzureBlob`**: `builder.AddCloudstrapMessaging()....UseAzureBlobClaimCheck()` stores
+any body over a size threshold (200 KiB by default) in a dedicated Azure Blob Storage container and
+sends only a reference; the receiving handler sees the whole message. The account and credential come
+from the blob client the host already registered (`AddCloudstrapBlobStorage`), and contracts stay
+dependency-free. See that package's README.
+
 ## Correlation
 
 The business correlation id flows on the configured header from the ambient

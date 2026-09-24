@@ -36,12 +36,22 @@ namespace Cloudstrap.Demo.E2E.Tests
         private static SutProcess? _sut;
         private static SutProcess? _api;
         private static TestIdentityProviderHost? _identityProvider;
+        private static AzuriteProcess? _azurite;
 
         /// <summary>Base URL of the running SUT for this test run.</summary>
         public static string BaseUrl { get; private set; } = DefaultBaseUrl;
 
         /// <summary>Everything the SUT wrote to stdout/stderr so far (empty in attach mode).</summary>
         public static string CapturedSutOutput => _sut?.CapturedOutput ?? string.Empty;
+
+        /// <summary>Everything the fixture-owned Api demo host wrote to stdout/stderr so far.</summary>
+        public static string CapturedApiOutput => _api?.CapturedOutput ?? string.Empty;
+
+        /// <summary>
+        /// The blob connection string in force for this run (deliverable #15, DL-10): the
+        /// <c>CLOUDSTRAP_TEST_BLOB</c> override, else the fixture-started Azurite emulator's shortcut.
+        /// </summary>
+        public static string BlobConnectionString => _azurite?.ConnectionString ?? AzuriteProcess.DevelopmentStorage;
 
         /// <summary>
         /// The number of token requests the fixture-hosted identity provider has served — the hit
@@ -62,6 +72,11 @@ namespace Cloudstrap.Demo.E2E.Tests
                 IdentityProviderPort,
                 options => TestIdentityProviderSeed.Configure(options, [new Uri(DefaultBaseUrl)]));
 
+            // Since deliverable #15 the Api and the Worker carry the Azure Blob claim check: the blob
+            // backend must answer before either boots. Fixture-started Azurite by default, or attach mode
+            // through CLOUDSTRAP_TEST_BLOB (DL-10 — the D-3 template).
+            _azurite = await AzuriteProcess.StartOrAttachAsync();
+
             // The Api demo host boots after the IdP (it validates tokens against 5310) and before
             // the Bff (whose UserApi readiness check probes the Api's /healthz). Fixture-owned in
             // attach mode too, like the IdP.
@@ -72,6 +87,12 @@ namespace Cloudstrap.Demo.E2E.Tests
             if (!string.IsNullOrWhiteSpace(sqlOverride))
             {
                 apiArguments.Add("--ConnectionStrings:DefaultConnection=" + sqlOverride);
+            }
+
+            string? blobOverride = Environment.GetEnvironmentVariable(AzuriteProcess.EnvironmentVariable);
+            if (!string.IsNullOrWhiteSpace(blobOverride))
+            {
+                apiArguments.Add("--Cloudstrap:Storage:ConnectionString=" + blobOverride);
             }
 
             _api = SutProcess.Start(ApiBaseUrl, apiArguments, _apiProjectPath);
@@ -93,12 +114,33 @@ namespace Cloudstrap.Demo.E2E.Tests
         [OneTimeTearDown]
         public void StopSut()
         {
-            _sut?.Dispose();
-            _sut = null;
-            _api?.Dispose();
-            _api = null;
-            _identityProvider?.Dispose();
-            _identityProvider = null;
+            // Each disposal is independent: a failure stopping one host must not leave another running.
+            try
+            {
+                _sut?.Dispose();
+                _sut = null;
+            }
+            finally
+            {
+                try
+                {
+                    _api?.Dispose();
+                    _api = null;
+                }
+                finally
+                {
+                    try
+                    {
+                        _identityProvider?.Dispose();
+                        _identityProvider = null;
+                    }
+                    finally
+                    {
+                        _azurite?.Dispose();
+                        _azurite = null;
+                    }
+                }
+            }
         }
 
         private static async Task WaitUntilReadyAsync(string url, Func<SutProcess?> process, string what)

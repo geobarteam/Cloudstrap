@@ -1,7 +1,9 @@
 using Cloudstrap.Core;
 using Cloudstrap.Demo.Worker;
 using Cloudstrap.Demo.Worker.Data;
+using Cloudstrap.Extensions;
 using Cloudstrap.Messaging;
+using Cloudstrap.Messaging.AzureBlob;
 using Cloudstrap.Observability;
 using Cloudstrap.Worker;
 using Microsoft.EntityFrameworkCore;
@@ -42,10 +44,17 @@ builder.AddCloudstrapWorker();
 // queue (demo-application-worker — no listener configuration needed) over the SQL Server
 // transport, with a durable inbox/outbox in its own schema, and PlaceOrderCommandHandler is a plain
 // Wolverine handler made transactional by taking WorkerDbContext.
+// The blob registration (#4): the same Cloudstrap:Storage account as the Api (Azurite in the demo),
+// so the claim check below reads what the Api stored.
+builder.AddCloudstrapBlobStorage();
+
 builder.AddCloudstrapMessaging()
     .UseSqlServer()
     .AddCloudstrapTransactionalMessaging<WorkerDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")))
+    // The Azure Blob claim check (#15): an offloaded PlaceOrderCommand is rehydrated from the
+    // demo-claimcheck container before PlaceOrderCommandHandler runs — the handler knows nothing of blobs.
+    .UseAzureBlobClaimCheck();
 
 builder.Services.AddHostedService<PeriodicWorker>();
 builder.Services.AddHealthChecks()

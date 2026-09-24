@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Playwright" />
+    <!-- Deliverable #15: readiness poll of the Azurite blob backend and the claim-check container count (existing pin) -->
+    <PackageReference Include="Azure.Storage.Blobs" />
   </ItemGroup>
 
   <ItemGroup>

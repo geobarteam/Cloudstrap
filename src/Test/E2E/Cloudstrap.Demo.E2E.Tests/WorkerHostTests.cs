@@ -44,6 +44,14 @@ namespace Cloudstrap.Demo.E2E.Tests
                 arguments.Add("--ConnectionStrings:DefaultConnection=" + sqlOverride);
             }
 
+            // Since deliverable #15 the Worker carries the Azure Blob claim check: the blob override
+            // (DL-10) is forwarded when set, exactly as the fixture forwards it to the Api.
+            string? blobOverride = Environment.GetEnvironmentVariable(AzuriteProcess.EnvironmentVariable);
+            if (!string.IsNullOrWhiteSpace(blobOverride))
+            {
+                arguments.Add("--Cloudstrap:Storage:ConnectionString=" + blobOverride);
+            }
+
             _workerHost = SutProcess.Start(_workerBaseUrl, arguments, _workerProjectPath);
             _client = new HttpClient { BaseAddress = new Uri(_workerBaseUrl) };
             await WaitUntilReadyAsync(_client, _workerHost);

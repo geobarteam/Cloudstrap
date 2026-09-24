@@ -25,6 +25,18 @@ namespace Cloudstrap.Demo.Api.Data
         {
             get; set;
         }
+
+        /// <summary>Gets or sets the length of the notes the Worker received (deliverable #15) — the notes themselves are never stored.</summary>
+        public int? NotesLength
+        {
+            get; set;
+        }
+
+        /// <summary>Gets or sets the hex SHA-256 of the UTF-8 notes the Worker received (deliverable #15).</summary>
+        public string? NotesSha256
+        {
+            get; set;
+        }
     }
 
     /// <summary>
@@ -61,6 +73,11 @@ namespace Cloudstrap.Demo.Api.Data
                 "IF OBJECT_ID('demo.Orders') IS NULL CREATE TABLE demo.Orders (" +
                 "Id uniqueidentifier NOT NULL PRIMARY KEY, Description nvarchar(200) NOT NULL, " +
                 "Status nvarchar(50) NOT NULL, ProcessedCorrelationId nvarchar(200) NULL);");
+
+            // Deliverable #15 added two columns; the persistent demo database predates them (demo-only ALTER).
+            db.Database.ExecuteSqlRaw(
+                "IF COL_LENGTH('demo.Orders', 'NotesLength') IS NULL " +
+                "ALTER TABLE demo.Orders ADD NotesLength int NULL, NotesSha256 nvarchar(64) NULL;");
         }
 
         /// <inheritdoc />

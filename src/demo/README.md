@@ -46,6 +46,9 @@ calls with `PackageReference Cloudstrap.*` instead — nothing else changes.
 | 5330 | Api demo | E2E fixture (or `dotnet run`) |
 | 5340 | BlazorServer demo | `BlazorServerTests` (or `dotnet run`) |
 | 5350 | Worker demo (health listener) | `WorkerHostTests` (or `dotnet run`) |
+| 5351 | Worker demo, second instance | `MessagingTests` |
+| 5352 | Worker demo, third instance | `ClaimCheckTests` |
+| 10000 | Azurite blob emulator | E2E fixture (fixture-started) or `azurite-blob` |
 | 59999 | dead-port test | `ExtensionsTests` |
 
 All ports are launch-profile/configuration defaults — override with `ASPNETCORE_URLS` and
@@ -108,6 +111,13 @@ One-time browser install (also required on CI agents):
 pwsh src/Test/E2E/Cloudstrap.Demo.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
 ```
 
+One-time blob emulator install (deliverable #15 — the Api and Worker hosts carry the Azure Blob claim
+check, so the whole suite needs a blob backend; the fixture starts it):
+
+```powershell
+npm install -g azurite
+```
+
 Then build the solution (the fixture launches hosts with `--no-build`) and run the executable
 like any other MTP suite:
 
@@ -124,6 +134,14 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
   BlazorServer fixtures boot their own hosts by project path.
 - Set **`CLOUDSTRAP_E2E_BASEURL`** to attach to an already-running Bff instead — the IdP and the
   Api host are still fixture-booted in attach mode.
+- **Blob backend (spec DL-10, the LocalDB template):** the fixture starts `azurite-blob` from PATH
+  on `127.0.0.1:10000` (`--skipApiVersionCheck`, per-run temp location) before the Api boots and
+  stops it last; an emulator already listening there is attached to instead. Set
+  **`CLOUDSTRAP_TEST_BLOB`** to a connection string to attach to any backend (CI's Azurite
+  container, a real account) — it is forwarded to every fixture-booted Api and Worker as
+  `Cloudstrap:Storage:ConnectionString`. A missing emulator fails loudly with the install command.
+- **SQL Server (spec D-3):** LocalDB by default; `CLOUDSTRAP_TEST_SQL` overrides and is forwarded
+  the same way as `ConnectionStrings:DefaultConnection`.
 - Captures each launched host's stdout/stderr (`E2eFixture.CapturedSutOutput` for the Bff) so
   tests can assert on console telemetry (OpenTelemetry Console exporter output).
 - Observability modes are deliberately varied so every mode runs somewhere: the Bff boots in

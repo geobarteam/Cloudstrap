@@ -479,16 +479,16 @@ verbatim against the spec's amended-surface sketch; the ordering contract (corre
 contributions → consumer's `Wolverine` → `RetryLadder`) confirmed as the one-way door the PostgreSQL leaf
 will reuse; `CloudstrapMessagingExtension`'s new `IServiceProvider` dependency.
 
-- [ ] Behavioral verification: `DependencyPinTests` green (lockstep, ≥ 6.33.0, AzureBlobStorage pinned,
+- [x] Behavioral verification: `DependencyPinTests` green (lockstep, ≥ 6.33.0, AzureBlobStorage pinned,
   no superseded package); all 14 unit exes + E2E green on the bumped engine (Step 1);
   `EngineContributionTests` show contribution-before-consumer, registration order, a usable service
   provider, and the exactly-once dead-letter of the contribution's rule versus 1 + 3 attempts for the
   ladder; the builder member guard green (Step 2).
-- [ ] Code review: the props comments (license, justification, pin date/source, Weasel note); no
+- [x] Code review: the props comments (license, justification, pin date/source, Weasel note); no
   `WolverineFx.ClaimCheck.*` anywhere; `ConfigureEngine` is additive, guarded, documented, non-idempotent by
   design; `MessagingRegistrationState`/`CloudstrapMessagingExtension` changes minimal; README section
   accurate.
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate
 
 ---
 
@@ -498,7 +498,7 @@ will reuse; `CloudstrapMessagingExtension`'s new `IServiceProvider` dependency.
 
 ## Step 3 — `UseAzureBlobClaimCheck()` registers the claim check without touching storage: the `Cloudstrap:Messaging:ClaimCheck` block binds with the 200 KiB default and the `{system}-claimcheck` container, invalid values fail startup naming the exact key, the blob client is resolved at host start through the fixed ladder (code > `BlobServiceClient` > `AddCloudstrapBlobStorage`'s container client) or the host fails naming both routes, one posture line states container/threshold/client source, a second call fails fast, and a node without the call resolves no blob client at all (AC-CK7; AC-CK8; AC-CK9; AC-CK10; AC-CK14; mechanics (a)–(f))
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Messaging.AzureBlob/Cloudstrap.Messaging.AzureBlob.csproj` *(create)* —
@@ -629,7 +629,7 @@ member from the start; Wolverine API names per mechanic (d)'s caveat.
 
 ## Step 4 — Large bodies leave the message and come back whole: a command whose serialized body exceeds the threshold crosses two nodes over the SQL Server transport as one stored blob plus Wolverine's `claim-check.$body` reference with an empty wire body, the remote handler receives the fully rehydrated message with no knowledge of blobs, an at-or-below-threshold command writes nothing and carries no reference, a transiently failing handler re-reads the payload on every attempt with exactly one side effect and the blob still there afterwards, the correlation id and Wolverine's spans flow exactly as before, and the contracts/handler assemblies reference no leaf, claim-check or Azure types (AC-M4; AC-CK1; AC-CK2; AC-CK3; AC-CK5; AC-CK6; mechanics (g)–(i)) ⚠️ first LocalDB tests of the leaf
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/UnitTest/Cloudstrap.Messaging.AzureBlob.Tests/Cloudstrap.Messaging.AzureBlob.Tests.csproj`
@@ -726,17 +726,17 @@ and its fail-fast wording · mechanic (g)'s double vs. fallback decision and any
 logged under mechanic (d)'s caveat · the leaf's `InternalsVisibleTo` for its **own** test project only
 (no grant from #14 — DL-8 honored).
 
-- [ ] Behavioral verification: test exe output shows — the duplicate-call and null-guard fail-fasts, the
+- [x] Behavioral verification: test exe output shows — the duplicate-call and null-guard fail-fasts, the
   AC-CK7 no-leaf/no-client proof, the one posture line with no connection string, the key-naming
   validation failures, and the four-route ladder incl. the "names both routes" failure (Step 3); the
   above-threshold blob + reference + whole-message round trip, the at/below-threshold no-op, the
   re-read-on-retry with one side effect and a retained blob, unchanged correlation + additive spans, and
   the contracts/handlers reflection tripwire (Step 4).
-- [ ] Code review: options/validator against the #1/#14 pattern (keys named, values never echoed);
+- [x] Code review: options/validator against the #1/#14 pattern (keys named, values never echoed);
   `sealed`/static/internal-by-default; single namespace `Cloudstrap.Messaging.AzureBlob`; full XML docs;
   the csproj → one PackageReference + one ProjectReference, nothing else; no credential constructed; no
   Drop-listed concept resurrected (no `Enabled`, no `DataBus`, no leaf-owned account settings).
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate
 
 ---
 
@@ -746,7 +746,7 @@ logged under mechanic (d)'s caveat · the leaf's `InternalsVisibleTo` for its **
 
 ## Step 5 — A missing payload is a deterministic failure and is treated like one: an envelope whose referenced blob answers 404 is dead-lettered immediately with no retries, logged with message type, id and container name and never the payload or a connection string, while a 503/timeout from storage rides the normal #14 retry ladder — the leaf's rule sits before the ladder through the DL-8 seam (AC-CK4; DL-1; mechanic (d) item 3)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Messaging.AzureBlob/CloudstrapMessagingBuilderExtensions.cs` *(modify)* — inside the
@@ -801,7 +801,7 @@ logged under mechanic (d)'s caveat · the leaf's `InternalsVisibleTo` for its **
 
 ## Step 6 — Offloaded messages survive a crash exactly like small ones: an above-threshold command staged through `IDbContextOutbox<TDbContext>` and committed while the process dies before dispatch is delivered by the next node that starts on the store, and its handler receives the rehydrated message — the offload happened inside `SaveChangesAndFlushMessagesAsync`, before the commit (AC-CK13; AC-MSG8 carried to offloaded messages; Behaviors "Outbox interplay")
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Test/UnitTest/Cloudstrap.Messaging.AzureBlob.Tests/Fixtures/ExportsDbContext.cs` *(create)* — a
@@ -848,7 +848,7 @@ gap is fixed minimally in the leaf and reported at Gate 3.
 
 ## Step 7 — The package is publishable and guarded forever: metadata, README (quick start, options table, the ladder, the lifecycle-policy sample and the orphan case, required data-plane rights and container creation, the outbox interplay, the 404 posture, the Aspire "Cloudstrap's blob registration or Aspire's — not both" clause, Wolverine's `[Blob]` as the engine-native per-property opt-in, the manual live-account verification procedure, migration notes on all eight Deliberate Behavior Changes), permanent tripwires on the closure, the public surface and the dropped concepts, the forbidden-identifier sweep, and the #14 README pointer (AC-CK11; AC-A3; AC-ASP2; DL-2 documentation)
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/Cloudstrap.Messaging.AzureBlob/Cloudstrap.Messaging.AzureBlob.csproj` *(modify)* — `<Description>`
@@ -946,15 +946,15 @@ frozen** — Step 7's `PublicSurface_IsExactlyTheApprovedTypes` pins the Gate-2 
 Release nupkg (metadata + two-dependency list) reviewed · the README's Aspire clause and the `[Blob]` /
 `StoreForMessage<T>` guidance reviewed against the spec's "deliberately not shipped" list.
 
-- [ ] Behavioral verification: test exe output shows — the one-attempt 404 dead-letter with
+- [x] Behavioral verification: test exe output shows — the one-attempt 404 dead-letter with
   type+id+container logging and no payload/connection string, the 503 ride through the ladder to success,
   and the consumer-rule door (Step 5); the crash-recovery delivery of an offloaded command with the
   upload-before-commit timing, and the AC-M2 rollback (Step 6); the five permanent guards green, the
   expanded Release nupkg reviewed, the identifier sweep clean (Step 7).
-- [ ] Code review: one failure rule, one log line — nothing bespoke around Wolverine's pipeline; no
+- [x] Code review: one failure rule, one log line — nothing bespoke around Wolverine's pipeline; no
   payload/URI/connection string in any log; README accuracy against as-built behavior (ladder, defaults,
   lifecycle sample, rights, outbox timing, migration notes); #14 README pointer present.
-- [ ] User approved — implementation may continue past this gate
+- [x] User approved — implementation may continue past this gate
 
 ---
 
@@ -964,7 +964,7 @@ Release nupkg (metadata + two-dependency list) reviewed · the README's Aspire c
 
 ## Step 8 — The demo apps run the package (workflow rule 9; AC-CK12; AC-CK10 live; DL-10; Planner note 2; mechanics (k)–(l)): `Cloudstrap.Demo.Api` and `Cloudstrap.Demo.Worker` add `AddCloudstrapBlobStorage()` + `.UseAzureBlobClaimCheck()`, `PlaceOrderCommand` carries `Notes`, the Worker records length + SHA-256 (never the notes), a new E2E fixture proves the above/below-threshold flows against Azurite and reads the Api's posture line, the E2E harness owns Azurite (or attaches via `CLOUDSTRAP_TEST_BLOB`), CI runs an Azurite service container, and every pre-existing E2E test stays green ⚠️ E2E/CI INFRASTRUCTURE + DEMO CONTRACT RISK AREA
 
-- [ ] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
+- [x] Done *(checked by the executor when VERIFY passes — user approval happens at the next 🛑 HUMAN GATE)*
 
 **Scope**:
 - `src/demo/Shared/Contracts/PlaceOrderCommand.cs` *(modify)* — `public sealed record PlaceOrderCommand(

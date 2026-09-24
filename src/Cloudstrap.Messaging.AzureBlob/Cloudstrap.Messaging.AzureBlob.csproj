@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>Transparent large-message handling for Cloudstrap.Messaging: message bodies over a size threshold are stored in a dedicated Azure Blob Storage container while only a reference travels through the transport, and handlers see the whole message. Account and credential come from the host's registered blob client; one builder call, no contract changes.</Description>
+    <PackageTags>$(PackageTags);messaging;wolverine;claim-check;azure-blob-storage;large-messages</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cloudstrap.Messaging\Cloudstrap.Messaging.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WolverineFx.AzureBlobStorage" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cloudstrap.Messaging.AzureBlob.Tests" />
+  </ItemGroup>
+
+</Project>

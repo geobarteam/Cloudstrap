@@ -16,6 +16,7 @@ peer host — it runs alone.
 | Probe polling produces no trace spans — #2's noise filter covers the worker listener for free (#2/#7) | shared `Cloudstrap:HealthChecks` paths | `WorkerHost_ProbePolling_ProducesNoTraceSpans` |
 | A real messaging node: consumes `PlaceOrderCommand` from its workload queue over SQL Server, a plain Wolverine handler made transactional by taking `WorkerDbContext`, the flowed correlation id recorded (#14) | `AddCloudstrapMessaging().UseSqlServer().AddCloudstrapTransactionalMessaging<WorkerDbContext>()` + `PlaceOrderCommandHandler` | `Messaging_OrderPlacedThroughTheApiOutbox_IsProcessedByTheWorker_WithTheCorrelationIdObserved` |
 | Handled messages are logged by **type and id, never payload** (#14) | `PlaceOrderCommandHandler`'s log lines | `Messaging_WorkerLogsTheHandledCommandTypeAndId_NeverThePayload` |
+| Large messages arrive whole: a `PlaceOrderCommand` offloaded by the Api is rehydrated from the `demo-claimcheck` container before the handler runs, which records the notes' length and SHA-256 — never the notes (#15) | `AddCloudstrapBlobStorage()` + `AddCloudstrapMessaging()....UseAzureBlobClaimCheck()`; `PlaceOrderCommandHandler` | `ClaimCheck_OrderWithNotesAboveTheThreshold_IsProcessedByTheWorker_WithLengthAndHashRecorded_AndExactlyOneNewBlobInTheClaimCheckContainer` |
 
 ## Harness notes
 
@@ -40,6 +41,13 @@ peer host — it runs alone.
   share in the explicitly configured `demo_transport` schema — a demo decision, not a package
   opinion. The node listens on its own workload queue (`demo-application-worker`, sanitized to
   `demo_application_worker` by the transport) with no listener configuration at all.
+- Since #15 this host also needs a **blob backend**: `Cloudstrap:Storage:ConnectionString` is
+  `UseDevelopmentStorage=true` (the Azurite emulator, `npm install -g azurite`; start it with
+  `--skipApiVersionCheck`). `CLOUDSTRAP_TEST_BLOB` overrides it; every E2E fixture that boots this
+  host forwards the override. The E2E `ClaimCheckTests` fixture boots a third instance on health port
+  **5352** (5350 `WorkerHostTests`, 5351 `MessagingTests`). `Cloudstrap:Messaging:ClaimCheck` is
+  deliberately unset: `demo-claimcheck` and 204 800 bytes — the same defaults as the Api — are the
+  demo. The handler records the notes' **length and SHA-256, never the notes**.
 
 ## Running
 

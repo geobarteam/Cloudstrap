@@ -81,10 +81,20 @@ jobs:
       - name: Install Playwright Chromium (E2E)
         run: pwsh src/Test/E2E/Cloudstrap.Demo.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 
+      # Deliverable #15 made an Azure Blob emulator a test-time prerequisite (spec DL-10: the E2E fixture
+      # starts Azurite itself, or attaches to CLOUDSTRAP_TEST_BLOB). A throwaway Azurite container stands in,
+      # started with docker run rather than a `services:` entry because the image's default command lacks
+      # --skipApiVersionCheck, which the pinned Azure SDK's newer service version needs; the fixture polls
+      # readiness before the first host boots.
+      - name: Start Azurite (blob emulator for the E2E claim-check tests)
+        run: docker run -d --name azurite -p 10000:10000 mcr.microsoft.com/azure-storage/azurite azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck --silent
+
       - name: Run all MTP test executables
         env:
           # Honored by the Messaging SQL fixtures and the E2E fixture (spec D-3); the demo hosts create the database.
           CLOUDSTRAP_TEST_SQL: "Server=localhost,1433;Database=CloudstrapCi;User Id=sa;Password=Cloudstrap_CI_P4ssw0rd!;TrustServerCertificate=true;"
+          # Honored by the E2E fixture (spec DL-10): attach to the Azurite container above instead of starting one.
+          CLOUDSTRAP_TEST_BLOB: "UseDevelopmentStorage=true"
         run: |
           shopt -s globstar nullglob
           status=0

@@ -21,6 +21,8 @@ hardened versioned API host needs.
 | Cross-process user-token validation — this host's `demo-api` marker proves the hop (#9/#10 plumbing) | `GET api/v1/downstream/whoami` echoes the validated claims | `UserCall_SignedIn_ProvesTheApiHostValidatedTheUsersToken` |
 | The HTTP-path transactional outbox: `POST api/v1/orders` stages a row and sends `PlaceOrderCommand` to the Worker over SQL Server in one transaction, dispatch after commit; the correlation id flows across (#14) | `AddCloudstrapMessaging().UseSqlServer().AddCloudstrapTransactionalMessaging<DemoDbContext>()` + `IDbContextOutbox<DemoDbContext>` in `OrdersController` | `Messaging_OrderPlacedThroughTheApiOutbox_IsProcessedByTheWorker_WithTheCorrelationIdObserved` |
 | The hardened default still gates the new endpoint (#5/#14) | no `[Authorize]` on `OrdersController` | `Messaging_AnonymousOrdersPost_Returns401` |
+| Large messages: an order whose `notes` push `PlaceOrderCommand` over 200 KiB travels to the Worker as one blob in the `demo-claimcheck` container plus a reference; a small order adds no blob (#15) | `AddCloudstrapBlobStorage()` + `AddCloudstrapMessaging()....UseAzureBlobClaimCheck()` | `ClaimCheck_OrderWithNotesAboveTheThreshold_IsProcessedByTheWorker_WithLengthAndHashRecorded_AndExactlyOneNewBlobInTheClaimCheckContainer`, `ClaimCheck_OrderWithNotesBelowTheThreshold_IsProcessed_AndAddsNoBlob` |
+| The claim-check posture line names container, threshold and client source — never the connection string (#15) | the startup log of `UseAzureBlobClaimCheck()` | `ClaimCheck_ApiStartupPostureLine_NamesContainerThresholdAndClientSource_NeverTheConnectionString` |
 
 Observability runs in **Console** mode (`Cloudstrap:OpenTelemetry:Mode`), so the E2E fixture can
 capture this host's telemetry from stdout; versioned OpenAPI documents and the Scalar reference
@@ -40,6 +42,20 @@ UI come with `AddCloudstrapWebApi` like on every WebApi host.
 - `Cloudstrap:Messaging:Destinations` routes the contracts namespace to `demo-application-worker`
   — the Worker's workload queue. `PlaceOrderCommand` lives in `Cloudstrap.Demo.Contracts` with zero
   package references; the `*Command` suffix is all the routing needs.
+
+## Claim-check harness notes (#15)
+
+- Since #15 this host also needs a **blob backend** at startup: `Cloudstrap:Storage:ConnectionString`
+  is `UseDevelopmentStorage=true` — the **Azurite** emulator on `127.0.0.1:10000` (`npm install -g
+  azurite` once; the E2E fixture starts `azurite-blob` itself, or attaches to an emulator already
+  running, or to whatever `CLOUDSTRAP_TEST_BLOB` names and forwards that value to every host).
+  Start it manually with `azurite-blob --skipApiVersionCheck --location <folder>` — the pinned Azure
+  SDK may speak a newer service version than the emulator knows.
+- `Cloudstrap:Messaging:ClaimCheck` is deliberately **unset**: the defaults are the demo — the
+  `demo-claimcheck` container (`{SystemName}-claimcheck`, created by Wolverine's store on first use) and
+  the 204 800-byte threshold. The Worker lands on the same container by the same convention. The
+  `notes` of an order ride the command, never the row; only the Worker's recorded length and SHA-256
+  come back on `GET api/v1/orders/{id}`.
 
 ## Running
 

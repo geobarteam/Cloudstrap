@@ -1,5 +1,7 @@
 namespace Cloudstrap.Demo.Worker
 {
+    using System.Security.Cryptography;
+    using System.Text;
     using Cloudstrap.Demo.Contracts;
     using Cloudstrap.Demo.Worker.Data;
     using Cloudstrap.Observability.Correlation;
@@ -47,6 +49,15 @@ namespace Cloudstrap.Demo.Worker
 
             order.Status = "Processed";
             order.ProcessedCorrelationId = correlation.CorrelationId;
+
+            // Deliverable #15: the notes arrived whole whatever their size — rehydrated from the claim-check
+            // container before this handler ran. Only their length and hash are recorded; the notes are
+            // never stored and never logged.
+            if (command.Notes is not null)
+            {
+                order.NotesLength = command.Notes.Length;
+                order.NotesSha256 = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(command.Notes)));
+            }
         }
 
         [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Handling {MessageType} {MessageId}")]

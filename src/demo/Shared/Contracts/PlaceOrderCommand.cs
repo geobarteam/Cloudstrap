@@ -6,5 +6,10 @@ namespace Cloudstrap.Demo.Contracts
     /// needs to classify and route it — contracts never depend on the engine.
     /// </summary>
     /// <param name="OrderId">The order to process.</param>
-    public sealed record PlaceOrderCommand(Guid OrderId);
+    /// <param name="Notes">
+    /// Free-form notes of any size (deliverable #15). Nothing here marks them as large: no attribute, no
+    /// naming convention — when the serialized body exceeds the claim-check threshold the whole body is
+    /// stored in the <c>demo-claimcheck</c> container and only a reference travels; the handler sees the notes whole.
+    /// </param>
+    public sealed record PlaceOrderCommand(Guid OrderId, string? Notes = null);
 }
