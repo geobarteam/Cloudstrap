@@ -1077,13 +1077,13 @@ persistent `CloudstrapDemo` database, `OrderDto`'s two new fields — **confirm*
 topology (`UseDevelopmentStorage=true` as explicit demo config; both hosts on `demo-claimcheck` by
 convention; defaults deliberately unset in `appsettings.json`) — **confirm**.
 
-- [ ] Behavioral verification: the three new E2E tests pass
+- [x] Behavioral verification: the three new E2E tests pass
   (`ClaimCheck_OrderWithNotesAboveTheThreshold_..._AndExactlyOneNewBlobInTheClaimCheckContainer`,
   `ClaimCheck_OrderWithNotesBelowTheThreshold_IsProcessed_AndAddsNoBlob`,
   `ClaimCheck_ApiStartupPostureLine_..._NeverTheConnectionString`) in **both** fixture-started and attach
   mode, and **all pre-existing E2E tests pass unchanged**; the full-suite check (build + 15 unit exes +
   E2E exe + `dotnet format --verify-no-changes`) is green end to end.
-- [ ] Spec acceptance sign-off: walk **AC-M4, AC-M3, AC-A3, AC-ASP2, AC-CK1…AC-CK14** against the step
+- [x] Spec acceptance sign-off: walk **AC-M4, AC-M3, AC-A3, AC-ASP2, AC-CK1…AC-CK14** against the step
   evidence using the Overview's AC coverage map — all met; confirm nothing from the spec's Drop /
   Out-of-Scope lists was resurrected (no bespoke middleware/serializer/envelope rule, no `Enable*` flag,
   no `*DataBus` convention, no encryption, no leaf-owned account settings, no sweep/TTL/delete code, no
@@ -1091,7 +1091,7 @@ convention; defaults deliberately unset in `appsettings.json`) — **confirm**.
   `InternalsVisibleTo` grant from #14) and every De-NIHDI row is closed (no hard-coded account URI, no
   settings-borne credential, `ClaimCheck` vocabulary throughout, `nihdi`-free container default, neutral
   fixtures, no cryptography remnants).
-- [ ] Docs review: `src/Cloudstrap.Messaging.AzureBlob/README.md` matches as-built behavior (ladder,
+- [x] Docs review: `src/Cloudstrap.Messaging.AzureBlob/README.md` matches as-built behavior (ladder,
   defaults, lifecycle sample + orphan case, rights, outbox timing, 404 posture, Aspire clause, `[Blob]`
   guidance, manual live-account procedure); `src/Cloudstrap.Messaging/README.md` documents `ConfigureEngine`
   and points to the leaf; the Api/Worker/demo READMEs cite the real E2E test names, the Azurite
@@ -1099,4 +1099,4 @@ convention; defaults deliberately unset in `appsettings.json`) — **confirm**.
   `Testcontainers.Azurite` (DL-10), hoisting the duplicated test helpers into `Cloudstrap.Testing`, the
   `configure-wolverine` skill (CLAUDE.md pending artefacts), the PostgreSQL durability leaf as the second
   `ConfigureEngine` consumer, #19/#20 Dashboard visibility of offloaded payloads.
-- [ ] User approved — deliverable #15 done; project-manager flips the ROADMAP row to ✅.
+- [x] User approved — deliverable #15 done; project-manager flips the ROADMAP row to ✅.
