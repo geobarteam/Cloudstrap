@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Cloudstrap.Hangfire\Cloudstrap.Hangfire.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- AC-HF15: the host owns its OpenTelemetry pipeline; the tests observe the contributed span source in it -->
+    <PackageReference Include="OpenTelemetry.Exporter.InMemory" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+  </ItemGroup>
+
+  <!-- DD-8: the D-3 LocalDB helper and the log-capturing provider are linked from Cloudstrap.Messaging.Tests,
+       never copied a third time; deliverable #8 (Cloudstrap.Testing) hoists both. -->
+  <ItemGroup>
+    <Compile Include="..\Cloudstrap.Messaging.Tests\Infrastructure\SqlServerTestDatabase.cs" Link="Infrastructure\SqlServerTestDatabase.cs" />
+    <Compile Include="..\Cloudstrap.Messaging.Tests\Infrastructure\CapturingLoggerProvider.cs" Link="Infrastructure\CapturingLoggerProvider.cs" />
+  </ItemGroup>
+
+</Project>

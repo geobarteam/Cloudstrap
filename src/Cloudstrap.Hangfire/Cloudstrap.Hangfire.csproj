@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cloudstrap.Core\Cloudstrap.Core.csproj" />
+    <ProjectReference Include="..\Cloudstrap.Observability\Cloudstrap.Observability.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hangfire.Core" />
+    <PackageReference Include="Hangfire.SqlServer" />
+    <PackageReference Include="Hangfire.AspNetCore" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Scrutor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cloudstrap.Hangfire.Tests" />
+  </ItemGroup>
+
+</Project>
