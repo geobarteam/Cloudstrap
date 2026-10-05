@@ -93,7 +93,6 @@ src/
 ├── Cloudstrap.Analytics.GoogleAnalytics/ # GA4 adapter
 ├── Cloudstrap.Dashboard.*/              # Ops dashboard (contracts, API, components — MudBlazor)
 ├── Cloudstrap.Localization/             # Thin setup over ASP.NET Core localization
-├── Cloudstrap.Testing/                  # Test helper utilities
 ├── demo/                                # Demo applications (deliverable #27) — consumer examples + E2E test bed
 │   ├── Api/                             #   Cloudstrap.Demo.Api — pure JWT host, hardened by default (5330)
 │   ├── BlazorServer/                    #   Cloudstrap.Demo.BlazorServer — OIDC + user-token client (5340)
@@ -105,7 +104,8 @@ src/
 └── Test/
     ├── UnitTest/                        # Unit tests (mirror source structure, one project per package)
     ├── E2E/                             # Cloudstrap.Demo.E2E.Tests (NUnit 4 + Playwright) — drives the demo apps
-    └── TestIdentityProvider/            # Cloudstrap.TestIdentityProvider — shared OpenIddict test IdP library
+    ├── TestIdentityProvider/            # Cloudstrap.TestIdentityProvider — shared OpenIddict test IdP library
+    └── TestInfrastructure/              # Cloudstrap.TestInfrastructure — shared test helpers (SQL test DB, recorder, host); test-only, never packed
 ```
 
 ---

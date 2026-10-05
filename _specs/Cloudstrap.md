@@ -92,7 +92,7 @@ Aspire and Cloudstrap sit on the same substrate — `Microsoft.Extensions.Config
 | Nihdi.Core.Configuration.Analytics.Matomo | `Cloudstrap.Analytics` + `Cloudstrap.Analytics.Matomo` + `Cloudstrap.Analytics.GoogleAnalytics` | Provider abstraction (`IAnalyticsTracker`); endpoint/site ID always required, no defaults. |
 | Nihdi.Core.Configuration.Dashboard.* | `Cloudstrap.Dashboard.*` | Full port; replace internal MudBlazor design system with plain MudBlazor (MIT). Message-decryption feature dropped (encryption is dropped). |
 | — (from `Nihdi.AspNetCore.Localization`) | `Cloudstrap.Localization` | Thin one-call setup over stock ASP.NET Core localization: request-culture negotiation defaults, supported-culture config section, resource conventions. No custom engine. |
-| Nihdi.Core.Testing | `Cloudstrap.Testing` | Rename only. |
+| Nihdi.Core.Testing | — *(not ported)* | Nothing ships. The source has no consumers and contributes nothing worth porting. Cloudstrap's own shared test infrastructure lives in a test-only, never-packed library under `src/Test/`. The `Cloudstrap.Testing.*` id family is reserved for demand-driven test-audience packages (#26). *(amended 2026-10-05 — see `_specs/8-TestHelpers.md` Decision Log, D-1)* |
 
 API naming: `AddNihdiX`/`AddXForNihdi` → `AddCloudstrapX` / `UseCloudstrapX` (e.g. `AddCloudstrapWebApi`, `UseCloudstrapObservability`, `AddCloudstrapMessaging`).
 
