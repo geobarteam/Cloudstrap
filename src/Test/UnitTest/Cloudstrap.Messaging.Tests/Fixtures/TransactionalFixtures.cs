@@ -1,6 +1,7 @@
 namespace Cloudstrap.Messaging.Tests.Fixtures
 {
     using Cloudstrap.Messaging.Tests.Fixtures.Contracts;
+    using Cloudstrap.TestInfrastructure;
     using Wolverine;
 
     /// <summary>A fixture command whose handler stages an <see cref="Order"/> and cascades an event, then optionally throws.</summary>

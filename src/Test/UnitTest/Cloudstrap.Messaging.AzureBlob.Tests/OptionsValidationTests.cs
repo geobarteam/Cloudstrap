@@ -1,6 +1,6 @@
 namespace Cloudstrap.Messaging.AzureBlob.Tests
 {
-    using Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using NUnit.Framework;
@@ -17,7 +17,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public void Options_Defaults_Are200KiBAndTheSystemNameClaimCheckContainer()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
 
             // Act
             builder.AddCloudstrapMessaging().UseAzureBlobClaimCheck();
@@ -35,9 +35,9 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public void Options_ThresholdZeroOrNegative_FailsNamingTheThresholdKey()
         {
             // Arrange
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Messaging:ClaimCheck:OffloadThresholdBytes"] = "0";
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             CloudstrapMessagingBuilder messaging = builder.AddCloudstrapMessaging();
 
             // Act
@@ -51,9 +51,9 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public void Options_InvalidContainerName_FailsNamingTheContainerKey_NeverTheValue()
         {
             // Arrange
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Messaging:ClaimCheck:ContainerName"] = "Bad_Name--x";
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             CloudstrapMessagingBuilder messaging = builder.AddCloudstrapMessaging();
 
             // Act
@@ -72,9 +72,9 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public void Options_SystemNameThatYieldsAnInvalidDefaultContainer_FailsNamingTheContainerKey()
         {
             // Arrange — an underscore is legal in a system name but not in a container name.
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Application:SystemName"] = "a_b";
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             CloudstrapMessagingBuilder messaging = builder.AddCloudstrapMessaging();
 
             // Act
@@ -88,9 +88,9 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public void Options_ContainerNameOverride_Wins()
         {
             // Arrange
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Messaging:ClaimCheck:ContainerName"] = "exports-claimcheck";
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
 
             // Act
             builder.AddCloudstrapMessaging().UseAzureBlobClaimCheck();

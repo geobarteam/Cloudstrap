@@ -2,7 +2,7 @@ namespace Cloudstrap.Messaging.Tests
 {
     using System.Diagnostics;
     using Cloudstrap.Messaging.Tests.Fixtures;
-    using Cloudstrap.Messaging.Tests.Infrastructure;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using NUnit.Framework;
@@ -26,7 +26,7 @@ namespace Cloudstrap.Messaging.Tests
         {
             // Arrange — the host owns its pipeline; Cloudstrap only contributes the Wolverine source.
             List<Activity> exported = [];
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             builder.Services.AddOpenTelemetry().WithTracing(tracing => tracing.AddInMemoryExporter(exported));
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.AddCloudstrapMessaging();
@@ -51,7 +51,7 @@ namespace Cloudstrap.Messaging.Tests
         public void Messaging_RegistersNoExporterAndNoSecondTracerProvider()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
 
             // Act
             builder.AddCloudstrapMessaging();
@@ -71,7 +71,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task Messaging_NoOtelPipeline_HostStillStarts()
         {
             // Arrange — no OpenTelemetry registration at all.
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.AddCloudstrapMessaging();
             using IHost host = builder.Build();

@@ -41,11 +41,7 @@ namespace Cloudstrap.Demo.E2E.Tests
                 "--Cloudstrap:Worker:HealthPort=5353",
                 "--Demo:OutageSentinelPath=" + _sentinelPath,
             ];
-            string? sqlOverride = Environment.GetEnvironmentVariable("CLOUDSTRAP_TEST_SQL");
-            if (!string.IsNullOrWhiteSpace(sqlOverride))
-            {
-                arguments.Add("--ConnectionStrings:DefaultConnection=" + sqlOverride);
-            }
+            DemoDatabase.AddConnectionStringOverride(arguments);
 
             string? blobOverride = Environment.GetEnvironmentVariable(AzuriteProcess.EnvironmentVariable);
             if (!string.IsNullOrWhiteSpace(blobOverride))
@@ -59,10 +55,7 @@ namespace Cloudstrap.Demo.E2E.Tests
 
             // The storage-only dashboard host, on the same database (and SQL override) as the Worker.
             List<string> blazorArguments = [];
-            if (!string.IsNullOrWhiteSpace(sqlOverride))
-            {
-                blazorArguments.Add("--ConnectionStrings:DefaultConnection=" + sqlOverride);
-            }
+            DemoDatabase.AddConnectionStringOverride(blazorArguments);
 
             _blazorServerHost = SutProcess.Start(_blazorServerBaseUrl, blazorArguments, _blazorServerProjectPath);
             using HttpClient blazorProbe = new HttpClient { BaseAddress = new Uri(_blazorServerBaseUrl) };

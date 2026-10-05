@@ -2,6 +2,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure
 {
     using System.Diagnostics;
     using Cloudstrap.Messaging.AzureBlob.Tests.Fixtures;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
@@ -117,7 +118,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure
                 ["Cloudstrap:Messaging:Transport"] = "SqlServer",
                 ["Cloudstrap:Messaging:SqlTransport:SchemaName"] = _transportSchema,
                 ["Cloudstrap:Messaging:AutoProvision"] = "true",
-                ["ConnectionStrings:DefaultConnection"] = SqlServerTestDatabase.ConnectionString,
+                ["ConnectionStrings:DefaultConnection"] = TestDatabase.Instance.ConnectionString,
             };
             if (offloadThresholdBytes is not null)
             {
@@ -134,7 +135,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure
             Action<HostApplicationBuilder>? extra = null,
             Action<WolverineOptions>? wolverine = null)
         {
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             CapturingLoggerProvider provider = new();
             builder.Logging.AddProvider(provider);
             builder.Services.AddSingleton<InvocationRecorder>();

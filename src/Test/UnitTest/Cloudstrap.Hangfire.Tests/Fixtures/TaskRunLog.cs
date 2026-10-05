@@ -3,7 +3,7 @@ namespace Cloudstrap.Hangfire.Tests.Fixtures
     using System.Collections.Concurrent;
 
     /// <summary>Process-wide record of fixture-task runs (fixtures run one at a time: the assembly is non-parallel).</summary>
-    public static class InvocationRecorder
+    public static class TaskRunLog
     {
         private static readonly ConcurrentQueue<string> _runs = new();
 

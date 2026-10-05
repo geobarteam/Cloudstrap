@@ -4,6 +4,7 @@ namespace Cloudstrap.Messaging.Tests
     using Cloudstrap.Messaging.Tests.Fixtures;
     using Cloudstrap.Messaging.Tests.Infrastructure;
     using Cloudstrap.Observability.Correlation;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
@@ -29,7 +30,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task Enforcement_RequireForAllOn_MessageWithoutCorrelation_IsBlockedWithTypedErrorNamingHeaderAndHandler()
         {
             // Arrange
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings[_requireAllKey] = "true";
             (IHost host, CapturingLoggerProvider logs) = BuildHost(settings);
             await host.StartAsync();
@@ -53,7 +54,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task Enforcement_CorrelationRequiredOnHandlerHierarchy_BlocksWithoutTheFlag()
         {
             // Arrange — RequireForAll off; the requirement sits on the handler's base class.
-            (IHost host, CapturingLoggerProvider logs) = BuildHost(MessagingTestHost.ValidSettings());
+            (IHost host, CapturingLoggerProvider logs) = BuildHost(CloudstrapTestHost.ValidSettings());
             await host.StartAsync();
 
             // Act
@@ -74,7 +75,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task Enforcement_AllowNoCorrelationOnHandler_Exempts()
         {
             // Arrange — RequireForAll on; the handler carries [AllowNoCorrelation].
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings[_requireAllKey] = "true";
             (IHost host, _) = BuildHost(settings);
             await host.StartAsync();
@@ -95,7 +96,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task Enforcement_ExcludeMessageHandlersList_Exempts()
         {
             // Arrange — RequireForAll on; the handler's full type name is excluded by configuration.
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings[_requireAllKey] = "true";
             settings["Cloudstrap:Correlation:Message:ExcludeMessageHandlers:0"] = typeof(ExcludedCommandHandler).FullName;
             (IHost host, _) = BuildHost(settings);
@@ -117,7 +118,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task Enforcement_OutgoingSendWithoutCorrelation_WhenRequired_IsBlocked()
         {
             // Arrange — RequireForAll on; the sender has no ambient correlation id.
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings[_requireAllKey] = "true";
             (IHost host, _) = BuildHost(settings);
             await host.StartAsync();
@@ -150,7 +151,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task Enforcement_CorrelatedSend_WhenRequired_ReachesTheHandler()
         {
             // Arrange — the positive path under RequireForAll: a correlated send goes through.
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings[_requireAllKey] = "true";
             (IHost host, _) = BuildHost(settings);
             await host.StartAsync();
@@ -173,7 +174,7 @@ namespace Cloudstrap.Messaging.Tests
         public void Enforcement_BindsCoresShippedCorrelationMessageOptionsFromTheSiblingSection()
         {
             // Arrange — the sibling section drives Core's shipped CorrelationMessageOptions; no new type exists.
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings[_requireAllKey] = "true";
             settings["Cloudstrap:Correlation:Message:ExcludeMessageHandlers:0"] = "Contoso.Excluded";
             (IHost host, _) = BuildHost(settings);
@@ -192,7 +193,7 @@ namespace Cloudstrap.Messaging.Tests
 
         private static (IHost Host, CapturingLoggerProvider Logs) BuildHost(Dictionary<string, string?> settings)
         {
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             CapturingLoggerProvider logs = new();
             builder.Logging.AddProvider(logs);
             builder.Services.AddSingleton<InvocationRecorder>();

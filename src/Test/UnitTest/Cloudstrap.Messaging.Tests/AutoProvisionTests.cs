@@ -1,6 +1,7 @@
 namespace Cloudstrap.Messaging.Tests
 {
     using Cloudstrap.Messaging.Tests.Infrastructure;
+    using Cloudstrap.TestInfrastructure;
     using JasperFx;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
@@ -95,7 +96,7 @@ namespace Cloudstrap.Messaging.Tests
         {
             HostApplicationBuilder builder = Host.CreateApplicationBuilder(
                 new HostApplicationBuilderSettings { EnvironmentName = environment });
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             if (explicitValue is not null)
             {
                 settings["Cloudstrap:Messaging:AutoProvision"] = explicitValue.Value ? "true" : "false";

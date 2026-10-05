@@ -1,6 +1,6 @@
 namespace Cloudstrap.Hangfire.Tests.Fixtures.Tasks
 {
-    /// <summary>A task that records each run in <see cref="InvocationRecorder"/>.</summary>
+    /// <summary>A task that records each run in <see cref="TaskRunLog"/>.</summary>
     public sealed class RecordingTask : IBackgroundRecurringTask
     {
         public string CronExpression => "0 0 1 1 *";
@@ -9,7 +9,7 @@ namespace Cloudstrap.Hangfire.Tests.Fixtures.Tasks
 
         public Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            InvocationRecorder.Record(JobId);
+            TaskRunLog.Record(JobId);
             return Task.CompletedTask;
         }
     }

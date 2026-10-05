@@ -26,14 +26,14 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         [OneTimeSetUp]
         public Task ResetDatabase()
         {
-            return SqlServerTestDatabase.ResetAsync();
+            return TestDatabase.Instance.ResetAsync();
         }
 
         [SetUp]
         public Task ClearDeadLetters()
         {
             // Every test dead-letters the same message type into one shared table: start each from an empty one.
-            return SqlServerTestDatabase.ScalarAsync(
+            return TestDatabase.Instance.ScalarAsync(
                 $"IF OBJECT_ID('{_deadLetters}') IS NOT NULL DELETE FROM {_deadLetters}");
         }
 
@@ -83,8 +83,8 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
             // Assert
             Assert.That(deadLetterId, Is.Not.Null);
             string id = Convert.ToString(deadLetterId, CultureInfo.InvariantCulture)!;
-            object? rowType = await SqlServerTestDatabase.ScalarAsync(
-                $"SELECT message_type FROM {_deadLetters} WHERE id = @id", ("@id", deadLetterId!));
+            object? rowType = await TestDatabase.Instance.ScalarAsync(
+                $"SELECT message_type FROM {_deadLetters} WHERE id = @id", [("@id", deadLetterId!)]);
             string[] messages = [.. harness.ListenerLogs.Entries.Select(entry => entry.Message + " " + entry.Exception)];
             string[] leafLines = [.. harness.ListenerLogs.Entries
                 .Where(entry => entry.Category == "Cloudstrap.Messaging.AzureBlob")
@@ -155,7 +155,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
 
         private static Task<object?> WaitForDeadLetterAsync(string messageTypeFragment)
         {
-            return SqlServerTestDatabase.WaitForScalarAsync(
+            return TestDatabase.Instance.WaitForScalarAsync(
                 $"SELECT TOP 1 id FROM {_deadLetters} WHERE message_type LIKE '%{messageTypeFragment}%'",
                 _timeout);
         }

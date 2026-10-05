@@ -1,6 +1,7 @@
 namespace Cloudstrap.Messaging.Tests.Fixtures
 {
     using Cloudstrap.Messaging.Tests.Fixtures.Contracts;
+    using Cloudstrap.TestInfrastructure;
 
     /// <summary>A fixture command whose handler always fails; the payload carries a sentinel that must never be logged.</summary>
     public sealed record PoisonCommand(string Payload);

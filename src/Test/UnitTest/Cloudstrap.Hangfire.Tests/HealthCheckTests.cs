@@ -2,7 +2,6 @@ namespace Cloudstrap.Hangfire.Tests
 {
     using Cloudstrap.Hangfire.Tests.Fakes;
     using Cloudstrap.Hangfire.Tests.Infrastructure;
-    using Cloudstrap.Messaging.Tests.Infrastructure;
     using global::Hangfire;
     using global::Hangfire.Storage.Monitoring;
     using Microsoft.Extensions.DependencyInjection;
@@ -137,8 +136,8 @@ namespace Cloudstrap.Hangfire.Tests
         [Test]
         public async Task RealStorage_OnLocalDb_ReportsHealthy()
         {
-            // Arrange — a storage-only host installs the schema on the D-3 test database.
-            await SqlServerTestDatabase.ResetAsync();
+            // Arrange — a storage-only host installs the schema on the suite's CloudstrapHangfireTests catalog.
+            await TestDatabase.Instance.ResetAsync();
             HostApplicationBuilder builder = HangfireSqlHost.CreateBuilder(runServer: false, schema: "hangfire_health");
             builder.Services.AddHealthChecks().AddCloudstrapHangfireHealthCheck();
             using IHost host = builder.Build();

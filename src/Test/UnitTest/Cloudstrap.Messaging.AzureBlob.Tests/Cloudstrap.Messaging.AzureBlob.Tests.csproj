@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Cloudstrap.Messaging.AzureBlob\Cloudstrap.Messaging.AzureBlob.csproj" />
+    <ProjectReference Include="..\..\TestInfrastructure\Cloudstrap.TestInfrastructure\Cloudstrap.TestInfrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -16,7 +17,8 @@
     <!-- AC-CK6: the host owns its OpenTelemetry pipeline; the tests collect Wolverine's spans from it -->
     <PackageReference Include="OpenTelemetry.Exporter.InMemory" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
-    <!-- D-3 LocalDB round trips over the SQL Server transport (Microsoft.Data.SqlClient arrives transitively);
+    <!-- D-3 LocalDB round trips over the SQL Server transport (Microsoft.Data.SqlClient arrives transitively, and
+         through Cloudstrap.TestInfrastructure's shared test database);
          the EF Core provider backs the outbox interplay test -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
   </ItemGroup>

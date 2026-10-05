@@ -3,6 +3,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests.Fixtures
     using System.Collections.Concurrent;
     using Cloudstrap.Messaging.AzureBlob.Tests.Fixtures.Contracts;
     using Cloudstrap.Observability.Correlation;
+    using Cloudstrap.TestInfrastructure;
     using Wolverine;
 
     /// <summary>What a handler observed: the rehydrated message, the envelope headers and the correlation id.</summary>

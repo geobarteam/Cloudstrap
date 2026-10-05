@@ -141,8 +141,10 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
   **`CLOUDSTRAP_TEST_BLOB`** to a connection string to attach to any backend (CI's Azurite
   container, a real account) — it is forwarded to every fixture-booted Api and Worker as
   `Cloudstrap:Storage:ConnectionString`. A missing emulator fails loudly with the install command.
-- **SQL Server (spec D-3):** LocalDB by default; `CLOUDSTRAP_TEST_SQL` overrides and is forwarded
-  the same way as `ConnectionStrings:DefaultConnection`.
+- **SQL Server (spec D-3, #8 D-4):** LocalDB by default; `CLOUDSTRAP_TEST_SQL` supplies the server,
+  credentials and options only, and is forwarded to every SQL-backed demo host as
+  `ConnectionStrings:DefaultConnection` on the `CloudstrapDemo` catalog through the shared
+  `Cloudstrap.TestInfrastructure` helper.
 - **Hangfire topology (#16):** the Worker demo is the processing host and the BlazorServer demo the
   storage-only dashboard host, both on the `HangFire` schema in `CloudstrapDemo`. Every E2E fixture
   that boots a Worker starts a processing host with the same task set, which is safe because

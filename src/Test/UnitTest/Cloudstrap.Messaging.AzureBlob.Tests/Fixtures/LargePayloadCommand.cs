@@ -1,5 +1,6 @@
 namespace Cloudstrap.Messaging.AzureBlob.Tests.Fixtures
 {
+    using Cloudstrap.TestInfrastructure;
     /// <summary>A fixture command carrying an arbitrarily large body; it references no messaging type.</summary>
     public sealed record LargePayloadCommand(string Content);
 

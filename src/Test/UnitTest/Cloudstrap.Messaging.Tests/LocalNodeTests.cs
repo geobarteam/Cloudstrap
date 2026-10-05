@@ -1,7 +1,7 @@
 namespace Cloudstrap.Messaging.Tests
 {
     using Cloudstrap.Messaging.Tests.Fixtures;
-    using Cloudstrap.Messaging.Tests.Infrastructure;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using NUnit.Framework;
@@ -21,7 +21,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task AddCloudstrapMessaging_NoMessagingSection_HostStartsAndLocalMessageReachesItsHandler()
         {
             // Arrange — only Cloudstrap:Application is configured; no Cloudstrap:Messaging section at all.
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.AddCloudstrapMessaging();
             using IHost host = builder.Build();
@@ -46,7 +46,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task AddCloudstrapMessaging_InvokeAsync_RunsTheHandlerInProcess()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.AddCloudstrapMessaging();
             using IHost host = builder.Build();
@@ -70,7 +70,7 @@ namespace Cloudstrap.Messaging.Tests
         public void AddCloudstrapMessaging_DefaultEndpointIdentity_IsTheWorkloadName()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             builder.AddCloudstrapMessaging();
 
             // Act
@@ -78,16 +78,16 @@ namespace Cloudstrap.Messaging.Tests
             WolverineOptions options = host.Services.GetRequiredService<WolverineOptions>();
 
             // Assert
-            Assert.That(options.ServiceName, Is.EqualTo(MessagingTestHost.WorkloadName));
+            Assert.That(options.ServiceName, Is.EqualTo(CloudstrapTestHost.WorkloadName));
         }
 
         [Test]
         public void AddCloudstrapMessaging_ExplicitEndpointName_WinsOverTheWorkloadName()
         {
             // Arrange
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Messaging:EndpointName"] = "contoso-orders-custom";
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             builder.AddCloudstrapMessaging();
 
             // Act

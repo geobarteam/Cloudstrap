@@ -4,6 +4,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
     using Azure.Core;
     using Azure.Storage.Blobs;
     using Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
@@ -23,7 +24,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public void Resolve_NoBlobClientRegistered_StartupFailsNamingAddCloudstrapBlobStorageAndTheRegisterAClientAlternative()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             builder.AddCloudstrapMessaging().UseAzureBlobClaimCheck();
             using IHost host = builder.Build();
 
@@ -43,7 +44,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public async Task Resolve_RegisteredBlobContainerClient_OpensTheClaimCheckContainerOnTheSameAccount()
         {
             // Arrange — route (b): the application container client, as AddCloudstrapBlobStorage registers it.
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             ClaimCheckTestHost.RegisterApplicationContainerClient(builder.Services);
             builder.AddCloudstrapMessaging().UseAzureBlobClaimCheck();
             using IHost host = builder.Build();
@@ -67,7 +68,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public async Task Resolve_RegisteredBlobServiceClient_IsPreferredOverTheContainerClient()
         {
             // Arrange — both registered; the service client (a consumer's or a platform's) is on another account.
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             ClaimCheckTestHost.RegisterApplicationContainerClient(builder.Services);
             builder.Services.AddSingleton(new BlobServiceClient(ClaimCheckTestHost.ConnectionStringFor("other")));
             builder.AddCloudstrapMessaging().UseAzureBlobClaimCheck();
@@ -92,9 +93,9 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public async Task Resolve_CodeLevelContainerClient_WinsOverEverything_AndIgnoresTheContainerNameSetting()
         {
             // Arrange
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Messaging:ClaimCheck:ContainerName"] = "ignored-name";
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             CapturingLoggerProvider logs = new();
             builder.Logging.AddProvider(logs);
             ClaimCheckTestHost.RegisterApplicationContainerClient(builder.Services);
@@ -123,7 +124,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public async Task Resolve_ConstructsNoCredentialAndNoSecondClient()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             ClaimCheckTestHost.FactoryCounter factory = ClaimCheckTestHost.RegisterApplicationContainerClient(builder.Services);
             builder.AddCloudstrapMessaging().UseAzureBlobClaimCheck();
             using IHost host = builder.Build();

@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Cloudstrap.Hangfire\Cloudstrap.Hangfire.csproj" />
+    <ProjectReference Include="..\..\TestInfrastructure\Cloudstrap.TestInfrastructure\Cloudstrap.TestInfrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,10 +21,9 @@
     <PackageReference Include="Microsoft.AspNetCore.TestHost" />
   </ItemGroup>
 
-  <!-- DD-8: the D-3 LocalDB helper and the log-capturing provider are linked from Cloudstrap.Messaging.Tests,
-       never copied a third time; deliverable #8 (Cloudstrap.Testing) hoists both. -->
+  <!-- DD-8: the log-capturing provider stays linked from Cloudstrap.Messaging.Tests until deliverable #8 Step 6
+       replaces it with Microsoft.Extensions.Diagnostics.Testing; the SQL helper comes from Cloudstrap.TestInfrastructure. -->
   <ItemGroup>
-    <Compile Include="..\Cloudstrap.Messaging.Tests\Infrastructure\SqlServerTestDatabase.cs" Link="Infrastructure\SqlServerTestDatabase.cs" />
     <Compile Include="..\Cloudstrap.Messaging.Tests\Infrastructure\CapturingLoggerProvider.cs" Link="Infrastructure\CapturingLoggerProvider.cs" />
   </ItemGroup>
 

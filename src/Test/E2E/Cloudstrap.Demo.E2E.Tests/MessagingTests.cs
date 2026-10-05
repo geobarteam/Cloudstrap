@@ -38,11 +38,7 @@ namespace Cloudstrap.Demo.E2E.Tests
                 "--Cloudstrap:Worker:HealthPort=5351",
                 "--Demo:OutageSentinelPath=" + _sentinelPath,
             ];
-            string? sqlOverride = Environment.GetEnvironmentVariable("CLOUDSTRAP_TEST_SQL");
-            if (!string.IsNullOrWhiteSpace(sqlOverride))
-            {
-                arguments.Add("--ConnectionStrings:DefaultConnection=" + sqlOverride);
-            }
+            DemoDatabase.AddConnectionStringOverride(arguments);
 
             // Since deliverable #15 the Worker carries the Azure Blob claim check: the blob override
             // (DL-10) is forwarded when set, exactly as the fixture forwards it to the Api.

@@ -1,6 +1,7 @@
 namespace Cloudstrap.Messaging.Tests.Fixtures
 {
     using System.Collections.Concurrent;
+    using Cloudstrap.TestInfrastructure;
 
     /// <summary>A fixture command whose handler fails the first <paramref name="FailuresBeforeSuccess"/> attempts.</summary>
     public sealed record FlakyCommand(string Id, int FailuresBeforeSuccess);

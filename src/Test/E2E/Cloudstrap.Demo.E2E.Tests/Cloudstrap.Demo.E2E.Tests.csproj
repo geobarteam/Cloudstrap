@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\TestIdentityProvider\Cloudstrap.TestIdentityProvider\Cloudstrap.TestIdentityProvider.csproj" />
+    <ProjectReference Include="..\..\TestInfrastructure\Cloudstrap.TestInfrastructure\Cloudstrap.TestInfrastructure.csproj" />
     <ProjectReference Include="..\..\..\demo\Shared\IdentityProvider\Cloudstrap.Demo.IdentityProvider.csproj" />
   </ItemGroup>
 

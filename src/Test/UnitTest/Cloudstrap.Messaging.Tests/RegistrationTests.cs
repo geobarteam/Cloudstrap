@@ -1,6 +1,6 @@
 namespace Cloudstrap.Messaging.Tests
 {
-    using Cloudstrap.Messaging.Tests.Infrastructure;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using NUnit.Framework;
@@ -28,7 +28,7 @@ namespace Cloudstrap.Messaging.Tests
         public void AddCloudstrapMessaging_CalledTwice_ThrowsNamingTheDuplicateCall()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             builder.AddCloudstrapMessaging();
 
             // Act + Assert — at the call site, earlier than startup, contractual (AC-MSG14).
@@ -42,10 +42,10 @@ namespace Cloudstrap.Messaging.Tests
         {
             // Arrange — an unknown transport plus a sentinel secret that must never be echoed. The section is
             // read eagerly, so the failure lands at the call — before the host is even built (AC-MSG2).
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Messaging:Transport"] = "RabbitMQ";
             settings["ConnectionStrings:DefaultConnection"] = "Server=sentinel-secret-host;Password=sentinel-secret";
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
 
             // Act
             Exception? failure = Assert.Catch(() => builder.AddCloudstrapMessaging());
@@ -64,7 +64,7 @@ namespace Cloudstrap.Messaging.Tests
         public void AddCloudstrapMessaging_ReturnsTheBuilder_AndConfiguratorWolverineDelegateRuns()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
 
             // Act — the escape hatch has final say: it overrides the workload-name identity.
             CloudstrapMessagingBuilder result = builder.AddCloudstrapMessaging(configurator =>

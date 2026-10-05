@@ -9,7 +9,7 @@ namespace Cloudstrap.Hangfire.Tests.Fixtures.Tasks
 
         public Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            InvocationRecorder.Record(nameof(NoOverlapGuardTask));
+            TaskRunLog.Record(nameof(NoOverlapGuardTask));
             return Task.CompletedTask;
         }
     }

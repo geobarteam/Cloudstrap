@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Cloudstrap.Messaging\Cloudstrap.Messaging.csproj" />
+    <ProjectReference Include="..\..\TestInfrastructure\Cloudstrap.TestInfrastructure\Cloudstrap.TestInfrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

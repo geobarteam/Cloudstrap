@@ -3,6 +3,7 @@ namespace Cloudstrap.Messaging.Tests
     using Cloudstrap.Messaging.Tests.Fixtures;
     using Cloudstrap.Messaging.Tests.Fixtures.Contracts;
     using Cloudstrap.Messaging.Tests.Infrastructure;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
@@ -26,8 +27,8 @@ namespace Cloudstrap.Messaging.Tests
         [OneTimeSetUp]
         public async Task ResetDatabase()
         {
-            await SqlServerTestDatabase.ResetAsync();
-            await SqlServerTestDatabase.ScalarAsync(OrdersDbContext.CreateTableSql);
+            await TestDatabase.Instance.ResetAsync();
+            await TestDatabase.Instance.ScalarAsync(OrdersDbContext.CreateTableSql);
         }
 
         [Test]
@@ -45,7 +46,7 @@ namespace Cloudstrap.Messaging.Tests
                     .PublishAsync(new StageOrderCommand(orderId, "doomed", Fail: true));
             }
 
-            object? deadLetter = await SqlServerTestDatabase.WaitForScalarAsync(
+            object? deadLetter = await TestDatabase.Instance.WaitForScalarAsync(
                 "SELECT TOP 1 id FROM contoso_failing_worker.wolverine_dead_letters WHERE message_type LIKE '%StageOrderCommand%'",
                 _timeout);
             await Task.Delay(_settle);
@@ -160,9 +161,9 @@ namespace Cloudstrap.Messaging.Tests
         public async Task TransactionalMessaging_WithoutDurabilityProvider_FailsFastNamingUseSqlServer()
         {
             // Arrange — the transactional integration without UseSqlServer(); no SQL is touched.
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             builder.AddCloudstrapMessaging()
-                .AddCloudstrapTransactionalMessaging<OrdersDbContext>(options => options.UseSqlServer(SqlServerTestDatabase.ConnectionString));
+                .AddCloudstrapTransactionalMessaging<OrdersDbContext>(options => options.UseSqlServer(TestDatabase.Instance.ConnectionString));
             using IHost host = builder.Build();
 
             // Act
@@ -174,9 +175,9 @@ namespace Cloudstrap.Messaging.Tests
 
         private static async Task<int> CountOrdersAsync(Guid orderId)
         {
-            object? count = await SqlServerTestDatabase.ScalarAsync(
+            object? count = await TestDatabase.Instance.ScalarAsync(
                 "SELECT COUNT(*) FROM dbo.Orders WHERE Id = @id",
-                ("@id", orderId));
+                [("@id", orderId)]);
             return Convert.ToInt32(count, System.Globalization.CultureInfo.InvariantCulture);
         }
 
@@ -189,7 +190,7 @@ namespace Cloudstrap.Messaging.Tests
                 ["Cloudstrap:Application:SubsystemName"] = subsystem,
                 ["Cloudstrap:Application:SubsystemType"] = "worker",
                 ["Cloudstrap:Messaging:AutoProvision"] = "true",
-                ["ConnectionStrings:DefaultConnection"] = SqlServerTestDatabase.ConnectionString,
+                ["ConnectionStrings:DefaultConnection"] = TestDatabase.Instance.ConnectionString,
             };
             if (!retries)
             {
@@ -197,7 +198,7 @@ namespace Cloudstrap.Messaging.Tests
                 settings["Cloudstrap:Messaging:Retries:NumberOfDelayed"] = "0";
             }
 
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.AddCloudstrapMessaging(configurator => configurator.Wolverine = options =>
                 {
@@ -206,7 +207,7 @@ namespace Cloudstrap.Messaging.Tests
                     options.Durability.ScheduledJobPollingTime = TimeSpan.FromSeconds(1);
                 })
                 .UseSqlServer()
-                .AddCloudstrapTransactionalMessaging<OrdersDbContext>(options => options.UseSqlServer(SqlServerTestDatabase.ConnectionString));
+                .AddCloudstrapTransactionalMessaging<OrdersDbContext>(options => options.UseSqlServer(TestDatabase.Instance.ConnectionString));
             return builder.Build();
         }
     }

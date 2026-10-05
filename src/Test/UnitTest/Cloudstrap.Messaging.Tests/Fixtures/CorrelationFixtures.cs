@@ -1,6 +1,7 @@
 namespace Cloudstrap.Messaging.Tests.Fixtures
 {
     using Cloudstrap.Observability.Correlation;
+    using Cloudstrap.TestInfrastructure;
     using Wolverine;
 
     /// <summary>What a handler observed about correlation: the accessor's value and the envelope's headers.</summary>

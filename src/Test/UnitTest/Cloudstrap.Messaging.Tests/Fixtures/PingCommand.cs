@@ -1,5 +1,6 @@
 namespace Cloudstrap.Messaging.Tests.Fixtures
 {
+    using Cloudstrap.TestInfrastructure;
     /// <summary>A fixture command — a plain record, no Wolverine or Cloudstrap dependency.</summary>
     public sealed record PingCommand(string Text);
 

@@ -3,6 +3,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
     using Azure.Storage.Blobs;
     using Cloudstrap.Messaging.AzureBlob.Tests.Fixtures;
     using Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
@@ -33,7 +34,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public void UseAzureBlobClaimCheck_CalledTwice_ThrowsNamingTheDuplicateCall()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             CloudstrapMessagingBuilder messaging = builder.AddCloudstrapMessaging().UseAzureBlobClaimCheck();
 
             // Act + Assert — at the call site, earlier than startup (AC-CK14).
@@ -47,10 +48,10 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         {
             // Arrange — a durability connection string the registration-time path resolves by name; no SQL is
             // touched because neither host is started.
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["ConnectionStrings:DefaultConnection"] = "Server=(local);Database=never-opened;Integrated Security=true;";
-            HostApplicationBuilder first = MessagingTestHost.CreateBuilder(settings);
-            HostApplicationBuilder second = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder first = CloudstrapTestHost.CreateBuilder(settings);
+            HostApplicationBuilder second = CloudstrapTestHost.CreateBuilder(settings);
             CloudstrapMessagingBuilder firstMessaging = first.AddCloudstrapMessaging();
             CloudstrapMessagingBuilder secondMessaging = second.AddCloudstrapMessaging();
 
@@ -70,7 +71,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public async Task AddCloudstrapMessaging_WithoutTheLeafCall_ResolvesNoBlobClient()
         {
             // Arrange — blob-client factories that fail loudly if anything resolves them; a 1 MB body.
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.Services.AddSingleton<BlobContainerClient>(_ => throw new InvalidOperationException("no leaf call, no blob client"));
             builder.Services.AddSingleton<BlobServiceClient>(_ => throw new InvalidOperationException("no leaf call, no blob client"));
@@ -96,7 +97,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public async Task UseAzureBlobClaimCheck_StartupLogsOnePostureLine_NamingContainerThresholdAndSource_NeverTheConnectionString()
         {
             // Arrange — the container client AddCloudstrapBlobStorage would register (route b of the ladder).
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             CapturingLoggerProvider logs = new();
             builder.Logging.AddProvider(logs);
             ClaimCheckTestHost.RegisterApplicationContainerClient(builder.Services);

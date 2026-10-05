@@ -80,14 +80,10 @@ namespace Cloudstrap.Demo.E2E.Tests
             // The Api demo host boots after the IdP (it validates tokens against 5310) and before
             // the Bff (whose UserApi readiness check probes the Api's /healthz). Fixture-owned in
             // attach mode too, like the IdP.
-            // Since deliverable #14 the Api is a SQL Server messaging node: it needs LocalDB (or the
-            // CLOUDSTRAP_TEST_SQL override, forwarded here as its connection string — spec D-3) at startup.
+            // Since deliverable #14 the Api is a SQL Server messaging node: it needs LocalDB at startup, or the
+            // SQL override's server and credentials on the CloudstrapDemo catalog (#8 D-4, via DemoDatabase).
             List<string> apiArguments = [];
-            string? sqlOverride = Environment.GetEnvironmentVariable("CLOUDSTRAP_TEST_SQL");
-            if (!string.IsNullOrWhiteSpace(sqlOverride))
-            {
-                apiArguments.Add("--ConnectionStrings:DefaultConnection=" + sqlOverride);
-            }
+            DemoDatabase.AddConnectionStringOverride(apiArguments);
 
             string? blobOverride = Environment.GetEnvironmentVariable(AzuriteProcess.EnvironmentVariable);
             if (!string.IsNullOrWhiteSpace(blobOverride))

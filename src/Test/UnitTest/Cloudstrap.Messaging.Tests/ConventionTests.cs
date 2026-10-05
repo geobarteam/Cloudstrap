@@ -3,6 +3,7 @@ namespace Cloudstrap.Messaging.Tests
     using System.Reflection;
     using Cloudstrap.Messaging.Tests.Fixtures.Contracts;
     using Cloudstrap.Messaging.Tests.Infrastructure;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
@@ -27,7 +28,7 @@ namespace Cloudstrap.Messaging.Tests
         public void Conventions_SuffixTypes_AreClassifiedAsCommandEventAndMessage()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             builder.AddCloudstrapMessaging();
             using IHost host = builder.Build();
 
@@ -75,7 +76,7 @@ namespace Cloudstrap.Messaging.Tests
         {
             // Arrange — SQL transport, one Destinations entry; the host is never started (no SQL touched:
             // the connection string points at an unreachable host on purpose).
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(SqlTransportSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(SqlTransportSettings());
             builder.AddCloudstrapMessaging();
             using IHost host = builder.Build();
 
@@ -91,7 +92,7 @@ namespace Cloudstrap.Messaging.Tests
         public void Conventions_ConfiguratorConventions_ReplacesTheDefaultRules()
         {
             // Arrange — a custom destination rule and a custom classification replace the defaults.
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(SqlTransportSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(SqlTransportSettings());
             builder.AddCloudstrapMessaging(configurator => configurator.Conventions = conventions =>
             {
                 conventions.DestinationFor = _ => "contoso-override-worker";
@@ -117,7 +118,7 @@ namespace Cloudstrap.Messaging.Tests
         {
             // Arrange — both hooks record when they run; the Wolverine delegate also routes explicitly.
             List<string> order = [];
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(SqlTransportSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(SqlTransportSettings());
             builder.AddCloudstrapMessaging(configurator =>
             {
                 configurator.Conventions = conventions =>
@@ -149,9 +150,9 @@ namespace Cloudstrap.Messaging.Tests
         public async Task StartupSummary_LogsTheRoutingInForceInOneLine()
         {
             // Arrange — local transport (the host starts), one Destinations entry to be named.
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings[$"Cloudstrap:Messaging:Destinations:{_contractsNamespace}"] = "contoso-billing-worker";
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             CapturingLoggerProvider logs = new();
             builder.Logging.AddProvider(logs);
             builder.AddCloudstrapMessaging();
@@ -169,7 +170,7 @@ namespace Cloudstrap.Messaging.Tests
             {
                 Assert.That(summaries[0].Level, Is.EqualTo(LogLevel.Information));
                 Assert.That(summaries[0].Message, Does.Contain("Local"));
-                Assert.That(summaries[0].Message, Does.Contain(MessagingTestHost.WorkloadName));
+                Assert.That(summaries[0].Message, Does.Contain(CloudstrapTestHost.WorkloadName));
                 Assert.That(summaries[0].Message, Does.Contain(_contractsNamespace));
                 Assert.That(summaries[0].Message, Does.Contain("contoso-billing-worker"));
             });
@@ -184,7 +185,7 @@ namespace Cloudstrap.Messaging.Tests
 
         private static Dictionary<string, string?> SqlTransportSettings()
         {
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Messaging:Transport"] = "SqlServer";
             settings[$"Cloudstrap:Messaging:Destinations:{_contractsNamespace}"] = "contoso-billing-worker";
             settings["ConnectionStrings:DefaultConnection"] =

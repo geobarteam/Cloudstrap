@@ -4,6 +4,7 @@ namespace Cloudstrap.Messaging.Tests
     using Cloudstrap.Messaging.Tests.Fixtures;
     using Cloudstrap.Messaging.Tests.Fixtures.Contracts;
     using Cloudstrap.Messaging.Tests.Infrastructure;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
@@ -27,7 +28,7 @@ namespace Cloudstrap.Messaging.Tests
         [OneTimeSetUp]
         public Task ResetDatabase()
         {
-            return SqlServerTestDatabase.ResetAsync();
+            return TestDatabase.Instance.ResetAsync();
         }
 
         [Test]
@@ -40,8 +41,8 @@ namespace Cloudstrap.Messaging.Tests
             // Act
             await orders.StartAsync();
             await billing.StartAsync();
-            bool ordersSchema = await SqlServerTestDatabase.TableExistsAsync("contoso_orders_worker", "wolverine_incoming_envelopes");
-            bool billingSchema = await SqlServerTestDatabase.TableExistsAsync("contoso_billing_worker", "wolverine_incoming_envelopes");
+            bool ordersSchema = await TestDatabase.Instance.TableExistsAsync("contoso_orders_worker", "wolverine_incoming_envelopes");
+            bool billingSchema = await TestDatabase.Instance.TableExistsAsync("contoso_billing_worker", "wolverine_incoming_envelopes");
             await orders.StopAsync();
             await billing.StopAsync();
 
@@ -63,8 +64,8 @@ namespace Cloudstrap.Messaging.Tests
 
             // Act
             await host.StartAsync();
-            bool overridden = await SqlServerTestDatabase.TableExistsAsync("shipping_store", "wolverine_incoming_envelopes");
-            bool derived = await SqlServerTestDatabase.TableExistsAsync("contoso_shipping_worker", "wolverine_incoming_envelopes");
+            bool overridden = await TestDatabase.Instance.TableExistsAsync("shipping_store", "wolverine_incoming_envelopes");
+            bool derived = await TestDatabase.Instance.TableExistsAsync("contoso_shipping_worker", "wolverine_incoming_envelopes");
             await host.StopAsync();
 
             // Assert
@@ -79,10 +80,10 @@ namespace Cloudstrap.Messaging.Tests
         public void UseSqlServer_UnresolvableConnectionStringName_FailsFastNamingTheKey_NeverTheValue()
         {
             // Arrange — the durability connection string name has no entry; a sentinel elsewhere must not leak.
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Messaging:Durability:ConnectionStringName"] = "Store";
             settings["ConnectionStrings:DefaultConnection"] = "Server=sentinel-secret-host;Password=sentinel-secret";
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             CloudstrapMessagingBuilder messaging = builder.AddCloudstrapMessaging();
 
             // Act
@@ -114,7 +115,7 @@ namespace Cloudstrap.Messaging.Tests
                     .PublishAsync(new PoisonCommand("sentinel-payload-never-logged"));
             }
 
-            object? deadLetterId = await SqlServerTestDatabase.WaitForScalarAsync(
+            object? deadLetterId = await TestDatabase.Instance.WaitForScalarAsync(
                 "SELECT TOP 1 id FROM contoso_poison_worker.wolverine_dead_letters WHERE message_type LIKE '%PoisonCommand%'",
                 _timeout);
             await host.StopAsync();
@@ -178,7 +179,7 @@ namespace Cloudstrap.Messaging.Tests
                 ["Cloudstrap:Application:SubsystemName"] = subsystem,
                 ["Cloudstrap:Application:SubsystemType"] = type,
                 ["Cloudstrap:Messaging:AutoProvision"] = "true",
-                ["ConnectionStrings:DefaultConnection"] = SqlServerTestDatabase.ConnectionString,
+                ["ConnectionStrings:DefaultConnection"] = TestDatabase.Instance.ConnectionString,
             };
         }
 
@@ -188,7 +189,7 @@ namespace Cloudstrap.Messaging.Tests
             out CapturingLoggerProvider logs,
             Action<WolverineOptions>? wolverine = null)
         {
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             CapturingLoggerProvider provider = new();
             builder.Logging.AddProvider(provider);
             builder.Services.AddSingleton<InvocationRecorder>();

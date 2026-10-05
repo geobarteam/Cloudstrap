@@ -2,8 +2,8 @@ namespace Cloudstrap.Messaging.Tests
 {
     using System.Diagnostics;
     using Cloudstrap.Messaging.Tests.Fixtures;
-    using Cloudstrap.Messaging.Tests.Infrastructure;
     using Cloudstrap.Observability.Correlation;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using NUnit.Framework;
@@ -27,7 +27,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task Correlation_AccessorValueOnSend_ArrivesInTheRemoteHandlersAccessor()
         {
             // Arrange
-            using IHost host = BuildHost(MessagingTestHost.ValidSettings());
+            using IHost host = BuildHost(CloudstrapTestHost.ValidSettings());
             await host.StartAsync();
 
             // Act — the sender's ambient correlation id, then a publish.
@@ -48,7 +48,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task Correlation_ConfiguredHeaderName_IsUsedOnTheEnvelope()
         {
             // Arrange — #2's setting, redefined nowhere: one option drives both sides.
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Correlation:HeaderName"] = "X-CUSTOM-ID";
             using IHost host = BuildHost(settings);
             await host.StartAsync();
@@ -73,7 +73,7 @@ namespace Cloudstrap.Messaging.Tests
         {
             // Arrange — the host owns an OTel pipeline; no business correlation id is set at all.
             List<Activity> exported = [];
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             builder.Services.AddOpenTelemetry().WithTracing(tracing => tracing.AddSource("Contoso.Test").AddInMemoryExporter(exported));
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.AddCloudstrapMessaging();
@@ -103,7 +103,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task Correlation_NoInboundValue_EnforcementOff_HandlerRunsWithFreshScope()
         {
             // Arrange — nothing set, nothing enforced.
-            using IHost host = BuildHost(MessagingTestHost.ValidSettings());
+            using IHost host = BuildHost(CloudstrapTestHost.ValidSettings());
             await host.StartAsync();
 
             // Act
@@ -121,7 +121,7 @@ namespace Cloudstrap.Messaging.Tests
 
         private static IHost BuildHost(Dictionary<string, string?> settings)
         {
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.AddCloudstrapMessaging();
             return builder.Build();

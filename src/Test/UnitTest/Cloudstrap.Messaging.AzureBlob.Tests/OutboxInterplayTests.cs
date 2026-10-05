@@ -4,6 +4,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
     using Cloudstrap.Messaging.AzureBlob.Tests.Fixtures;
     using Cloudstrap.Messaging.AzureBlob.Tests.Fixtures.Contracts;
     using Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
@@ -27,8 +28,8 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         [OneTimeSetUp]
         public async Task ResetDatabase()
         {
-            await SqlServerTestDatabase.ResetAsync();
-            await SqlServerTestDatabase.ScalarAsync(ExportsDbContext.CreateTableSql);
+            await TestDatabase.Instance.ResetAsync();
+            await TestDatabase.Instance.ScalarAsync(ExportsDbContext.CreateTableSql);
         }
 
         [Test]
@@ -93,7 +94,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
                     .PublishAsync(new StageExportCommand(exportId, ContentLength: 300_000, Fail: true));
             }
 
-            object? deadLetter = await SqlServerTestDatabase.WaitForScalarAsync(
+            object? deadLetter = await TestDatabase.Instance.WaitForScalarAsync(
                 "SELECT TOP 1 id FROM contoso_rollback_worker.wolverine_dead_letters WHERE message_type LIKE '%StageExportCommand%'",
                 _timeout);
             await Task.Delay(_settle);
@@ -131,7 +132,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
                 await scope.ServiceProvider.GetRequiredService<IMessageBus>().PublishAsync(command);
             }
 
-            object? deadLetter = await SqlServerTestDatabase.WaitForScalarAsync(
+            object? deadLetter = await TestDatabase.Instance.WaitForScalarAsync(
                 "SELECT TOP 1 id FROM contoso_poison_worker.wolverine_dead_letters WHERE message_type LIKE '%FlakyExportCommand%'",
                 _timeout);
             await Task.Delay(_settle);
@@ -150,15 +151,15 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
 
         private static async Task<int> CountExportsAsync(Guid exportId)
         {
-            object? count = await SqlServerTestDatabase.ScalarAsync(
+            object? count = await TestDatabase.Instance.ScalarAsync(
                 "SELECT COUNT(*) FROM dbo.Exports WHERE Id = @id",
-                ("@id", exportId));
+                [("@id", exportId)]);
             return Convert.ToInt32(count, CultureInfo.InvariantCulture);
         }
 
         private static async Task<int> CountPersistedEnvelopesAsync(string schema, string messageTypeFragment)
         {
-            object? count = await SqlServerTestDatabase.ScalarAsync(
+            object? count = await TestDatabase.Instance.ScalarAsync(
                 $"SELECT (SELECT COUNT(*) FROM {schema}.wolverine_incoming_envelopes WHERE message_type LIKE '%{messageTypeFragment}%' AND status <> 'Handled') " +
                 $"+ (SELECT COUNT(*) FROM {schema}.wolverine_outgoing_envelopes WHERE message_type LIKE '%{messageTypeFragment}%')");
             return Convert.ToInt32(count, CultureInfo.InvariantCulture);
@@ -173,7 +174,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
                 ["Cloudstrap:Application:SubsystemName"] = subsystem,
                 ["Cloudstrap:Application:SubsystemType"] = "worker",
                 ["Cloudstrap:Messaging:AutoProvision"] = "true",
-                ["ConnectionStrings:DefaultConnection"] = SqlServerTestDatabase.ConnectionString,
+                ["ConnectionStrings:DefaultConnection"] = TestDatabase.Instance.ConnectionString,
             };
             if (!retries)
             {
@@ -181,7 +182,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
                 settings["Cloudstrap:Messaging:Retries:NumberOfDelayed"] = "0";
             }
 
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.Services.AddSingleton<AttemptCounter>();
             builder.AddCloudstrapMessaging(configurator => configurator.Wolverine = options =>
@@ -191,7 +192,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
                     options.Durability.ScheduledJobPollingTime = TimeSpan.FromSeconds(1);
                 })
                 .UseSqlServer()
-                .AddCloudstrapTransactionalMessaging<ExportsDbContext>(options => options.UseSqlServer(SqlServerTestDatabase.ConnectionString))
+                .AddCloudstrapTransactionalMessaging<ExportsDbContext>(options => options.UseSqlServer(TestDatabase.Instance.ConnectionString))
                 .UseAzureBlobClaimCheck(claimCheck => claimCheck.ContainerClient = blobs);
             return builder.Build();
         }

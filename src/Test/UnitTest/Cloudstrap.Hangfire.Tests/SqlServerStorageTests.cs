@@ -27,13 +27,13 @@ namespace Cloudstrap.Hangfire.Tests
         [OneTimeSetUp]
         public async Task OneTimeSetUp()
         {
-            await SqlServerTestDatabase.ResetAsync();
+            await TestDatabase.Instance.ResetAsync();
         }
 
         [SetUp]
         public void SetUp()
         {
-            InvocationRecorder.Reset();
+            TaskRunLog.Reset();
             while (GatedTask.Started.Wait(0))
             {
             }
@@ -56,8 +56,8 @@ namespace Cloudstrap.Hangfire.Tests
             // Assert
             Assert.Multiple(async () =>
             {
-                Assert.That(await SqlServerTestDatabase.TableExistsAsync(HangfireSqlHost.Schema, "Job"), Is.True);
-                Assert.That(await SqlServerTestDatabase.TableExistsAsync(HangfireSqlHost.Schema, "Hash"), Is.True);
+                Assert.That(await TestDatabase.Instance.TableExistsAsync(HangfireSqlHost.Schema, "Job"), Is.True);
+                Assert.That(await TestDatabase.Instance.TableExistsAsync(HangfireSqlHost.Schema, "Hash"), Is.True);
             });
         }
 
@@ -84,7 +84,7 @@ namespace Cloudstrap.Hangfire.Tests
 
                 // Act
                 host.Services.GetRequiredService<IRecurringJobManager>().Trigger("recording-task");
-                bool ran = await HangfireSqlHost.WaitUntilAsync(() => InvocationRecorder.Runs.Contains("recording-task"), _deadline);
+                bool ran = await HangfireSqlHost.WaitUntilAsync(() => TaskRunLog.Runs.Contains("recording-task"), _deadline);
 
                 // Assert
                 Assert.Multiple(() =>
@@ -92,7 +92,7 @@ namespace Cloudstrap.Hangfire.Tests
                     Assert.That(stored.Cron, Is.EqualTo("0 0 1 1 *"));
                     Assert.That(stored.Job?.Type, Is.EqualTo(typeof(RecurringTaskRunner)));
                     Assert.That(ran, Is.True, "The triggered job never ran through the server.");
-                    Assert.That(InvocationRecorder.Runs.Count(run => run == "recording-task"), Is.EqualTo(1));
+                    Assert.That(TaskRunLog.Runs.Count(run => run == "recording-task"), Is.EqualTo(1));
                 });
             }
             finally

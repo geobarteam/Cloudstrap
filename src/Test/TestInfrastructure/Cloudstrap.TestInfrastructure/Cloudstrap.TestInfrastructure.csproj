@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Test-only shared infrastructure for Cloudstrap's own suites (deliverable #8, D-1/D-7): never packed
+       (inherits IsPackable=false from src/Test), never referenced by a shipped package or a demo app. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cloudstrap.TestInfrastructure.Tests" />
+  </ItemGroup>
+
+</Project>

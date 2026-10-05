@@ -6,6 +6,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
     using Cloudstrap.Messaging.AzureBlob.Tests.Fixtures.Contracts;
     using Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure;
     using Cloudstrap.Observability.Correlation;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using NUnit.Framework;
@@ -30,7 +31,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         [OneTimeSetUp]
         public Task ResetDatabase()
         {
-            return SqlServerTestDatabase.ResetAsync();
+            return TestDatabase.Instance.ResetAsync();
         }
 
         [Test]
@@ -156,7 +157,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         public void Leaf_RegistersNoExporterAndNoProvider()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
 
             // Act
             builder.AddCloudstrapMessaging().UseAzureBlobClaimCheck(claimCheck => claimCheck.ContainerClient = new InMemoryBlobContainerClient());

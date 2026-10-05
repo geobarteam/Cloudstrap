@@ -28,13 +28,9 @@ namespace Cloudstrap.Demo.E2E.Tests
         {
             // The fixture-owned IdP (5310) and Api host (5330) are already running; this fixture
             // boots only its own host, the MvcHostTests precedent.
-            // Since #16 this host reads Hangfire storage for its dashboard: forward the SQL override (spec D-3).
+            // Since #16 this host reads Hangfire storage for its dashboard: forward the SQL override (#8 D-4, via DemoDatabase).
             List<string> arguments = [];
-            string? sqlOverride = Environment.GetEnvironmentVariable("CLOUDSTRAP_TEST_SQL");
-            if (!string.IsNullOrWhiteSpace(sqlOverride))
-            {
-                arguments.Add("--ConnectionStrings:DefaultConnection=" + sqlOverride);
-            }
+            DemoDatabase.AddConnectionStringOverride(arguments);
 
             _blazorServerHost = SutProcess.Start(_blazorServerBaseUrl, arguments, _blazorServerProjectPath);
             using HttpClient client = new HttpClient { BaseAddress = new Uri(_blazorServerBaseUrl) };

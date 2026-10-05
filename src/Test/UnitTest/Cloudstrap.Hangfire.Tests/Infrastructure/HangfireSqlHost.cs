@@ -7,7 +7,7 @@ namespace Cloudstrap.Hangfire.Tests.Infrastructure
     using Microsoft.Extensions.Logging;
 
     /// <summary>
-    /// Builds real hosts on the D-3 SQL Server test database (LocalDB, or <c>CLOUDSTRAP_TEST_SQL</c>): Hangfire in
+    /// Builds real hosts on the suite's <c>CloudstrapHangfireTests</c> SQL Server catalog (LocalDB, or the <c>CLOUDSTRAP_TEST_SQL</c> server): Hangfire in
     /// its own <see cref="Schema"/>, two workers on the <c>default</c> and <c>critical</c> queues, and short
     /// polling and shutdown intervals so triggers are picked up in seconds.
     /// </summary>
@@ -36,7 +36,7 @@ namespace Cloudstrap.Hangfire.Tests.Infrastructure
             });
             builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:DefaultConnection"] = SqlServerTestDatabase.ConnectionString,
+                ["ConnectionStrings:DefaultConnection"] = TestDatabase.Instance.ConnectionString,
                 ["Cloudstrap:Hangfire:Storage:SchemaName"] = schema,
                 ["Cloudstrap:Hangfire:Storage:PrepareSchema"] = prepareSchema ? "true" : "false",
                 ["Cloudstrap:Hangfire:Server:WorkerCount"] = WorkerCount.ToString(System.Globalization.CultureInfo.InvariantCulture),

@@ -1,7 +1,7 @@
 namespace Cloudstrap.Messaging.Tests
 {
     using Cloudstrap.Messaging.Tests.Fixtures;
-    using Cloudstrap.Messaging.Tests.Infrastructure;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Options;
@@ -22,9 +22,9 @@ namespace Cloudstrap.Messaging.Tests
         public async Task Retries_HandlerFailsFewerTimesThanImmediateCount_SucceedsWithExactlyOneSideEffect()
         {
             // Arrange — three immediate retries; the handler fails twice, then succeeds.
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Messaging:Retries:NumberOfImmediate"] = "3";
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.Services.AddSingleton<AttemptCounter>();
             builder.AddCloudstrapMessaging();
@@ -57,9 +57,9 @@ namespace Cloudstrap.Messaging.Tests
         public async Task Retries_ConfiguredImmediateCount_IsHonored()
         {
             // Arrange — one immediate retry; a handler that fails twice cannot succeed inline.
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Messaging:Retries:NumberOfImmediate"] = "1";
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.Services.AddSingleton<AttemptCounter>();
             builder.AddCloudstrapMessaging();
@@ -92,7 +92,7 @@ namespace Cloudstrap.Messaging.Tests
         public void Retries_DefaultCounts_AreFiveAndFive()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             builder.AddCloudstrapMessaging();
             using IHost host = builder.Build();
 

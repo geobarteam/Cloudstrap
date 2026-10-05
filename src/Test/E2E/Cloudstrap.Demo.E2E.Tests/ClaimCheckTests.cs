@@ -41,11 +41,7 @@ namespace Cloudstrap.Demo.E2E.Tests
                 "--Cloudstrap:Worker:HealthPort=5352",
                 "--Demo:OutageSentinelPath=" + _sentinelPath,
             ];
-            string? sqlOverride = Environment.GetEnvironmentVariable("CLOUDSTRAP_TEST_SQL");
-            if (!string.IsNullOrWhiteSpace(sqlOverride))
-            {
-                arguments.Add("--ConnectionStrings:DefaultConnection=" + sqlOverride);
-            }
+            DemoDatabase.AddConnectionStringOverride(arguments);
 
             string? blobOverride = Environment.GetEnvironmentVariable(AzuriteProcess.EnvironmentVariable);
             if (!string.IsNullOrWhiteSpace(blobOverride))

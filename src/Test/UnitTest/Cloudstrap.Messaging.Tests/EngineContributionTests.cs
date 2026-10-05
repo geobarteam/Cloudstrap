@@ -1,7 +1,7 @@
 namespace Cloudstrap.Messaging.Tests
 {
     using Cloudstrap.Messaging.Tests.Fixtures;
-    using Cloudstrap.Messaging.Tests.Infrastructure;
+    using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using NUnit.Framework;
@@ -26,7 +26,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task ConfigureEngine_Contribution_RunsBeforeTheConsumersWolverineDelegate()
         {
             // Arrange — the contribution and the consumer both set the service name and record their turn.
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             ContributionProbe probe = new();
             builder.Services.AddSingleton(probe);
             builder.AddCloudstrapMessaging(configurator => configurator.Wolverine = options =>
@@ -58,7 +58,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task ConfigureEngine_ContributionsRun_InRegistrationOrder()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             ContributionProbe probe = new();
             builder.Services.AddSingleton(probe);
             builder.AddCloudstrapMessaging()
@@ -78,7 +78,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task ConfigureEngine_ContributionReceivesTheHostsServiceProvider()
         {
             // Arrange — a singleton registered on the host must be resolvable from inside the contribution.
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             builder.Services.AddSingleton<ContributionProbe>();
             builder.AddCloudstrapMessaging()
                 .ConfigureEngine((services, _) =>
@@ -101,9 +101,9 @@ namespace Cloudstrap.Messaging.Tests
         public async Task ConfigureEngine_ContributionFailureRule_PrecedesTheRetryLadder()
         {
             // Arrange — three immediate retries on the ladder; the contribution dead-letters one exception type.
-            Dictionary<string, string?> settings = MessagingTestHost.ValidSettings();
+            Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Messaging:Retries:NumberOfImmediate"] = "3";
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(settings);
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.Services.AddSingleton<AttemptCounter>();
             builder.AddCloudstrapMessaging()
@@ -139,7 +139,7 @@ namespace Cloudstrap.Messaging.Tests
         public void ConfigureEngine_NullContribution_ThrowsArgumentNullException()
         {
             // Arrange
-            HostApplicationBuilder builder = MessagingTestHost.CreateBuilder(MessagingTestHost.ValidSettings());
+            HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
             CloudstrapMessagingBuilder messaging = builder.AddCloudstrapMessaging();
 
             // Act & Assert

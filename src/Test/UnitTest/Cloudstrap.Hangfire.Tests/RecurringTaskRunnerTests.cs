@@ -27,7 +27,7 @@ namespace Cloudstrap.Hangfire.Tests
         [SetUp]
         public void SetUp()
         {
-            InvocationRecorder.Reset();
+            TaskRunLog.Reset();
             _storage = new FakeJobStorage();
             _logs = new CapturingLoggerProvider();
             _loggerFactory = LoggerFactory.Create(logging => logging.AddProvider(_logs).SetMinimumLevel(LogLevel.Trace));
@@ -82,7 +82,7 @@ namespace Cloudstrap.Hangfire.Tests
                 Assert.That(_storage.Connection.LockTimeouts, Is.EqualTo(new[] { TimeSpan.Zero }));
                 Assert.That(_storage.Connection.LocksReleased, Is.EqualTo(1));
                 Assert.That(_storage.Connection.DisposeCount, Is.EqualTo(1));
-                Assert.That(InvocationRecorder.Runs, Is.EqualTo(_recordingRun));
+                Assert.That(TaskRunLog.Runs, Is.EqualTo(_recordingRun));
             });
         }
 
@@ -100,7 +100,7 @@ namespace Cloudstrap.Hangfire.Tests
             CapturedLogEntry[] warnings = [.. _logs.Entries.Where(entry => entry.Level == LogLevel.Warning)];
             Assert.Multiple(() =>
             {
-                Assert.That(InvocationRecorder.Runs, Is.Empty);
+                Assert.That(TaskRunLog.Runs, Is.Empty);
                 Assert.That(warnings, Has.Length.EqualTo(1));
                 Assert.That(warnings[0].Message, Does.Contain("recording-task").And.Contain("skipped"));
             });
@@ -120,7 +120,7 @@ namespace Cloudstrap.Hangfire.Tests
             {
                 Assert.That(_storage.Connection.LockRequests, Is.Empty);
                 Assert.That(_storage.ConnectionsOpened, Is.Zero);
-                Assert.That(InvocationRecorder.Runs, Is.EqualTo(new[] { nameof(NoOverlapGuardTask) }));
+                Assert.That(TaskRunLog.Runs, Is.EqualTo(new[] { nameof(NoOverlapGuardTask) }));
             });
         }
 
