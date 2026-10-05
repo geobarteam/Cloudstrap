@@ -17,6 +17,8 @@ peer host — it runs alone.
 | A real messaging node: consumes `PlaceOrderCommand` from its workload queue over SQL Server, a plain Wolverine handler made transactional by taking `WorkerDbContext`, the flowed correlation id recorded (#14) | `AddCloudstrapMessaging().UseSqlServer().AddCloudstrapTransactionalMessaging<WorkerDbContext>()` + `PlaceOrderCommandHandler` | `Messaging_OrderPlacedThroughTheApiOutbox_IsProcessedByTheWorker_WithTheCorrelationIdObserved` |
 | Handled messages are logged by **type and id, never payload** (#14) | `PlaceOrderCommandHandler`'s log lines | `Messaging_WorkerLogsTheHandledCommandTypeAndId_NeverThePayload` |
 | Large messages arrive whole: a `PlaceOrderCommand` offloaded by the Api is rehydrated from the `demo-claimcheck` container before the handler runs, which records the notes' length and SHA-256 — never the notes (#15) | `AddCloudstrapBlobStorage()` + `AddCloudstrapMessaging()....UseAzureBlobClaimCheck()`; `PlaceOrderCommandHandler` | `ClaimCheck_OrderWithNotesAboveTheThreshold_IsProcessedByTheWorker_WithLengthAndHashRecorded_AndExactlyOneNewBlobInTheClaimCheckContainer` |
+| The Hangfire processing host: `DemoOrderCountRecurringTask` (every minute, logs the `demo.Orders` row count — never row contents) is discovered and scheduled at startup, with a one-line posture summary and one line per job (#16) | `AddCloudstrapHangfire()` + an internal `IBackgroundRecurringTask` | `Hangfire_WorkerStartup_SchedulesTheDemoTaskOnTheProcessingHost_AndLogsTheSummary` |
+| `/ready` includes the ready-tagged Hangfire storage check (#16) | `AddHealthChecks()....AddCloudstrapHangfireHealthCheck()` | `Hangfire_WorkerReady_IncludesTheStorageCheck_AndIsHealthy` |
 
 ## Harness notes
 
@@ -48,6 +50,14 @@ peer host — it runs alone.
   **5352** (5350 `WorkerHostTests`, 5351 `MessagingTests`). `Cloudstrap:Messaging:ClaimCheck` is
   deliberately unset: `demo-claimcheck` and 204 800 bytes — the same defaults as the Api — are the
   demo. The handler records the notes' **length and SHA-256, never the notes**.
+- Since #16 this host is the **Hangfire processing host**: storage on `DefaultConnection`
+  (`CloudstrapDemo`) in Hangfire's default `HangFire` schema, prepared automatically in Development,
+  next to `demo`, `demo_transport` and the workload durability schemas. `DemoOrderCountRecurringTask`
+  runs **every minute** (`* * * * *`, UTC). Every E2E fixture that boots this host starts a processing
+  host with the same task set, which is safe because scheduling is idempotent and nothing is
+  reconciled away. The E2E `HangfireTests` fixture owns health port **5353**. The commented
+  `Cloudstrap:Hangfire:Jobs` example in `appsettings.json` shows how operators retune or disable a job
+  without a redeploy. The dashboard lives in the BlazorServer demo (storage-only host).
 
 ## Running
 

@@ -665,19 +665,19 @@ before the first write, zero-task guard, `ConfigurationValidationException`).
   summary's placement (mechanic (e), including "enqueue-only storage-only host logs none"); cron failures
   are wrapped at write time (the spec requires only duplicate + time-zone pre-validation).
 
-- [ ] Behavioral verification (Step 1): test exe output shows the duplicate-call and key-naming fail-fasts,
+- [x] Behavioral verification (Step 1): test exe output shows the duplicate-call and key-naming fail-fasts,
   the recommended storage options, the `PrepareSchema` matrix, interface-only transient discovery (public +
   internal), the scheduling-before-server descriptor order, zero hosted services on a storage-only host, and
   the pin tripwires.
-- [ ] Behavioral verification (Step 2): dispatcher-bound scheduling, config-over-code, disabled removal, the
+- [x] Behavioral verification (Step 2): dispatcher-bound scheduling, config-over-code, disabled removal, the
   duplicate / time-zone / cron failures that write nothing, reconciliation with foreign/unloadable jobs left
   alone and the zero-task guard, the unknown-override warning, the summary lines, and the host-faulting
   startup.
-- [ ] Code review: options/validator follow the #1/#14 pattern (keys named, values never echoed);
+- [x] Code review: options/validator follow the #1/#14 pattern (keys named, values never echoed);
   `sealed`/static/internal by default; single namespace `Cloudstrap.Hangfire`; XML docs complete; csproj
   references exactly as listed; no Drop-listed concept (no job-client facade, no `Use…` scheduling call,
   no environment-string checks, no `ServerName`/`QueuePollInterval` keys).
-- [ ] User approved: implementation may continue past this gate.
+- [x] User approved: implementation may continue past this gate.
 
 ---
 
@@ -698,7 +698,7 @@ After this step, `RecurringTaskRunner.RunAsync(jobId, ct)`:
 
 The span also reaches a consumer-owned OTel pipeline, and nothing happens without one.
 
-- [ ] Done
+- [x] Done
 
 **Scope**:
 - `src/Cloudstrap.Hangfire/RecurringTaskRunner.cs` *(implement, `public sealed`, `[EditorBrowsable(Never)]`)*:
@@ -777,7 +777,7 @@ After this step:
 - A storage-only host on the same schema lists the processing host's recurring jobs and never registers a
   server.
 
-- [ ] Done
+- [x] Done
 
 **Scope**:
 - `src/Test/UnitTest/Cloudstrap.Hangfire.Tests/Infrastructure/HangfireSqlHost.cs` *(create)*: builds real
@@ -848,15 +848,15 @@ fixed minimally in the package and reported at Gate 2.
 - **The linked-helper shared catalog** (mechanic (f)).
 - **Any Hangfire-API deviations** found in Step 4.
 
-- [ ] Behavioral verification (Step 3): resolve-by-id plus the unknown-id failure; zero-wait lock with skip
+- [x] Behavioral verification (Step 3): resolve-by-id plus the unknown-id failure; zero-wait lock with skip
   warning and release; the no-lock path; failure logging plus rethrow; no payloads in logs; the Ok/Error span
   reaching a consumer-owned pipeline; the no-pipeline no-op; the `DisplayName` tripwire.
-- [ ] Behavioral verification (Step 4): schema install and the missing-schema startup fault; the real
+- [x] Behavioral verification (Step 4): schema install and the missing-schema startup fault; the real
   schedule → trigger → run round trip; live server options; real-storage reconciliation; the real
   distributed-lock skip; the storage-only host listing the processing host's jobs with no server.
-- [ ] Code review: the runner's XML docs carry the wire-contract warning; logs are structured (ids +
+- [x] Code review: the runner's XML docs carry the wire-contract warning; logs are structured (ids +
   elapsed); `using`/disposal of the lock and connection; tests poll with deadlines (no bare sleeps).
-- [ ] User approved: implementation may continue past this gate.
+- [x] User approved: implementation may continue past this gate.
 
 ---
 
@@ -879,7 +879,7 @@ After this step, on any web host with an authentication scheme:
 - Mapping on a host without an authentication scheme throws.
 - A storage-only host logs its startup summary at mapping time.
 
-- [ ] Done
+- [x] Done
 
 **Scope**:
 - `src/Cloudstrap.Hangfire/EndpointRouteBuilderExtensions.cs` *(create, public static)*:
@@ -975,7 +975,7 @@ the stock builder:
 
 This holds with fake storage and on real LocalDB, including an unreachable server.
 
-- [ ] Done
+- [x] Done
 
 **Scope**:
 - `src/Cloudstrap.Hangfire/HealthChecksBuilderExtensions.cs` *(create, public static)*:
@@ -1035,7 +1035,7 @@ After this step:
   concepts and the README notice.
 - The stale `configure-hangfire` skill is rewritten against the as-built package.
 
-- [ ] Done
+- [x] Done
 
 **Scope**:
 - `src/Cloudstrap.Hangfire/Cloudstrap.Hangfire.csproj` *(modify)*:
@@ -1178,17 +1178,17 @@ description/tags/readme, and the README-notice test fails because the file is mi
 - **LGPL notice**: review the README license section's wording.
 - **Skill rewrite**: review `.claude/skills/configure-hangfire/SKILL.md` against the as-built package.
 
-- [ ] Behavioral verification (Step 5): cookie redirect / bearer 401 / wrong-role 403 / right-role 200; the
+- [x] Behavioral verification (Step 5): cookie redirect / bearer 401 / wrong-role 403 / right-role 200; the
   policy override; the no-scheme throw; the `.AllowAnonymous()` bypass still denied by the Hangfire floor;
   read-only; default path, configured path and `PathBase`; the forwarded-prefix header ignored; the
   storage-only summary.
-- [ ] Behavioral verification (Step 6): the default and overridden name/tags/failure status, healthy with
+- [x] Behavioral verification (Step 6): the default and overridden name/tags/failure status, healthy with
   data, failure without leaks, additive registration, and LocalDB healthy/unreachable.
-- [ ] Behavioral verification (Step 7): the seven guards green, the expanded nupkg reviewed, the identifier
+- [x] Behavioral verification (Step 7): the seven guards green, the expanded nupkg reviewed, the identifier
   sweep clean.
-- [ ] Code review: README accuracy against as-built behavior (keys, defaults, golden rules, troubleshooting,
+- [x] Code review: README accuracy against as-built behavior (keys, defaults, golden rules, troubleshooting,
   migration notes 1–13); skill accuracy; no Drop/Routed concept resurrected.
-- [ ] User approved: implementation may continue past this gate.
+- [x] User approved: implementation may continue past this gate.
 
 ---
 
@@ -1206,7 +1206,7 @@ After this step:
 - Every pre-existing Worker-booting E2E fixture stays green now that each Worker instance is also a
   processing host.
 
-- [ ] Done
+- [x] Done
 
 **Scope**:
 - `src/demo/Worker/Cloudstrap.Demo.Worker.csproj` *(modify)*: ProjectReference →
@@ -1286,7 +1286,7 @@ After this step:
 - Clicking *Trigger now* makes the separate Worker process run the job within seconds.
 - The BlazorServer `/ready` stays 200 through a `Degraded`-on-failure storage check.
 
-- [ ] Done
+- [x] Done
 
 **Scope**:
 - `src/demo/BlazorServer/Cloudstrap.Demo.BlazorServer.csproj` *(modify)*: ProjectReference →
@@ -1388,15 +1388,15 @@ user's explicit go-ahead (CLAUDE.md: no push without confirmation).*
   BlazorServer demo now needs LocalDB for its dashboard; the new port 5353. **Confirm.**
 - **Whether the D-5 fallback was used.**
 
-- [ ] Behavioral verification (Step 8): `Hangfire_WorkerStartup_SchedulesTheDemoTaskOnTheProcessingHost_AndLogsTheSummary`
+- [x] Behavioral verification (Step 8): `Hangfire_WorkerStartup_SchedulesTheDemoTaskOnTheProcessingHost_AndLogsTheSummary`
   and `Hangfire_WorkerReady_IncludesTheStorageCheck_AndIsHealthy` pass.
-- [ ] Behavioral verification (Step 9):
+- [x] Behavioral verification (Step 9):
   `Hangfire_AnonymousDashboardRequest_IsChallengedToTheIdentityProvider_NeverServesTheDashboard`,
   `Hangfire_SignedInTester_SeesTheWorkersRecurringJob_OnAHostThatDoesNotReferenceTheWorker` and
   `Hangfire_TesterTriggersTheJobFromTheDashboard_TheWorkerRunsItWithinSeconds` pass.
-- [ ] Regression: **all pre-existing E2E tests pass unchanged**, and the full-suite check (build + every
+- [x] Regression: **all pre-existing E2E tests pass unchanged**, and the full-suite check (build + every
   unit exe + E2E exe + `dotnet format --verify-no-changes`) is green end to end.
-- [ ] Spec acceptance sign-off:
+- [x] Spec acceptance sign-off:
   - Walk **AC-ASP2, AC-A3, AC-HF1…AC-HF21** against the step evidence using the Overview's AC coverage map;
     all must be met.
   - Confirm nothing from the Drop / Routed / Out-of-Scope lists was resurrected:
@@ -1411,7 +1411,7 @@ user's explicit go-ahead (CLAUDE.md: no push without confirmation).*
     - no Proxy `InternalsVisibleTo`.
   - Confirm every De-NIHDI row is closed: `Cloudstrap:Hangfire` section, neutral host vocabulary, no
     TST/VAL/PRD, `Cloudstrap.Hangfire` span source, neutral fixtures and demo task.
-- [ ] Docs review:
+- [x] Docs review:
   - `src/Cloudstrap.Hangfire/README.md` matches as-built behavior, including the LGPL-3.0 notice.
   - `.claude/skills/configure-hangfire/SKILL.md` matches as-built behavior.
   - The Worker/BlazorServer/demo READMEs cite the real E2E test names, port 5353, the LocalDB prerequisite
@@ -1423,4 +1423,4 @@ user's explicit go-ahead (CLAUDE.md: no push without confirmation).*
     - D-2(b) owner-scoped reconciliation as the post-v1 improvement if a consumer reports the residual
       hazard;
     - an optional `Cloudstrap.Hangfire.PostgreSql` leaf post-v1.
-- [ ] User approved: deliverable #16 is done; the project-manager flips the ROADMAP row to ✅.
+- [x] User approved: deliverable #16 is done; the project-manager flips the ROADMAP row to ✅.

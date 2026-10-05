@@ -66,6 +66,15 @@ namespace Cloudstrap.Hangfire
         public string SchemaName => CustomStorage ? "n/a" : Options.Storage.SchemaName ?? DefaultSchemaName;
 
         /// <summary>
+        /// Gets or sets the number of recurring-task registrations present when the integration was registered
+        /// (discovered plus any registered earlier by hand), for a storage-only host's summary.
+        /// </summary>
+        public int RegisteredTaskCount
+        {
+            get; set;
+        }
+
+        /// <summary>
         /// Gets or sets the path the dashboard was mapped at, or <see langword="null"/> while it is not mapped.
         /// </summary>
         public string? DashboardPath

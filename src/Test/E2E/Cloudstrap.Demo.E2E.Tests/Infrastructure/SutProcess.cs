@@ -148,7 +148,7 @@ namespace Cloudstrap.Demo.E2E.Tests.Infrastructure
             }
         }
 
-        private static string FindRepoRoot()
+        internal static string FindRepoRoot()
         {
             DirectoryInfo? current = new DirectoryInfo(AppContext.BaseDirectory);
             while (current is not null)

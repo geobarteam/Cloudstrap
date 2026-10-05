@@ -108,6 +108,7 @@ namespace Cloudstrap.Hangfire
             });
 
             RegisterTasks(builder.Services, taskAssemblies);
+            state.RegisteredTaskCount = builder.Services.Count(descriptor => descriptor.ServiceType == typeof(IBackgroundRecurringTask));
             builder.Services.TryAddScoped<RecurringTaskRunner>();
             builder.Services.TryAddScoped<RecurringJobsScheduler>();
 

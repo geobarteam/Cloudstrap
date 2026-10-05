@@ -73,7 +73,7 @@ jobs:
 
       - name: Run all MTP test executables
         env:
-          # Honored by the Messaging SQL fixtures and the E2E fixture (spec D-3); the demo hosts create the database.
+          # Honored by the Messaging and Hangfire SQL storage fixtures and the E2E fixture (spec D-3); the demo hosts create the database.
           CLOUDSTRAP_TEST_SQL: "Server=localhost,1433;Database=CloudstrapCi;User Id=sa;Password=Cloudstrap_CI_P4ssw0rd!;TrustServerCertificate=true;"
           # Honored by the E2E fixture (spec DL-10): attach to the Azurite container above instead of starting one.
           CLOUDSTRAP_TEST_BLOB: "UseDevelopmentStorage=true"

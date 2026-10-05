@@ -23,6 +23,15 @@ namespace Cloudstrap.Hangfire.Tests.Fakes
         /// <summary>Gets the resources of every distributed lock requested, in order.</summary>
         public List<string> LockRequests { get; } = [];
 
+        /// <summary>Gets the timeout of every distributed lock requested, in order.</summary>
+        public List<TimeSpan> LockTimeouts { get; } = [];
+
+        /// <summary>Gets the number of distributed locks released.</summary>
+        public int LocksReleased
+        {
+            get; private set;
+        }
+
         /// <summary>Gets or sets a value indicating whether every lock request fails as if the lock were held.</summary>
         public bool LockAlwaysBusy
         {
@@ -73,6 +82,15 @@ namespace Cloudstrap.Hangfire.Tests.Fakes
         }
 
         /// <inheritdoc />
+        public override long GetSetCount(string key)
+        {
+            lock (_gate)
+            {
+                return _sets.TryGetValue(key, out HashSet<string>? items) ? items.Count : 0;
+            }
+        }
+
+        /// <inheritdoc />
         public override Dictionary<string, string>? GetAllEntriesFromHash(string key)
         {
             lock (_gate)
@@ -89,6 +107,7 @@ namespace Cloudstrap.Hangfire.Tests.Fakes
             lock (_gate)
             {
                 LockRequests.Add(resource);
+                LockTimeouts.Add(timeout);
                 if (LockAlwaysBusy || !_heldLocks.Add(resource))
                 {
                     throw new DistributedLockTimeoutException(resource);
@@ -188,6 +207,7 @@ namespace Cloudstrap.Hangfire.Tests.Fakes
             lock (_gate)
             {
                 _heldLocks.Remove(resource);
+                LocksReleased++;
             }
         }
 

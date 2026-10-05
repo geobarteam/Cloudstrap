@@ -2,6 +2,7 @@ using Cloudstrap.Core;
 using Cloudstrap.Demo.Worker;
 using Cloudstrap.Demo.Worker.Data;
 using Cloudstrap.Extensions;
+using Cloudstrap.Hangfire;
 using Cloudstrap.Messaging;
 using Cloudstrap.Messaging.AzureBlob;
 using Cloudstrap.Observability;
@@ -56,6 +57,12 @@ builder.AddCloudstrapMessaging()
     // demo-claimcheck container before PlaceOrderCommandHandler runs — the handler knows nothing of blobs.
     .UseAzureBlobClaimCheck();
 
+// Hangfire (#16): this host is the processing host — SQL Server storage on DefaultConnection (CloudstrapDemo,
+// Hangfire's default 'HangFire' schema, prepared automatically in Development), the Hangfire server, and the
+// startup scheduling of every IBackgroundRecurringTask in this assembly (DemoOrderCountRecurringTask). Golden
+// rule: exactly one processing host per schema. The BlazorServer demo is the storage-only dashboard host.
+builder.AddCloudstrapHangfire();
+
 builder.Services.AddHostedService<PeriodicWorker>();
 builder.Services.AddHealthChecks()
     .AddCheck(
@@ -64,7 +71,9 @@ builder.Services.AddHealthChecks()
         tags: [CloudstrapHealthCheckTags.Liveness])
     // The outage drill: a ready-tagged check flips /ready to 503 while the sentinel file exists
     // and /healthz stays 200 — the tag contract, drillable from outside the process.
-    .AddCheck<DemoOutageHealthCheck>("demo-outage", tags: [CloudstrapHealthCheckTags.Readiness]);
+    .AddCheck<DemoOutageHealthCheck>("demo-outage", tags: [CloudstrapHealthCheckTags.Readiness])
+    // Hangfire storage reachability (#16): ready-tagged, Unhealthy on failure — this host cannot work without it.
+    .AddCloudstrapHangfireHealthCheck();
 
 try
 {

@@ -44,10 +44,11 @@ calls with `PackageReference Cloudstrap.*` instead — nothing else changes.
 | 5311 | IdP host instance | `SelfHostedIdentityProviderTests` |
 | 5320 | Mvc demo | `MvcHostTests` (or `dotnet run`) |
 | 5330 | Api demo | E2E fixture (or `dotnet run`) |
-| 5340 | BlazorServer demo | `BlazorServerTests` (or `dotnet run`) |
+| 5340 | BlazorServer demo | `BlazorServerTests`, `HangfireTests` (or `dotnet run`) |
 | 5350 | Worker demo (health listener) | `WorkerHostTests` (or `dotnet run`) |
 | 5351 | Worker demo, second instance | `MessagingTests` |
 | 5352 | Worker demo, third instance | `ClaimCheckTests` |
+| 5353 | Worker demo, fourth instance | `HangfireTests` |
 | 10000 | Azurite blob emulator | E2E fixture (fixture-started) or `azurite-blob` |
 | 59999 | dead-port test | `ExtensionsTests` |
 
@@ -142,6 +143,10 @@ Harness behavior (`E2eFixture` / `Infrastructure/`):
   `Cloudstrap:Storage:ConnectionString`. A missing emulator fails loudly with the install command.
 - **SQL Server (spec D-3):** LocalDB by default; `CLOUDSTRAP_TEST_SQL` overrides and is forwarded
   the same way as `ConnectionStrings:DefaultConnection`.
+- **Hangfire topology (#16):** the Worker demo is the processing host and the BlazorServer demo the
+  storage-only dashboard host, both on the `HangFire` schema in `CloudstrapDemo`. Every E2E fixture
+  that boots a Worker starts a processing host with the same task set, which is safe because
+  scheduling is idempotent.
 - Captures each launched host's stdout/stderr (`E2eFixture.CapturedSutOutput` for the Bff) so
   tests can assert on console telemetry (OpenTelemetry Console exporter output).
 - Observability modes are deliberately varied so every mode runs somewhere: the Bff boots in

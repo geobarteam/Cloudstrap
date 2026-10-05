@@ -1,371 +1,203 @@
 ---
 name: configure-hangfire
-description: "Use when setting up, configuring, or extending Hangfire with Cloudstrap.Hangfire in a Cloudstrap project. Covers choosing the host topology (processing host, dashboard host, proxy host), registration (AddHangfireForCloudstrap), scheduling-vs-dashboard wiring, recurring tasks (IBackgroundRecurringTask), one-off & delayed jobs (ICloudstrapBackgroundJobScheduler), dashboard authorization for protected hosts or proxy hosts, per-job config overrides, read-only dashboard, server/storage tuning, health checks, and the SQL-client/schema requirements. Use for: adding Hangfire to a new host, serving the dashboard behind a proxy, adding a recurring job, enqueuing background work, fixing 'No registered recurring task' / disappearing jobs / 401 dashboard errors."
+description: "Use when setting up, configuring, or extending Hangfire with Cloudstrap.Hangfire in a Cloudstrap project. Covers choosing the host role (processing host vs storage-only host), registration (AddCloudstrapHangfire + CloudstrapHangfireConfigurator), recurring tasks (IBackgroundRecurringTask), fire-and-forget and delayed jobs (Hangfire's IBackgroundJobClient), the authenticated dashboard (MapCloudstrapHangfireDashboard: role, policy, read-only), per-job config overrides (Cloudstrap:Hangfire:Jobs), server/storage tuning hatches, the storage health check (AddCloudstrapHangfireHealthCheck), and schema preparation. Use for: adding Hangfire to a worker or web host, adding a recurring job, enqueuing background work, exposing the dashboard, fixing 'No registered recurring task' / disappearing jobs / 401-403 dashboard / startup failures."
 metadata:
-  argument-hint: "Describe your scenario, e.g. 'add Hangfire to my worker', 'serve the dashboard behind a proxy', 'add a daily recurring job', 'enqueue a one-off job', 'add a Hangfire health check'"
+  argument-hint: "Describe your scenario, e.g. 'add Hangfire to my worker', 'show the dashboard in my Blazor Server app', 'add a daily recurring job', 'enqueue a one-off job', 'add a Hangfire health check'"
 ---
 
-# Configure Hangfire — Setup, Scheduling, Dashboard & Jobs
+# Configure Hangfire — host roles, recurring tasks, dashboard & health
 
-Guide for wiring up `Cloudstrap.Hangfire` in a consuming Cloudstrap project. Covers the host
-topology decision, DI registration, scheduling vs dashboard, recurring tasks, one-off/delayed jobs, dashboard
-authorization for protected hosts and proxy hosts, per-job config overrides, tuning, and health checks.
+Guide for wiring up `Cloudstrap.Hangfire` in a consuming Cloudstrap project.
 
-> **Source of truth.** The package's own guide is the authoritative deep reference:
+> **Source of truth.** The package guide is the authoritative reference:
 > [`src/Cloudstrap.Hangfire/README.md`](../../../src/Cloudstrap.Hangfire/README.md).
-> For exact signatures/defaults, read the library code under `src/Cloudstrap.Hangfire/`
-> (`IServiceCollectionExtension`, `WebApplicationExtensions`, `IHostExtensions`, `IBackgroundRecurringTask`,
-> `ICloudstrapBackgroundJobScheduler`, `HangfireForCloudstrapOptions`, `HealthChecks/`, `Authorization/`) — not external
-> Hangfire docs that may be outdated. Always read before answering questions about keys, defaults, or behavior.
+> For exact signatures and defaults read the code under `src/Cloudstrap.Hangfire/`
+> (`HostApplicationBuilderExtensions`, `CloudstrapHangfireConfigurator`, `IBackgroundRecurringTask`,
+> `EndpointRouteBuilderExtensions`, `HealthChecksBuilderExtensions`, `HangfireOptions` and its sub-options) — not
+> external Hangfire docs. The spec is `_specs/16-HangfireScheduler.md`.
 
-> **Related skills:** dashboard token claims / service-to-service token propagation → **`configure-sts`**;
-> the Hangfire SQL schema in a DACPAC → **`database-changes`**.
+## The golden rules (read first)
 
----
-
-## The four golden rules (read first — violating them causes the two classic failures)
-
-1. **Exactly one host schedules** — the **processing** host. A dashboard-only host must **not** call any
-   scheduling method, or its orphan-reconciliation deletes the processing host's jobs from shared storage.
-2. **Dashboard-only hosts set `runServer: false`** — so they never dequeue a job whose implementation they
-   don't reference (which would throw `No registered recurring task named 'X'` on every tick).
-3. **All participating hosts share the same storage** — the same connection string / database.
-4. **The `IBackgroundRecurringTask` implementations live with the processing host**. The dashboard renders jobs
-   via the shared `RecurringTaskRunner` dispatcher and needs no reference to the implementation assembly.
-
----
+1. **Exactly one processing host (one task set) per storage schema.** A processing host removes, at startup, every
+   dispatcher-owned job it does not declare. Two different task sets on one schema remove each other's jobs.
+2. **Independent processing hosts sharing a database each set their own `Cloudstrap:Hangfire:Storage:SchemaName`.**
+3. **Every other host sets `RunServer = false`** (dashboard host, enqueue-only API, a future proxy host).
+4. **All hosts of one application share the same storage and schema; tasks live with the processing host.**
 
 ## First action — contextual discovery
 
-Before generating anything, explore the developer's project and infer as much as possible:
+Before changing anything, find out:
+- Which hosts exist (`Program.cs` of each) and which one should run the jobs.
+- Whether the host is a generic host (worker) or a web host on a Cloudstrap composite (WebApi, MVC, Blazor Server),
+  and which authentication scheme it registers.
+- The `ConnectionStrings:` entry the job storage should use.
+- Whether a `Cloudstrap:Hangfire` section already exists in `appsettings*.json`.
 
-1. **Existing Hangfire wiring** — search for `AddHangfireForCloudstrap`, `UseHangfireForCloudstrap`,
-   `UseHangfireDashboardForCloudstrap`, `UseHangfireForCloudstrapWithoutDashboard`.
-2. **Host role** — is this a processing host, a dashboard host, or a proxy host?
-3. **Existing tasks** — search for `IBackgroundRecurringTask` implementations.
-4. **Package references** — is `Cloudstrap.Hangfire` referenced? Is a SQL client present
-   (`Microsoft.Data.SqlClient`, or transitively via `Microsoft.EntityFrameworkCore.SqlServer`)?
-5. **Proxy** — if the host is a proxy, is `Cloudstrap.Hangfire.Proxy` or `Cloudstrap.Proxy`
-   referenced, and is there an upstream service entry in `Cloudstrap:HttpClientServiceRegistry`?
+## Step 1 — Decide the host role
 
-Use this to skip questions you can already answer.
+| Host | `RunServer` | Dashboard | Health check `failureStatus` |
+|---|---|---|---|
+| Worker that runs the jobs (processing host) | `true` (default) | usually not mapped | default (`Unhealthy`) |
+| Web host that shows the dashboard (storage-only) | `false` | `MapCloudstrapHangfireDashboard()` | `HealthStatus.Degraded` |
+| API that only enqueues work (storage-only) | `false` | not mapped | `HealthStatus.Degraded` |
+| Proxy host forwarding the dashboard | — | deliverable #18 (`Cloudstrap.Hangfire.Proxy`), not yet shipped | — |
 
----
+A single web host may also be the processing host (`RunServer = true` plus the dashboard) as long as rule 1 holds.
 
-## Step 1 — Decide the topology (the single most important decision)
-
-Every host opts into a subset of four concerns: **storage**, **processing server**, **scheduling**,
-**dashboard**. Pick the row that matches the host being configured:
-
-| Host role | `AddHangfireForCloudstrap` | `runServer` | Schedules? | Holds task impls? | Dashboard | Dashboard auth |
-|-----------|----------------------|-------------|-----------|-------------------|-----------|----------------|
-| **Processing host** | ✅ | `true` | ✅ `UseHangfireForCloudstrapWithoutDashboard` | ✅ | — | — |
-| **Dashboard-only host** | ✅ | **`false`** | **no** | no | ✅ `UseHangfireDashboardForCloudstrap` | authenticated user or service token |
-| **Single host (processing + dashboard)** | ✅ | `true` | ✅ | ✅ | ✅ `UseHangfireDashboardForCloudstrap` | authenticated user or service token |
-| **Proxy host** | — | — | — | — | forwards `/hangfire` | authenticated user or configured proxy policy |
-| **Self-hosted / dev (legacy)** | ✅ | `true` | ✅ `UseHangfireForCloudstrap` (combined) | ✅ | ✅ (same call) | localhost-only |
-
----
-
-## Step 2 — Register Hangfire (`AddHangfireForCloudstrap`)
-
-Every participating host calls this in DI. Only `runServer` and `backgroundRecurringTaskAssemblies` change per
-host; everything else is defaulted.
+## Step 2 — Register (`AddCloudstrapHangfire`)
 
 ```csharp
-using Cloudstrap.Hangfire;
-
-builder.Services.AddHangfireForCloudstrap(
-    cloudstrapConfiguration,
-    loggerFactory,
-    connectionString: null,                    // null => cloudstrapConfiguration.GetDefaultConnectionString()
-    backgroundRecurringTaskAssemblies: null,   // null => the CALLING assembly is scanned for IBackgroundRecurringTask
-    runServer: true,                           // false for a DASHBOARD-ONLY host (see golden rule #2)
-    configure: null);                          // optional Action<HangfireForCloudstrapOptions> (see Step 6)
+builder.AddCloudstrapHangfire();                                     // processing host
+builder.AddCloudstrapHangfire(hangfire => hangfire.RunServer = false); // storage-only host
 ```
 
-- On the **processing host**, set `backgroundRecurringTaskAssemblies` to the assembly that holds the task
-  implementations when they don't live in the calling assembly, e.g. `[typeof(ReminderSender).Assembly]`.
-- On a **dashboard-only host**, set `runServer: false` and leave the assemblies null — it scans nothing
-  meaningful and renders jobs via the shared dispatcher.
-- This call also registers `ICloudstrapBackgroundJobScheduler` (Step 5), the `RecurringTaskRunner` dispatcher, and
-  the per-job config overrides — no extra wiring needed.
+- One call per host; a second call throws.
+- Storage: SQL Server on `ConnectionStrings:{Storage:ConnectionStringName}` (default `DefaultConnection`), Hangfire's
+  recommended options, Hangfire's default schema `HangFire` unless `Storage:SchemaName` is set.
+- Discovery: concrete `IBackgroundRecurringTask` classes — public **or internal** — in the entry assembly, registered
+  as the interface only, transient. Override with `TaskAssemblies`.
+- A processing host registers the scheduling service **before** the Hangfire server: tasks are scheduled before
+  anything is dequeued, and a scheduling failure stops startup.
+- The `Cloudstrap.Hangfire` span source is contributed to the host's OpenTelemetry pipeline; no exporter.
 
-`cloudstrapConfiguration` / `loggerFactory` come from the standard bootstrap:
+Configurator hatches (each runs after the defaults it adjusts):
 
-```csharp
-IConfiguration configuration = BootstrapConfiguration.ReadAppSettings();
-CloudstrapOptions cloudstrapOptions = configuration.GetCloudstrapOptions();
-ILoggerFactory loggerFactory = BootstrapLoggerFactory.Create(cloudstrapOptions);
-```
+| Member | Use |
+|---|---|
+| `RunServer` | Host role. Code-level only — there is no configuration key. |
+| `TaskAssemblies` | Assemblies to scan instead of the entry assembly. |
+| `SqlServer` | `Action<SqlServerStorageOptions>` — tune storage (for example `QueuePollInterval`). |
+| `Storage` | `Action<IGlobalConfiguration>` — bring your own storage; SQL Server and `Storage:*` are ignored. |
+| `Server` | `Action<BackgroundJobServerOptions>` — final say over the server (for example `ServerName`). |
 
----
-
-## Step 3 — Wire scheduling and/or the dashboard (middleware)
-
-> **Order:** dashboard / proxy methods read `HttpContext.User`, so call them **after** `UseAuthentication()`
-> and `UseAuthorization()`. Before them, every request is unauthenticated ⇒ 401/403.
-
-### Processing host — schedule (no dashboard)
+## Step 3 — Add a recurring task (`IBackgroundRecurringTask`)
 
 ```csharp
-host.UseHangfireForCloudstrapWithoutDashboard(loggerFactory);   // schedules + reconciles orphans. Processing host ONLY.
-```
-
-### Dashboard-only host (behind a proxy) — never schedules
-
-```csharp
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseHangfireDashboardForCloudstrap(loggerFactory);        // no scheduling; serves the dashboard only
-```
-
-### Protected host — end-user role auth
-
-```csharp
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseHangfireDashboardForCloudstrap(loggerFactory);        // role from Cloudstrap:Hangfire:Dashboard:AccessRole if configured
-```
-
-### Single host (processing + dashboard)
-
-```csharp
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseHangfireForCloudstrapWithoutDashboard(loggerFactory);    // WebApplication is an IHost
-app.UseHangfireDashboardForCloudstrap(loggerFactory);
-```
-
-### Proxy host — forward `/hangfire` to an upstream host
-
-```csharp
-using Cloudstrap.Hangfire.Proxy;
-
-builder.Services.AddHangfireDashboardProxyForCloudstrap(cloudstrapConfiguration, HttpClientServicesNames.MyUpstream);
-...
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseHangfireDashboardProxyForCloudstrap();                // maps /hangfire → upstream host, RequireAuthorization(policy)
-```
-
-Lower-level building blocks (custom path or policy):
-
-```csharp
-using Cloudstrap.Proxy;
-
-builder.Services.AddCloudstrapProxy(cloudstrapConfiguration, HttpClientServicesNames.MyUpstream);
-...
-app.MapCloudstrapForwarder("/hangfire", HttpClientServicesNames.MyUpstream)
-   .RequireAuthorization(/* your policy */);
-```
-
-### Legacy self-hosted / dev — combined schedule + dashboard (localhost-only auth)
-
-```csharp
-app.UseHangfireForCloudstrap(loggerFactory);                    // backward-compatible; NOT for use behind a proxy
-```
-
----
-
-## Step 4 — Add a recurring task (`IBackgroundRecurringTask`)
-
-Implement the interface in the **processing host** (or a library it references). Assembly scanning registers
-it automatically — no manual DI. Only `CronExpression` and `ExecuteAsync()` are required; the rest are
-default interface members you override per task.
-
-```csharp
-using Cloudstrap.Hangfire;
-
-public sealed class ReminderSender : IBackgroundRecurringTask
+internal sealed class NightlyCleanupTask(OrdersDbContext db) : IBackgroundRecurringTask
 {
-    public string CronExpression => "0 7 * * *";            // required (Hangfire/NCrontab syntax)
+    public string CronExpression => "0 3 * * *";
 
-    // Optional overrides (defaults shown):
-    // public string JobId               => GetType().Name;  // stable dashboard id; override to survive a rename
-    // public TimeZoneInfo TimeZone      => TimeZoneInfo.Utc; // or override per-job in config (Step 6)
-    // public string Queue               => "default";
-    // public bool IsEnabled             => true;            // false => the recurring job is removed, not scheduled
-    // public bool PreventOverlappingRuns => true;           // skip a trigger if the previous run is still going
+    public string JobId => "nightly-cleanup";     // recommended: stable across class renames
 
-    public Task ExecuteAsync() => DoWorkAsync();
-
-    // Override to honour shutdown/timeout cancellation (defaults to the no-token ExecuteAsync()):
-    // public Task ExecuteAsync(CancellationToken ct) => DoWorkAsync(ct);
-}
-```
-
-- The task is resolved per trigger from DI (transient) by **`JobId`** — keep the id stable.
-- Cancellation: override `ExecuteAsync(CancellationToken)` and propagate the token; Hangfire injects the real
-  job-cancellation token at execution time.
-
----
-
-## Step 5 — Enqueue one-off / delayed jobs (`ICloudstrapBackgroundJobScheduler`)
-
-Inject the interface anywhere (no direct Hangfire dependency). Registered by `AddHangfireForCloudstrap`. The work
-runs on a **processing host** (`runServer: true`) that can resolve the target type.
-
-```csharp
-using Cloudstrap.Hangfire;
-
-public sealed class OrderService(ICloudstrapBackgroundJobScheduler scheduler)
-{
-    public void Reprocess(int orderId)
+    public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        scheduler.Enqueue(() => ReprocessAsync(orderId));                          // ASAP
-        scheduler.Schedule(() => ReprocessAsync(orderId), TimeSpan.FromMinutes(30)); // after a delay
+        await db.PurgeExpiredAsync(cancellationToken);
     }
-
-    public static Task ReprocessAsync(int orderId) => /* ... */;   // must be a PUBLIC method for Hangfire
 }
 ```
 
----
+| Member | Default |
+|---|---|
+| `CronExpression` | required (Cronos syntax) |
+| `JobId` | the type name — rename-sensitive, override it for anything referenced in config |
+| `TimeZone` | UTC (prefer IANA ids) |
+| `Queue` | `default` |
+| `IsEnabled` | `true` |
+| `PreventOverlappingRuns` | `true` (a busy `recurring-task:{JobId}` lock skips the trigger with a warning) |
+| `ExecuteAsync(CancellationToken)` | required — resolved per run in its own DI scope |
 
-## Step 6 — Optional: per-job overrides, tuning, read-only dashboard
+The task lives in the **processing host**. No Hangfire type is needed in the implementation.
 
-### Config-driven schedule/enable/timezone (no redeploy) — `Cloudstrap:Hangfire:Jobs:<JobId>`
+## Step 4 — Fire-and-forget and delayed jobs
 
-```jsonc
-"Cloudstrap": { "Hangfire": { "Jobs": {
-  "ReminderSender": {                 // keyed by the task's JobId (case-insensitive)
-    "Cron": "0 8 * * *",              // overrides the task's CronExpression (empty => task's own)
-    "Enabled": true,                  // false => the recurring job is removed
-    "TimeZone": "Europe/Brussels"     // IANA id; empty => the task's TimeZone (UTC by default). Bad id fails fast.
-  }
-} } }
-```
-
-### Server/storage tuning + read-only dashboard — the `configure` callback
+Inject Hangfire's `IBackgroundJobClient` (registered by `AddCloudstrapHangfire`). There is no Cloudstrap facade.
 
 ```csharp
-builder.Services.AddHangfireForCloudstrap(cloudstrapConfiguration, loggerFactory, configure: o =>
+public sealed class InvoiceService(IBackgroundJobClient jobs)
 {
-    o.WorkerCount = 4;                       // null => Hangfire default
-    o.Queues = ["critical", "default"];      // null => default
-    o.ServerName = "reminder-worker";        // null => machine-derived
-    o.QueuePollInterval = TimeSpan.FromSeconds(5); // null/Zero => existing default
-    o.DashboardReadOnly = true;              // disables trigger/delete/requeue in the UI (NOT authorization)
+    public void Queue(int invoiceId) => jobs.Enqueue<InvoiceRenderer>(renderer => renderer.RenderAsync(invoiceId, CancellationToken.None));
+}
+```
+
+The target method must be public on a type the processing host can resolve — that is where the job runs.
+
+## Step 5 — Expose the dashboard (`MapCloudstrapHangfireDashboard`)
+
+Map it inside a composite's `ConfigureEndpoints` hook (so it runs after the authentication middleware):
+
+```csharp
+app.UseCloudstrapBlazorServer<App>(pipeline => pipeline.ConfigureEndpoints = endpoints =>
+{
+    endpoints.MapCloudstrapAuthenticationEndpoints();
+    endpoints.MapCloudstrapHangfireDashboard();
 });
 ```
 
-Every `HangfireForCloudstrapOptions` member defaults to "keep existing behavior", so omitting `configure`
-reproduces today's setup exactly.
+- Always requires an authenticated user; `Dashboard:RequiredRole` narrows to a role, `Dashboard:AuthorizationPolicy`
+  replaces the built-in policy. With no role, any authenticated caller (for example a proxy host's token) is admitted.
+- A Cloudstrap filter inside the dashboard also requires authentication, so `.AllowAnonymous()` never exposes it.
+- The optional `configure` delegate over `DashboardOptions` is additive — **tighten, never loosen**.
+- Mapping throws when the host registers no authentication scheme.
+- `Dashboard:ReadOnly = true` hides trigger/delete/requeue.
+- Hosts with a secure-only antiforgery cookie (the Cloudstrap composites) must serve the dashboard over **HTTPS** for
+  dashboard actions to work.
+- `X-Forwarded-Prefix` is not handled — proxying is deliverable #18.
 
----
+## Step 6 — Per-job overrides and tuning
 
-## Step 7 — Optional: health check
+```jsonc
+"Cloudstrap": { "Hangfire": {
+  "Storage":   { "ConnectionStringName": "DefaultConnection", "SchemaName": "jobs", "PrepareSchema": true },
+  "Server":    { "WorkerCount": 4, "Queues": [ "critical", "default" ] },
+  "Dashboard": { "Path": "/hangfire", "RequiredRole": "ops", "ReadOnly": false },
+  "Jobs": {
+    "nightly-cleanup": { "Cron": "0 4 * * *", "TimeZone": "Europe/Brussels", "Enabled": true }
+  }
+} }
+```
 
-Opt-in; reports whether the Hangfire storage is reachable (via the monitoring API). Requires
-`AddHangfireForCloudstrap` to have registered a `JobStorage`.
+`Jobs` keys match `JobId` case-insensitively; an empty value falls back to the task's own; an override for an
+undeclared id logs one warning.
+
+## Step 7 — Health check
 
 ```csharp
-using Cloudstrap.Hangfire.HealthChecks;
-
-builder.Services.AddHealthChecks()
-    .AddHangfireHealthCheckForCloudstrap(name: "hangfire", tags: ["ready"]);
+builder.Services.AddHealthChecks().AddCloudstrapHangfireHealthCheck();                                   // processing host
+builder.Services.AddHealthChecks().AddCloudstrapHangfireHealthCheck(failureStatus: HealthStatus.Degraded); // storage-only host
 ```
 
----
+Name `hangfire`, tag `ready` (served by `/ready`), statistics as data; the result never carries a connection string
+or exception message (the detail is logged at Warning).
 
-## appsettings — what each host needs
+## Schema preparation
 
-The connection string is **root-level** `ConnectionStrings:DefaultConnection` (NOT under `Cloudstrap`); it's used
-when `AddHangfireForCloudstrap(..., connectionString: null)`. Minimal per host:
-
-```jsonc
-// Processing host
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=tcp:my-sql.database.windows.net;Database=Hangfire;Authentication=Active Directory Default;Encrypt=True"
-  },
-  "Cloudstrap": { "Hangfire": {
-    "Dashboard": { "AccessRole": "HangfireOps" },   // empty => any authenticated user
-    "Jobs": { "ReminderSender": { "Cron": "0 8 * * *", "Enabled": true } }
-  } }
-}
-```
-
-```jsonc
-// Dashboard-only host
-{
-  "ConnectionStrings": { "DefaultConnection": "...same database as the processing host..." }
-}
-```
-
-```jsonc
-// Proxy host
-{
-  "Cloudstrap": {
-    "Hangfire": { "Dashboard": { "AccessRole": "HangfireOps" } },
-    "HttpClientServiceRegistry": {
-      "MyUpstream": {
-        "BaseAddress": "https://upstream.example.com",
-        "AddClientAccessToken": true,
-        "TokenRequestParameters": { "Scope": "upstream", "Resource": "upstream" }
-      }
-    }
-  }
-}
-```
-
----
-
-## Critical: SQL client & schema (easy to miss)
-
-- **Every host that calls `AddHangfireForCloudstrap` must reference a SQL client.** `Hangfire.SqlServer` does not
-  carry one — add **`Microsoft.Data.SqlClient`** (recommended). Hosts that already reference
-  `Microsoft.EntityFrameworkCore.SqlServer` get it transitively and need add nothing.
-- **Schema provisioning:** in dev environments the schema auto-prepares; in **TST/VAL/PRD**
-  (`PrepareSchemaIfNecessary` is disabled) the Hangfire SQL schema must be deployed up front (DACPAC /
-  Schema Compare — see the `database-changes` skill).
-- **Do not** add `Microsoft.EntityFrameworkCore`, `Microsoft.EntityFrameworkCore.SqlServer`, or
-  `Newtonsoft.Json` to the Hangfire package itself — they were removed as unused.
-
----
+`Storage:PrepareSchema` unset → Hangfire prepares its schema in `Development` only. Elsewhere deploy Hangfire's
+`Install.sql` from infrastructure-as-code. A processing host against a missing schema fails at startup. Managed
+identity: `Authentication=Active Directory Default` in the connection string (the shipped `Microsoft.Data.SqlClient`
+6.x supports it in the core package).
 
 ## Validation rules — actively flag these
 
-| Misconfiguration | Warning |
-|------------------|---------|
-| Dashboard-only host runs `runServer: true` | It will dequeue jobs it can't resolve → `No registered recurring task named 'X'` on every tick. Set `runServer: false`. |
-| Dashboard-only host calls a scheduling method | Its reconciliation deletes the worker's jobs from shared storage → jobs vanish on restart. Remove the scheduling call. |
-| More than one host schedules | Same as above — only the processing host schedules. |
-| Hosts use different databases/connection strings | They won't see each other's jobs. All share one storage. |
-| Dashboard method called before `UseAuthentication`/`UseAuthorization` | `HttpContext.User` is empty → 401/403. Move it after. |
-| Proxy forwards but `AddClientAccessToken` is false / missing token params | The upstream host rejects the unauthenticated forward. |
-| Proxy token audience ≠ upstream auth audience | The upstream host rejects the token → 401. |
-| Registry `BaseAddress` host not covered by the upstream cert SAN | TLS validation fails (`RemoteCertificateNameMismatch`). |
-| Host calls `AddHangfireForCloudstrap` with no SQL client referenced | Runtime failure resolving an ADO.NET provider. Add `Microsoft.Data.SqlClient`. |
-| Relying on auto schema in TST/VAL/PRD | Schema isn't auto-prepared there; deploy it via DACPAC. |
-| Per-job `Cron`/`TimeZone` set under the wrong key | Must be `Cloudstrap:Hangfire:Jobs:<JobId>` (matches the task's `JobId`). |
-
----
+| Rule | Failure |
+|---|---|
+| `Storage:ConnectionStringName` must resolve under `ConnectionStrings:` (unless the `Storage` hatch is used) | throws at `AddCloudstrapHangfire`, naming the key |
+| `Storage:SchemaName`, when set, is non-empty | `ConfigurationValidationException` |
+| `Server:WorkerCount` ≥ 1; `Server:Queues` has no empty entry | `ConfigurationValidationException` |
+| `Dashboard:Path` rooted, no trailing slash | `ConfigurationValidationException` |
+| `JobId` unique across tasks (case-insensitive) | startup fails naming the id and both types; nothing written |
+| `Jobs:{id}:TimeZone` is a known IANA id | startup fails naming job, value and key; nothing written |
+| Cron expression accepted by Hangfire | startup fails naming job, value and key |
+| Only one `AddCloudstrapHangfire` per host | `InvalidOperationException` |
+| An authentication scheme exists before mapping the dashboard | `InvalidOperationException` |
 
 ## Troubleshooting (symptom → cause → fix)
 
-- **`No registered recurring task named 'X'` (at `RecurringTaskRunner.RunAsync`)** → a dashboard host is
-  running a processing server for a job it can't resolve → set that host `runServer: false` and stop it
-  scheduling.
-- **Recurring jobs disappear after deploy/restart** → more than one host schedules → only the processing host
-  schedules; dashboard-only hosts call a `UseHangfireDashboardForCloudstrap*` method and nothing else.
-- **Dashboard 401/403 behind the proxy** → middleware order, mismatched `/hangfire` prefix, or the proxy's
-  client-credentials token not targeting the upstream audience.
-
-(Full troubleshooting in the package README §12.)
-
----
+| Symptom | Cause | Fix |
+|---|---|---|
+| `No registered recurring task with id 'X' was found on this host` | A host without the task runs a server | `RunServer = false` on that host |
+| Recurring jobs disappear after a deployment | Two processing hosts with different task sets share a schema | Own `Storage:SchemaName` per independent processing host |
+| Dashboard 401 / redirect to login | Not authenticated, or mapped before the auth middleware | Map inside `ConfigureEndpoints` and sign in |
+| Dashboard 403 | Not in `RequiredRole` / fails `AuthorizationPolicy` | Grant the role or adjust the policy |
+| Dashboard action fails (antiforgery) | Secure-only antiforgery cookie over HTTP | Serve over HTTPS |
+| Startup fails naming a job | Duplicate id, unknown time zone, rejected cron | Fix the task or the `Jobs:` override |
+| `Invalid object name '…'` at startup | Schema missing | Deploy `Install.sql` or set `Storage:PrepareSchema` for dev |
 
 ## Checklist
 
-- [ ] Topology chosen (Step 1) — exactly one processing host; dashboard-only hosts are `runServer: false`.
-- [ ] `AddHangfireForCloudstrap` called on every participating host; `backgroundRecurringTaskAssemblies` set on the processing host if impls aren't in the calling assembly.
-- [ ] Only the processing host calls `UseHangfireForCloudstrapWithoutDashboard` (or legacy `UseHangfireForCloudstrap`).
-- [ ] Dashboard method matches the host role and runs after `UseAuthentication`/`UseAuthorization`.
-- [ ] Proxy host (if any): proxy registered, `/hangfire` forwarded with `RequireAuthorization`, registry entry present with `AddClientAccessToken: true`.
-- [ ] All hosts share one storage (`ConnectionStrings:DefaultConnection`).
-- [ ] `IBackgroundRecurringTask` impls live with the processing host; `JobId` stable.
-- [ ] A SQL client (`Microsoft.Data.SqlClient`) is referenced; TST/VAL/PRD schema deployed via DACPAC.
-- [ ] Upstream auth audience matches the proxy token audience; `BaseAddress` host matches the upstream cert SAN.
-- [ ] Optional: per-job overrides, `HangfireForCloudstrapOptions` tuning, read-only dashboard, health check.
+- [ ] Exactly one processing host per storage schema; every other host `RunServer = false`.
+- [ ] `ConnectionStrings:` entry present on every host; same schema across the application.
+- [ ] Tasks implement `IBackgroundRecurringTask` in the processing host, with stable `JobId` overrides where referenced.
+- [ ] Dashboard mapped only on a host with an authentication scheme, inside `ConfigureEndpoints`, over HTTPS.
+- [ ] `AddCloudstrapHangfireHealthCheck()` registered (`Degraded` on storage-only hosts).
+- [ ] Production schema deployed by IaC (`PrepareSchema` left unset or `false`).
+- [ ] The LGPL-3.0 license of the Hangfire family reviewed (see the package README).

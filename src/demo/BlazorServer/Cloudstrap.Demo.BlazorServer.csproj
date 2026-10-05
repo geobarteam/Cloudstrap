@@ -11,6 +11,8 @@
     <!-- Demo-level ViewModel convention adoption (D-13) — the BlazorServer package itself never references it. -->
     <ProjectReference Include="..\..\Cloudstrap.BlazorCommon\Cloudstrap.BlazorCommon.csproj" />
     <ProjectReference Include="..\..\Cloudstrap.Observability\Cloudstrap.Observability.csproj" />
+    <!-- Deliverable #16: storage-only Hangfire host + dashboard. Deliberately NO reference to the Worker demo. -->
+    <ProjectReference Include="..\..\Cloudstrap.Hangfire\Cloudstrap.Hangfire.csproj" />
     <ProjectReference Include="..\Shared\Contracts\Cloudstrap.Demo.Contracts.csproj" />
   </ItemGroup>
 

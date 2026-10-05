@@ -14,6 +14,9 @@ interaction trace around the WhoAmI API call.
 | The interaction trace + ViewModel convention: the WhoAmI call exports as a root span of its own (#12 D-9 + #11) | `IBlazorInteractionTrace.StartInteraction("whoami")` inside `WhoAmIViewModel`, registered by `AddCloudstrapBlazorCommon<IWhoAmIViewModel>()` | `BlazorServer_WhoAmI_EmitsAnInteractionRootSpanThroughTheCompositePipeline` |
 | Interactive OIDC login on server-rendered Blazor — auto-triggered challenge, hardened cookie session (#10) | `AddCloudstrapOpenIdConnect()` + `MapCloudstrapAuthenticationEndpoints()` (via the composite's `ConfigureEndpoints` hook) | `BlazorServer_SignInAndWhoAmI_RendersUserAndApiEcho_NoConsoleErrors` |
 | The signed-in user's token transparently reaches the Api demo host (#4 + #9/#10 plumbing, unchanged by #12) | `AddCloudstrapHttpServiceClient<IDemoApiClient, DemoApiClient>("DemoApi")` with `AddUserAccessToken: true` | the same test — the page renders the Api host's `demo-api` marker |
+| A storage-only Hangfire host: the dashboard challenges anonymous visitors to the IdP and never serves them (#16) | `AddCloudstrapHangfire(h => h.RunServer = false)` + `MapCloudstrapHangfireDashboard()` in the composite's `ConfigureEndpoints` hook | `Hangfire_AnonymousDashboardRequest_IsChallengedToTheIdentityProvider_NeverServesTheDashboard` |
+| The signed-in `tester` sees the Worker demo's recurring job, on a host that does not reference the Worker (#16) | `Cloudstrap:Hangfire:Dashboard:RequiredRole: tester`; the shared dispatcher type | `Hangfire_SignedInTester_SeesTheWorkersRecurringJob_OnAHostThatDoesNotReferenceTheWorker` |
+| *Trigger now* on the dashboard makes the separate Worker process run the job within seconds (#16) | the dashboard action over the shared `CloudstrapDemo` storage | `Hangfire_TesterTriggersTheJobFromTheDashboard_TheWorkerRunsItWithinSeconds` |
 
 ## Harness notes
 
@@ -31,6 +34,22 @@ interaction trace around the WhoAmI API call.
   so the app boots gracefully without peers.
 - The IdP client is `demo-blazorserver` (placeholder secret, token audience `demo-api` only — this
   app hosts no API of its own).
+- Since #16 this host reads **Hangfire storage** on `ConnectionStrings:DefaultConnection`, the same
+  `CloudstrapDemo` LocalDB database and `HangFire` schema as the Worker demo (the processing host).
+  It never dequeues, schedules or reconciles (`RunServer = false`) and has **no reference to the Worker**:
+  it renders the Worker's jobs through the shared dispatcher type. The app still boots without
+  LocalDB, and `/ready` stays 200, because its storage check reports `Degraded` on failure; the
+  dashboard itself needs the database. `CLOUDSTRAP_TEST_SQL` is forwarded by `BlazorServerTests`
+  and `HangfireTests`.
+- The dashboard is served only to the signed-in user in role `tester` (the seeded demo user;
+  `Cloudstrap:Hangfire:Dashboard:RequiredRole`). An anonymous `/hangfire` is challenged to the IdP.
+- **Antiforgery over plain HTTP (demo-only):** the composite hardens the antiforgery cookie to
+  secure-only, and the dashboard issues antiforgery tokens for its actions, which the framework
+  refuses over `http://127.0.0.1`. `Program.cs` relaxes the cookie to `SameAsRequest` **in
+  Development only**, through the composite's `Antiforgery` hook. Production serves HTTPS and keeps
+  `Always`.
+- The E2E `HangfireTests` fixture also boots this host on 5340, after its own Worker on 5353; it
+  never overlaps with `BlazorServerTests` (the suite is non-parallel).
 
 ## Running
 

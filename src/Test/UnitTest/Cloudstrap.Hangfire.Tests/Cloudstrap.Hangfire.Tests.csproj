@@ -16,6 +16,8 @@
     <!-- AC-HF15: the host owns its OpenTelemetry pipeline; the tests observe the contributed span source in it -->
     <PackageReference Include="OpenTelemetry.Exporter.InMemory" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <!-- AC-HF10–AC-HF13: the dashboard mapping is exercised on an in-process TestServer -->
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
   </ItemGroup>
 
   <!-- DD-8: the D-3 LocalDB helper and the log-capturing provider are linked from Cloudstrap.Messaging.Tests,

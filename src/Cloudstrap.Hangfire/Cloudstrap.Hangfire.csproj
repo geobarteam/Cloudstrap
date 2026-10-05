@@ -6,6 +6,16 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Description>Hangfire in one call: SQL Server storage with Hangfire's recommended settings, interface-based recurring tasks scheduled at startup, configuration-driven per-job overrides, overlap prevention, orphan reconciliation, an always-authenticated endpoint-routed dashboard, a readiness health check and additive OpenTelemetry. Hangfire itself is LGPL-3.0.</Description>
+    <PackageTags>$(PackageTags);hangfire;background-jobs;recurring-jobs;scheduler;cron;dashboard;sqlserver</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
