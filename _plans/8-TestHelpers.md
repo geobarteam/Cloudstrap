@@ -839,8 +839,8 @@ After this step:
   41/41; every other unit exe at baseline (unit total 926 + companion 65); E2E 68/68; build 0 code warnings; `dotnet
   format --verify-no-changes` exit 0. Grep evidence: in files touched since `03eee2b`, `Nihdi|Riziv` /
   `Security:EnableAuthentication` / `"UnitTest"` appear only in the AC-TS12 tripwire's own pattern, and `UnitTest` only as
-  the `src/Test/UnitTest` path / solution-folder name. Note: `OpenIdConnect.Tests/Infrastructure/CapturingLoggerProvider.cs`
-  is emptied, not deleted (the executor's sandbox allowed no file deletion); `git rm` it at the final gate.)*
+  the `src/Test/UnitTest` path / solution-folder name. `OpenIdConnect.Tests/Infrastructure/CapturingLoggerProvider.cs`
+  is deleted (`git rm`, Step 7 verify correction).)*
 
 **Scope**:
 - *(modify, csproj)*: add a version-less `<PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" />` to
