@@ -6,6 +6,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Http;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
 
     /// <summary>
@@ -148,7 +149,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
         public async Task ConfiguredPaths_AreHonored()
         {
             // Arrange
-            CapturingLoggerProvider logs = new();
+            FakeLogCollector logs = new();
             await using OidcTestHost host = await OidcTestHost.StartAsync(
                 configuration: new Dictionary<string, string?>
                 {
@@ -158,7 +159,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
                     ["Logging:LogLevel:Default"] = "Information",
                 },
                 mapEndpoints: static app => app.MapCloudstrapAuthenticationEndpoints(),
-                afterRegistration: (builder, _) => builder.Logging.AddProvider(logs));
+                afterRegistration: (builder, _) => builder.Logging.AddProvider(new FakeLoggerProvider(logs)));
             using BrowserlessUserAgent agent = host.CreateAgent();
 
             // Act
@@ -174,7 +175,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
                 Assert.That(movedLogin.Headers.Location!.Authority, Is.EqualTo(OidcTestHost.IdpBase.Authority));
                 Assert.That(defaultLogin.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
                 Assert.That(
-                    logs.Entries.Any(static entry =>
+                    logs.GetSnapshot().Any(static entry =>
                         entry.Message.Contains("/auth/enter", StringComparison.Ordinal)
                         && entry.Message.Contains("/auth/exit", StringComparison.Ordinal)),
                     Is.True,
@@ -217,14 +218,14 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
         public async Task IdpWithoutAnEndSessionEndpoint_StillCompletesLocalSignOutAndLogsOnce()
         {
             // Arrange — the provider's metadata advertises no end_session_endpoint
-            CapturingLoggerProvider logs = new();
+            FakeLogCollector logs = new();
             await using OidcTestHost host = await OidcTestHost.StartAsync(
                 configuration: new Dictionary<string, string?>
                 {
                     ["Logging:LogLevel:Default"] = "Information",
                 },
                 mapEndpoints: static app => app.MapCloudstrapAuthenticationEndpoints(),
-                afterRegistration: (builder, _) => builder.Logging.AddProvider(logs),
+                afterRegistration: (builder, _) => builder.Logging.AddProvider(new FakeLoggerProvider(logs)),
                 stripEndSessionEndpoint: true);
             using BrowserlessUserAgent agent = host.CreateAgent();
             using HttpResponseMessage signedIn = await agent.SignInAsync(
@@ -241,7 +242,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
             using HttpResponseMessage secondLogout =
                 await agent.GetNoRedirectAsync(new Uri(OidcTestHost.AppBase, "account/logout"));
 
-            int endSessionWarnings = logs.Entries.Count(static entry =>
+            int endSessionWarnings = logs.GetSnapshot().Count(static entry =>
                 entry.Message.Contains("end_session_endpoint", StringComparison.Ordinal));
 
             // Assert — the cookie is cleared, the browser stays local, no exception, one log entry

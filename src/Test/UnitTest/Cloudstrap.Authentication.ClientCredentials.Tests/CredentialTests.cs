@@ -7,6 +7,7 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
 
     /// <summary>
@@ -76,8 +77,8 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
             });
             CapturingPrimaryHandler capturing = new();
             FormCapturingTokenEndpointHandler tokenEndpoint = new();
-            CapturingLoggerProvider logs = new();
-            builder.Logging.AddProvider(logs);
+            FakeLogCollector logs = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             builder.Services.AddSingleton<IClientAssertionService>(new RecordingClientAssertionService());
             builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
                 .ConfigurePrimaryHttpMessageHandler(() => capturing);
@@ -97,7 +98,7 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
             {
                 Assert.That(tokenEndpoint.LastForm, Does.ContainKey("client_assertion"));
                 Assert.That(
-                    logs.Entries.Count(entry => entry.Level == LogLevel.Information
+                    logs.GetSnapshot().Count(entry => entry.Level == LogLevel.Information
                         && entry.Message.Contains("client assertion", StringComparison.OrdinalIgnoreCase)),
                     Is.EqualTo(1));
             });
@@ -110,18 +111,18 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
             const string secretValue = "placeholder-not-a-real-secret";
             using TestIdentityProviderHost identityProvider = ClientCredentialsTestHost.StartIdentityProvider();
 
-            CapturingLoggerProvider successLogs = new();
+            FakeLogCollector successLogs = new();
             HostApplicationBuilder successBuilder = ClientCredentialsTestHost.CreateBuilder(
                 ClientCredentialsTestHost.DefaultConfig(identityProvider));
             successBuilder.Logging.SetMinimumLevel(LogLevel.Trace);
-            successBuilder.Logging.AddProvider(successLogs);
+            successBuilder.Logging.AddProvider(new FakeLoggerProvider(successLogs));
             CapturingPrimaryHandler capturing = new();
             successBuilder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
                 .ConfigurePrimaryHttpMessageHandler(() => capturing);
             successBuilder.Services.AddCloudstrapClientCredentials(
                 ClientCredentialsTestHost.BackchannelTo(identityProvider));
 
-            CapturingLoggerProvider failureLogs = new();
+            FakeLogCollector failureLogs = new();
             HostApplicationBuilder failureBuilder = ClientCredentialsTestHost.CreateBuilder(new Dictionary<string, string?>
             {
                 ["Cloudstrap:HttpClients:Catalog:BaseAddress"] = "https://catalog.contoso.example/",
@@ -131,7 +132,7 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
                 ["Cloudstrap:ClientCredentials:ClientSecret"] = secretValue,
             });
             failureBuilder.Logging.SetMinimumLevel(LogLevel.Trace);
-            failureBuilder.Logging.AddProvider(failureLogs);
+            failureBuilder.Logging.AddProvider(new FakeLoggerProvider(failureLogs));
             failureBuilder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog");
             failureBuilder.Services.AddCloudstrapClientCredentials(configurator =>
                 configurator.Backchannel = http => http.ConfigurePrimaryHttpMessageHandler(() => new ThrowingHandler()));
@@ -157,8 +158,8 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
             // Assert — the secret value appears in no log line, no exception message, no inner exception
             List<string> allLogLines =
             [
-                .. successLogs.Entries.Select(entry => entry.Message),
-                .. failureLogs.Entries.Select(entry => entry.Message),
+                .. successLogs.GetSnapshot().Select(entry => entry.Message),
+                .. failureLogs.GetSnapshot().Select(entry => entry.Message),
             ];
             Assert.Multiple(() =>
             {

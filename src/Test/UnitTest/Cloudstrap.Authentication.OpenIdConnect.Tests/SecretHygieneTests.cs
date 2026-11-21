@@ -33,7 +33,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
 
             string[] sensitiveValues =
                 [OidcTestHost.ClientSecret, authorizationCode, accessToken, refreshToken, idToken];
-            List<string> logMessages = [.. host.Logs.Entries.Select(static entry => entry.Message)];
+            List<string> logMessages = [.. host.Logs.GetSnapshot().Select(static entry => entry.Message)];
             List<string> activityTexts = CollectActivityTexts(host.Activities);
             List<string> applicationBodies = await CollectApplicationBodiesAsync(agent);
 
@@ -86,7 +86,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
             string body = await response.Content.ReadAsStringAsync();
             host.FlushTelemetry();
 
-            List<string> logMessages = [.. host.Logs.Entries.Select(static entry => entry.Message)];
+            List<string> logMessages = [.. host.Logs.GetSnapshot().Select(static entry => entry.Message)];
             List<string> activityTexts = CollectActivityTexts(host.Activities);
 
             // Assert — an identified error, with no secret, code or token anywhere
@@ -191,7 +191,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
             {
                 Assert.That(cookieValue, Is.Not.Empty);
                 Assert.That(
-                    host.Logs.Entries.Select(static entry => entry.Message),
+                    host.Logs.GetSnapshot().Select(static entry => entry.Message),
                     Has.None.Contains(cookieValue));
                 Assert.That(CollectActivityTexts(host.Activities), Has.None.Contains(cookieValue));
             });

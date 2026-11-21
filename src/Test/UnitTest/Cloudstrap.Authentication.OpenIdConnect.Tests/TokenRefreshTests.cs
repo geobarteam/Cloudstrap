@@ -8,6 +8,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
     using Microsoft.AspNetCore.Http;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using Microsoft.IdentityModel.JsonWebTokens;
     using NUnit.Framework;
 
@@ -134,13 +135,13 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
         public async Task ExpiredRefreshToken_FailsLoudlyAndSendsNothing()
         {
             // Arrange — both lifetimes elapse; nothing renewable remains
-            CapturingLoggerProvider logs = new();
+            FakeLogCollector logs = new();
             CapturingPrimaryHandler capturing = new();
             await using OidcTestHost host = await StartShortLifetimeHostAsync(
                 capturing,
                 accessTokenLifetimeSeconds: 1,
                 refreshTokenLifetimeSeconds: 1,
-                afterRegistration: (builder, _) => builder.Logging.AddProvider(logs),
+                afterRegistration: (builder, _) => builder.Logging.AddProvider(new FakeLoggerProvider(logs)),
                 logLevel: "Information");
             using BrowserlessUserAgent agent = host.CreateAgent();
             using HttpResponseMessage signedIn = await agent.SignInAsync(
@@ -157,7 +158,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
                 await agent.GetAsync(new Uri(OidcTestHost.AppBase, "protected/call-catalog-caught"));
             string body = await response.Content.ReadAsStringAsync();
 
-            List<string> failureLogs = [.. logs.Entries
+            List<string> failureLogs = [.. logs.GetSnapshot()
                 .Where(static entry => entry.Level == LogLevel.Error
                     && entry.Message.Contains("No user access token could be produced", StringComparison.Ordinal))
                 .Select(static entry => entry.Message)];
@@ -177,7 +178,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
         public async Task ProviderUnreachableDuringRefresh_SameContract()
         {
             // Arrange — sign in normally, then kill the backchannel before the refresh
-            CapturingLoggerProvider logs = new();
+            FakeLogCollector logs = new();
             CapturingPrimaryHandler capturing = new();
             BreakableHandler? breakable = null;
             await using OidcTestHost host = await StartShortLifetimeHostAsync(
@@ -193,7 +194,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
                         oidc.BackchannelHttpHandler = breakable;
                     };
                 },
-                afterRegistration: (builder, _) => builder.Logging.AddProvider(logs),
+                afterRegistration: (builder, _) => builder.Logging.AddProvider(new FakeLoggerProvider(logs)),
                 logLevel: "Information");
             using BrowserlessUserAgent agent = host.CreateAgent();
             using HttpResponseMessage signedIn = await agent.SignInAsync(
@@ -210,7 +211,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests
                 await agent.GetAsync(new Uri(OidcTestHost.AppBase, "protected/call-catalog-caught"));
             string body = await response.Content.ReadAsStringAsync();
 
-            int failureLogCount = logs.Entries.Count(static entry => entry.Level == LogLevel.Error
+            int failureLogCount = logs.GetSnapshot().Count(static entry => entry.Level == LogLevel.Error
                 && entry.Message.Contains("No user access token could be produced", StringComparison.Ordinal));
 
             // Assert

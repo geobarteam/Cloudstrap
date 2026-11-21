@@ -8,6 +8,7 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
 
     /// <summary>
@@ -93,8 +94,8 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
             config["Cloudstrap:ClientCredentials:TokenCache"] = "Shared";
             HostApplicationBuilder builder = ClientCredentialsTestHost.CreateBuilder(config);
             CapturingPrimaryHandler capturing = new();
-            CapturingLoggerProvider logs = new();
-            builder.Logging.AddProvider(logs);
+            FakeLogCollector logs = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
                 .ConfigurePrimaryHttpMessageHandler(() => capturing);
             builder.Services.AddCloudstrapClientCredentials(ClientCredentialsTestHost.BackchannelTo(identityProvider));
@@ -115,7 +116,7 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
             {
                 Assert.That(identityProvider.TokenRequestCount, Is.EqualTo(1));
                 Assert.That(
-                    logs.Entries.Where(entry => entry.Level >= LogLevel.Warning),
+                    logs.GetSnapshot().Where(entry => entry.Level >= LogLevel.Warning),
                     Is.Empty,
                     "Shared mode without a distributed tier must neither warn nor fail.");
             });
@@ -127,10 +128,10 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
             // Arrange & Act — one default (Isolated) run and one opted-in (Shared) run
             using TestIdentityProviderHost identityProvider = ClientCredentialsTestHost.StartIdentityProvider();
 
-            CapturingLoggerProvider isolatedLogs = new();
+            FakeLogCollector isolatedLogs = new();
             HostApplicationBuilder isolatedBuilder = ClientCredentialsTestHost.CreateBuilder(
                 ClientCredentialsTestHost.DefaultConfig(identityProvider));
-            isolatedBuilder.Logging.AddProvider(isolatedLogs);
+            isolatedBuilder.Logging.AddProvider(new FakeLoggerProvider(isolatedLogs));
             isolatedBuilder.Services.AddCloudstrapClientCredentials(
                 ClientCredentialsTestHost.BackchannelTo(identityProvider));
             using (IHost isolatedHost = isolatedBuilder.Build())
@@ -140,9 +141,9 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
 
             Dictionary<string, string?> sharedConfig = ClientCredentialsTestHost.DefaultConfig(identityProvider);
             sharedConfig["Cloudstrap:ClientCredentials:TokenCache"] = "Shared";
-            CapturingLoggerProvider sharedLogs = new();
+            FakeLogCollector sharedLogs = new();
             HostApplicationBuilder sharedBuilder = ClientCredentialsTestHost.CreateBuilder(sharedConfig);
-            sharedBuilder.Logging.AddProvider(sharedLogs);
+            sharedBuilder.Logging.AddProvider(new FakeLoggerProvider(sharedLogs));
             sharedBuilder.Services.AddCloudstrapClientCredentials(
                 ClientCredentialsTestHost.BackchannelTo(identityProvider));
             using (IHost sharedHost = sharedBuilder.Build())
@@ -154,11 +155,11 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(
-                    isolatedLogs.Entries.Count(entry => entry.Level == LogLevel.Information
+                    isolatedLogs.GetSnapshot().Count(entry => entry.Level == LogLevel.Information
                         && entry.Message.Contains("Isolated", StringComparison.Ordinal)),
                     Is.EqualTo(1));
                 Assert.That(
-                    sharedLogs.Entries.Count(entry => entry.Level == LogLevel.Information
+                    sharedLogs.GetSnapshot().Count(entry => entry.Level == LogLevel.Information
                         && entry.Message.Contains("Shared", StringComparison.Ordinal)),
                     Is.EqualTo(1));
             });

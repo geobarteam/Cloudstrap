@@ -7,6 +7,7 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
 
     /// <summary>
@@ -26,8 +27,8 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
             config["Cloudstrap:ClientCredentials:ClientSecret"] = "placeholder-wrong-secret";
             HostApplicationBuilder builder = ClientCredentialsTestHost.CreateBuilder(config);
             CapturingPrimaryHandler capturing = new();
-            CapturingLoggerProvider logs = new();
-            builder.Logging.AddProvider(logs);
+            FakeLogCollector logs = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
                 .ConfigurePrimaryHttpMessageHandler(() => capturing);
             builder.Services.AddCloudstrapClientCredentials(ClientCredentialsTestHost.BackchannelTo(identityProvider));
@@ -47,7 +48,7 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
                 Assert.That(exception!.ToString(), Does.Contain(identityProvider.TokenEndpoint.AbsoluteUri));
                 Assert.That(capturing.RequestCount, Is.Zero);
                 Assert.That(
-                    logs.Entries.Count(entry => entry.Level == LogLevel.Error
+                    logs.GetSnapshot().Count(entry => entry.Level == LogLevel.Error
                         && entry.Message.Contains("acquisition", StringComparison.OrdinalIgnoreCase)),
                     Is.EqualTo(1));
             });
@@ -66,9 +67,9 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
                 ["Cloudstrap:ClientCredentials:ClientSecret"] = "placeholder-not-a-real-secret",
             });
             CapturingPrimaryHandler capturing = new();
-            CapturingLoggerProvider logs = new();
+            FakeLogCollector logs = new();
             StatusCodeHandler failingBackchannel = new(HttpStatusCode.InternalServerError);
-            builder.Logging.AddProvider(logs);
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
                 .ConfigurePrimaryHttpMessageHandler(() => capturing);
             builder.Services.AddCloudstrapClientCredentials(configurator =>
@@ -89,7 +90,7 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
                 Assert.That(exception!.ToString(), Does.Contain("https://sts.contoso.example/connect/token"));
                 Assert.That(capturing.RequestCount, Is.Zero);
                 Assert.That(
-                    logs.Entries.Count(entry => entry.Level == LogLevel.Error
+                    logs.GetSnapshot().Count(entry => entry.Level == LogLevel.Error
                         && entry.Message.Contains("acquisition", StringComparison.OrdinalIgnoreCase)),
                     Is.EqualTo(1));
             });
@@ -108,8 +109,8 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
                 ["Cloudstrap:ClientCredentials:ClientSecret"] = "placeholder-not-a-real-secret",
             });
             CapturingPrimaryHandler capturing = new();
-            CapturingLoggerProvider logs = new();
-            builder.Logging.AddProvider(logs);
+            FakeLogCollector logs = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
                 .ConfigurePrimaryHttpMessageHandler(() => capturing);
             builder.Services.AddCloudstrapClientCredentials(configurator =>
@@ -130,7 +131,7 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
                 Assert.That(exception!.ToString(), Does.Contain("https://sts.contoso.example/connect/token"));
                 Assert.That(capturing.RequestCount, Is.Zero);
                 Assert.That(
-                    logs.Entries.Count(entry => entry.Level == LogLevel.Error
+                    logs.GetSnapshot().Count(entry => entry.Level == LogLevel.Error
                         && entry.Message.Contains("acquisition", StringComparison.OrdinalIgnoreCase)),
                     Is.EqualTo(1));
             });

@@ -358,47 +358,4 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests.Infrastructure
             return base.SendAsync(request, cancellationToken);
         }
     }
-
-    /// <summary>
-    /// Captures every log entry the host writes, so warning assertions can count exact occurrences.
-    /// </summary>
-    internal sealed class CapturingLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider
-    {
-        private readonly System.Collections.Concurrent.ConcurrentQueue<(Microsoft.Extensions.Logging.LogLevel Level, string Message)> _entries = [];
-
-        public IReadOnlyCollection<(Microsoft.Extensions.Logging.LogLevel Level, string Message)> Entries => _entries;
-
-        public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => new CapturingLogger(_entries);
-
-        public void Dispose()
-        {
-        }
-
-        private sealed class CapturingLogger : Microsoft.Extensions.Logging.ILogger
-        {
-            private readonly System.Collections.Concurrent.ConcurrentQueue<(Microsoft.Extensions.Logging.LogLevel, string)> _entries;
-
-            public CapturingLogger(
-                System.Collections.Concurrent.ConcurrentQueue<(Microsoft.Extensions.Logging.LogLevel, string)> entries)
-            {
-                _entries = entries;
-            }
-
-            public IDisposable? BeginScope<TState>(TState state)
-                where TState : notnull => null;
-
-            public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
-
-            public void Log<TState>(
-                Microsoft.Extensions.Logging.LogLevel logLevel,
-                Microsoft.Extensions.Logging.EventId eventId,
-                TState state,
-                Exception? exception,
-                Func<TState, Exception?, string> formatter)
-            {
-                ArgumentNullException.ThrowIfNull(formatter);
-                _entries.Enqueue((logLevel, formatter(state, exception)));
-            }
-        }
-    }
 }

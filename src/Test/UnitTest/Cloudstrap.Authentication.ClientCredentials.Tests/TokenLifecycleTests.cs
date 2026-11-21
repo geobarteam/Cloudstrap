@@ -11,6 +11,7 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
     using Microsoft.Extensions.Http;
     using Microsoft.Extensions.Http.Resilience;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
 
     /// <summary>
@@ -237,8 +238,8 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
             config["Cloudstrap:HttpClients:Catalog:TokenRequestParameters:ForceRenewal"] = "true";
             HostApplicationBuilder builder = ClientCredentialsTestHost.CreateBuilder(config);
             CapturingPrimaryHandler capturing = new();
-            CapturingLoggerProvider logs = new();
-            builder.Logging.AddProvider(logs);
+            FakeLogCollector logs = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
                 .ConfigurePrimaryHttpMessageHandler(() => capturing);
             builder.Services.AddCloudstrapClientCredentials(ClientCredentialsTestHost.BackchannelTo(identityProvider));
@@ -259,7 +260,7 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
             {
                 Assert.That(identityProvider.TokenRequestCount, Is.EqualTo(3));
                 Assert.That(
-                    logs.Entries.Count(entry => entry.Level == LogLevel.Warning
+                    logs.GetSnapshot().Count(entry => entry.Level == LogLevel.Warning
                         && entry.Message.Contains("Cloudstrap:HttpClients:Catalog:TokenRequestParameters:ForceRenewal", StringComparison.Ordinal)),
                     Is.EqualTo(1));
             });
@@ -275,8 +276,8 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
             config["Cloudstrap:HttpClients:Catalog:TokenRequestParameters:ChallengeScheme"] = "oidc";
             HostApplicationBuilder builder = ClientCredentialsTestHost.CreateBuilder(config);
             CapturingPrimaryHandler capturing = new();
-            CapturingLoggerProvider logs = new();
-            builder.Logging.AddProvider(logs);
+            FakeLogCollector logs = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             builder.Services.AddCloudstrapHttpServiceClient<ICatalogClient, CatalogClient>("Catalog")
                 .ConfigurePrimaryHttpMessageHandler(() => capturing);
             builder.Services.AddCloudstrapClientCredentials(ClientCredentialsTestHost.BackchannelTo(identityProvider));
@@ -294,11 +295,11 @@ namespace Cloudstrap.Authentication.ClientCredentials.Tests
                 Assert.That(capturing.LastRequest!.Headers.Authorization, Is.Not.Null);
                 Assert.That(identityProvider.TokenRequestCount, Is.EqualTo(1));
                 Assert.That(
-                    logs.Entries.Count(entry => entry.Level == LogLevel.Warning
+                    logs.GetSnapshot().Count(entry => entry.Level == LogLevel.Warning
                         && entry.Message.Contains("Cloudstrap:HttpClients:Catalog:TokenRequestParameters:SignInScheme", StringComparison.Ordinal)),
                     Is.EqualTo(1));
                 Assert.That(
-                    logs.Entries.Count(entry => entry.Level == LogLevel.Warning
+                    logs.GetSnapshot().Count(entry => entry.Level == LogLevel.Warning
                         && entry.Message.Contains("Cloudstrap:HttpClients:Catalog:TokenRequestParameters:ChallengeScheme", StringComparison.Ordinal)),
                     Is.EqualTo(1));
             });

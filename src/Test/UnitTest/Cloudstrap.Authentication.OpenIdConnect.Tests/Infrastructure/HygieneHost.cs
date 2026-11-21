@@ -14,6 +14,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests.Infrastructure
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
     using OpenTelemetry.Trace;
 
@@ -29,7 +30,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests.Infrastructure
             TestIdentityProviderHost identityProvider,
             WebApplication app,
             TestServer appServer,
-            CapturingLoggerProvider logs,
+            FakeLogCollector logs,
             List<Activity> activities)
         {
             IdentityProvider = identityProvider;
@@ -66,7 +67,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests.Infrastructure
         /// <summary>
         /// Gets every log entry the host wrote, captured at Debug level.
         /// </summary>
-        public CapturingLoggerProvider Logs
+        public FakeLogCollector Logs
         {
             get;
         }
@@ -85,7 +86,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests.Infrastructure
         /// <returns>The started fixture.</returns>
         public static async Task<HygieneHost> StartAsync()
         {
-            CapturingLoggerProvider logs = new();
+            FakeLogCollector logs = new();
             List<Activity> activities = [];
 
             TestIdentityProviderHost identityProvider = TestIdentityProviderHost.StartInProcess(
@@ -137,7 +138,7 @@ namespace Cloudstrap.Authentication.OpenIdConnect.Tests.Infrastructure
                 builder.Services.AddCloudstrapOpenIdConnect(configurator =>
                     configurator.OpenIdConnect = oidc =>
                         oidc.BackchannelHttpHandler = identityProvider.CreateHandler());
-                builder.Logging.AddProvider(logs);
+                builder.Logging.AddProvider(new FakeLoggerProvider(logs));
 
                 WebApplication app = builder.Build();
                 app.UseCloudstrapWebApi(static pipeline => pipeline.ConfigureEndpoints = static endpoints =>
