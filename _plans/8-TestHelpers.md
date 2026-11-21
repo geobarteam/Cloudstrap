@@ -809,15 +809,18 @@ differs), the executor stops and reports it instead of adjusting the test.
 - **Assertion meaning (AC-TS2)**: review the five suites' diffs. Only type names (`FakeLogCollector`,
   `FakeLogRecord`) and `Entries` → `GetSnapshot()` changed; every predicate is verbatim.
 
-- [ ] Behavioral verification:
+- [x] Behavioral verification:
   - `DependencyPinTests.DiagnosticsTesting_IsPinnedAt10_8_0` and
     `RepositoryHygieneTests.NoTestProject_LinksASourceFileFromAnotherProject` /
     `RecordShapeSuite_DeclaresNoLogCaptureProvider` pass.
   - The five repointed exes are green at baseline counts, and every other exe + E2E is at baseline.
-- [ ] Code review: the deleted copies (four files + the last Hangfire link); the harness types retyped to
+  - *Evidence (2026-11-21)*: `dotnet build src/Cloudstrap.sln` 0 warnings; all 17 unit exes pass; E2E 68/68 pass;
+    `dotnet format --verify-no-changes` clean.
+- [x] Code review: the deleted copies (four files + the last Hangfire link); the harness types retyped to
   `FakeLogCollector`; no `Cloudstrap.TestInfrastructure` reference to the package (the library owns no log-capture
   type); `Cloudstrap.Observability.Tests` untouched.
-- [ ] User approved: implementation may continue past this gate.
+- [x] User approved: implementation may continue past this gate. *(Owner, 2026-11-21: new test-only dependency
+  `Microsoft.Extensions.Diagnostics.Testing` 10.8.0 and the five rewritten suites approved.)*
 
 ---
 
