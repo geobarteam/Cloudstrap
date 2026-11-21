@@ -834,7 +834,13 @@ After this step:
 - No `CapturingLoggerProvider` or `CapturedLogEntry` remains anywhere in `src/`.
 - Permanent guards keep the dropped source members, `Mvc.Testing`, EF Core and enterprise identifiers out.
 
-- [ ] Done
+- [x] Done *(2026-11-22. RED: `NoCloudstrapOwnedLogCaptureType_RemainsAnywhere` failed on 9 auth-suite files; the two
+  characterization tripwires were green on arrival. VERIFY: companion 65/65; OpenIdConnect 66/66; ClientCredentials
+  41/41; every other unit exe at baseline (unit total 926 + companion 65); E2E 68/68; build 0 code warnings; `dotnet
+  format --verify-no-changes` exit 0. Grep evidence: in files touched since `03eee2b`, `Nihdi|Riziv` /
+  `Security:EnableAuthentication` / `"UnitTest"` appear only in the AC-TS12 tripwire's own pattern, and `UnitTest` only as
+  the `src/Test/UnitTest` path / solution-folder name. Note: `OpenIdConnect.Tests/Infrastructure/CapturingLoggerProvider.cs`
+  is emptied, not deleted (the executor's sandbox allowed no file deletion); `git rm` it at the final gate.)*
 
 **Scope**:
 - *(modify, csproj)*: add a version-less `<PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" />` to
