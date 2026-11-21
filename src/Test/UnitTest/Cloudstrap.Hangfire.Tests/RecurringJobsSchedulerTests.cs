@@ -3,9 +3,9 @@ namespace Cloudstrap.Hangfire.Tests
     using Cloudstrap.Core;
     using Cloudstrap.Hangfire.Tests.Fakes;
     using Cloudstrap.Hangfire.Tests.Fixtures.Tasks;
-    using Cloudstrap.Messaging.Tests.Infrastructure;
     using global::Hangfire.Common;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
 
     /// <summary>
@@ -22,7 +22,7 @@ namespace Cloudstrap.Hangfire.Tests
 
         private RecordingRecurringJobManager _manager = null!;
         private FakeJobStorage _storage = null!;
-        private CapturingLoggerProvider _logs = null!;
+        private FakeLogCollector _logs = null!;
         private ILoggerFactory _loggerFactory = null!;
 
         [SetUp]
@@ -30,15 +30,14 @@ namespace Cloudstrap.Hangfire.Tests
         {
             _manager = new RecordingRecurringJobManager();
             _storage = new FakeJobStorage();
-            _logs = new CapturingLoggerProvider();
-            _loggerFactory = LoggerFactory.Create(logging => logging.AddProvider(_logs).SetMinimumLevel(LogLevel.Trace));
+            _logs = new FakeLogCollector();
+            _loggerFactory = LoggerFactory.Create(logging => logging.AddProvider(new FakeLoggerProvider(_logs)).SetMinimumLevel(LogLevel.Trace));
         }
 
         [TearDown]
         public void TearDown()
         {
             _loggerFactory.Dispose();
-            _logs.Dispose();
         }
 
         [Test]
@@ -274,7 +273,7 @@ namespace Cloudstrap.Hangfire.Tests
             scheduler.ScheduleAll();
 
             // Assert
-            CapturedLogEntry[] warnings = [.. _logs.Entries.Where(entry => entry.Level == LogLevel.Warning)];
+            FakeLogRecord[] warnings = [.. _logs.GetSnapshot().Where(entry => entry.Level == LogLevel.Warning)];
             Assert.Multiple(() =>
             {
                 Assert.That(warnings, Has.Length.EqualTo(1));
@@ -315,9 +314,9 @@ namespace Cloudstrap.Hangfire.Tests
                 _loggerFactory.CreateLogger<RecurringJobsScheduler>());
         }
 
-        private List<CapturedLogEntry> InfoLogsContaining(string fragment)
+        private List<FakeLogRecord> InfoLogsContaining(string fragment)
         {
-            return [.. _logs.Entries.Where(entry => entry.Level == LogLevel.Information && entry.Message.Contains(fragment, StringComparison.OrdinalIgnoreCase))];
+            return [.. _logs.GetSnapshot().Where(entry => entry.Level == LogLevel.Information && entry.Message.Contains(fragment, StringComparison.OrdinalIgnoreCase))];
         }
 
         /// <summary>A job type owned by some other component (never the dispatcher).</summary>

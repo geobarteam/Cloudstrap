@@ -8,6 +8,7 @@ namespace Cloudstrap.Messaging.Tests
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
     using Wolverine;
 
@@ -105,7 +106,7 @@ namespace Cloudstrap.Messaging.Tests
             Dictionary<string, string?> settings = DurableSettings("contoso", "poison", "worker");
             settings["Cloudstrap:Messaging:Retries:NumberOfImmediate"] = "0";
             settings["Cloudstrap:Messaging:Retries:NumberOfDelayed"] = "0";
-            using IHost host = DurableHost(settings, out CapturingLoggerProvider logs);
+            using IHost host = DurableHost(settings, out FakeLogCollector logs);
             await host.StartAsync();
 
             // Act
@@ -123,7 +124,7 @@ namespace Cloudstrap.Messaging.Tests
             // Assert — a queryable dead-letter row; the log names the type and the id, never the payload.
             Assert.That(deadLetterId, Is.Not.Null, "a dead-letter row for the poison message");
             string id = Convert.ToString(deadLetterId, CultureInfo.InvariantCulture)!;
-            string[] messages = [.. logs.Entries.Select(entry => entry.Message + " " + entry.Exception)];
+            string[] messages = [.. logs.GetSnapshot().Select(entry => entry.Message + " " + entry.Exception)];
             Assert.Multiple(() =>
             {
                 Assert.That(messages, Has.Some.Contains("PoisonCommand"));
@@ -186,12 +187,12 @@ namespace Cloudstrap.Messaging.Tests
         /// <summary>Builds a durable host: UseSqlServer(), solo durability mode (single node, no leader election).</summary>
         private static IHost DurableHost(
             Dictionary<string, string?> settings,
-            out CapturingLoggerProvider logs,
+            out FakeLogCollector logs,
             Action<WolverineOptions>? wolverine = null)
         {
             HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
-            CapturingLoggerProvider provider = new();
-            builder.Logging.AddProvider(provider);
+            FakeLogCollector provider = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(provider));
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.AddCloudstrapMessaging(configurator => configurator.Wolverine = options =>
                 {

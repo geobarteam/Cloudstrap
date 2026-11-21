@@ -21,10 +21,9 @@
     <PackageReference Include="Microsoft.AspNetCore.TestHost" />
   </ItemGroup>
 
-  <!-- DD-8: the log-capturing provider stays linked from Cloudstrap.Messaging.Tests until deliverable #8 Step 6
-       replaces it with Microsoft.Extensions.Diagnostics.Testing; the SQL helper comes from Cloudstrap.TestInfrastructure. -->
   <ItemGroup>
-    <Compile Include="..\Cloudstrap.Messaging.Tests\Infrastructure\CapturingLoggerProvider.cs" Link="Infrastructure\CapturingLoggerProvider.cs" />
+    <!-- #8 D-3: log capture through Microsoft's fake logger (FakeLoggerProvider / FakeLogCollector) -->
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" />
   </ItemGroup>
 
 </Project>

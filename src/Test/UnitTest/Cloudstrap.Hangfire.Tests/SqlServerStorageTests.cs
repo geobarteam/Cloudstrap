@@ -3,7 +3,6 @@ namespace Cloudstrap.Hangfire.Tests
     using Cloudstrap.Hangfire.Tests.Fixtures;
     using Cloudstrap.Hangfire.Tests.Fixtures.Tasks;
     using Cloudstrap.Hangfire.Tests.Infrastructure;
-    using Cloudstrap.Messaging.Tests.Infrastructure;
     using global::Hangfire;
     using global::Hangfire.Common;
     using global::Hangfire.Storage;
@@ -11,6 +10,7 @@ namespace Cloudstrap.Hangfire.Tests
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
 
     /// <summary>
@@ -167,7 +167,7 @@ namespace Cloudstrap.Hangfire.Tests
         public async Task OverlapLock_OnRealStorage_SecondTriggerIsSkippedWhileTheFirstRunHoldsTheLock()
         {
             // Arrange
-            CapturingLoggerProvider logs = new();
+            FakeLogCollector logs = new();
             using IHost host = HangfireSqlHost.CreateBuilder(logs).Build();
             await host.StartAsync();
             IRecurringJobManager manager = host.Services.GetRequiredService<IRecurringJobManager>();
@@ -180,7 +180,7 @@ namespace Cloudstrap.Hangfire.Tests
 
                 manager.Trigger(nameof(GatedTask));
                 bool skipped = await HangfireSqlHost.WaitUntilAsync(
-                    () => logs.Entries.Any(entry => entry.Level == LogLevel.Warning && entry.Message.Contains($"{nameof(GatedTask)} skipped", StringComparison.Ordinal)),
+                    () => logs.GetSnapshot().Any(entry => entry.Level == LogLevel.Warning && entry.Message.Contains($"{nameof(GatedTask)} skipped", StringComparison.Ordinal)),
                     _deadline);
                 GatedTask.Gate.Release();
 
@@ -200,7 +200,6 @@ namespace Cloudstrap.Hangfire.Tests
             finally
             {
                 await host.StopAsync();
-                logs.Dispose();
             }
         }
 

@@ -85,8 +85,8 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
             string id = Convert.ToString(deadLetterId, CultureInfo.InvariantCulture)!;
             object? rowType = await TestDatabase.Instance.ScalarAsync(
                 $"SELECT message_type FROM {_deadLetters} WHERE id = @id", [("@id", deadLetterId!)]);
-            string[] messages = [.. harness.ListenerLogs.Entries.Select(entry => entry.Message + " " + entry.Exception)];
-            string[] leafLines = [.. harness.ListenerLogs.Entries
+            string[] messages = [.. harness.ListenerLogs.GetSnapshot().Select(entry => entry.Message + " " + entry.Exception)];
+            string[] leafLines = [.. harness.ListenerLogs.GetSnapshot()
                 .Where(entry => entry.Category == "Cloudstrap.Messaging.AzureBlob")
                 .Select(entry => entry.Message)];
             Assert.Multiple(() =>

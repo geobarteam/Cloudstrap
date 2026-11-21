@@ -2,11 +2,11 @@ namespace Cloudstrap.Messaging.Tests
 {
     using System.Reflection;
     using Cloudstrap.Messaging.Tests.Fixtures.Contracts;
-    using Cloudstrap.Messaging.Tests.Infrastructure;
     using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
     using Wolverine;
     using Wolverine.Runtime;
@@ -153,8 +153,8 @@ namespace Cloudstrap.Messaging.Tests
             Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings[$"Cloudstrap:Messaging:Destinations:{_contractsNamespace}"] = "contoso-billing-worker";
             HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
-            CapturingLoggerProvider logs = new();
-            builder.Logging.AddProvider(logs);
+            FakeLogCollector logs = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             builder.AddCloudstrapMessaging();
             using IHost host = builder.Build();
 
@@ -163,7 +163,7 @@ namespace Cloudstrap.Messaging.Tests
             await host.StopAsync();
 
             // Assert — exactly one summary line naming transport, endpoint and each destination.
-            CapturedLogEntry[] summaries = [.. logs.Entries
+            FakeLogRecord[] summaries = [.. logs.GetSnapshot()
                 .Where(entry => entry.Category == typeof(MessagingStartupSummaryLogger).FullName)];
             Assert.That(summaries, Has.Length.EqualTo(1));
             Assert.Multiple(() =>

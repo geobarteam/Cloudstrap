@@ -220,7 +220,7 @@ namespace Cloudstrap.Hangfire.Tests
             await using DashboardTestApp app = await DashboardTestApp.StartAsync();
 
             // Assert
-            string[] summaries = [.. app.Logs.Entries
+            string[] summaries = [.. app.Logs.GetSnapshot()
                 .Where(entry => entry.Category == "Cloudstrap.Hangfire" && entry.Level == LogLevel.Information)
                 .Select(entry => entry.Message)
                 .Where(message => message.StartsWith("Cloudstrap Hangfire:", StringComparison.Ordinal))];

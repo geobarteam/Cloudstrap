@@ -3,7 +3,6 @@ namespace Cloudstrap.Hangfire.Tests.Infrastructure
     using System.Security.Claims;
     using System.Text.Encodings.Web;
     using Cloudstrap.Hangfire.Tests.Fakes;
-    using Cloudstrap.Messaging.Tests.Infrastructure;
     using global::Hangfire;
     using global::Hangfire.Storage.Monitoring;
     using Microsoft.AspNetCore.Authentication;
@@ -15,6 +14,7 @@ namespace Cloudstrap.Hangfire.Tests.Infrastructure
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using Microsoft.Extensions.Options;
 
     /// <summary>The authentication the dashboard test app registers.</summary>
@@ -48,7 +48,7 @@ namespace Cloudstrap.Hangfire.Tests.Infrastructure
         /// <summary>The consumer policy the tests reference: claim <c>scope=ops</c>.</summary>
         public const string OpsScopePolicy = "ops-scope";
 
-        private DashboardTestApp(WebApplication app, CapturingLoggerProvider logs)
+        private DashboardTestApp(WebApplication app, FakeLogCollector logs)
         {
             App = app;
             Logs = logs;
@@ -68,7 +68,7 @@ namespace Cloudstrap.Hangfire.Tests.Infrastructure
         }
 
         /// <summary>Gets the captured log entries.</summary>
-        public CapturingLoggerProvider Logs
+        public FakeLogCollector Logs
         {
             get;
         }
@@ -102,8 +102,8 @@ namespace Cloudstrap.Hangfire.Tests.Infrastructure
             }
 
             builder.Configuration.AddInMemoryCollection(configuration);
-            CapturingLoggerProvider logs = new();
-            builder.Logging.AddProvider(logs);
+            FakeLogCollector logs = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
 
             FakeJobStorage storage = new();
             storage.Monitoring.Statistics = new StatisticsDto { Servers = 1, Recurring = 3 };
@@ -195,7 +195,6 @@ namespace Cloudstrap.Hangfire.Tests.Infrastructure
             Client.Dispose();
             await App.StopAsync();
             await App.DisposeAsync();
-            Logs.Dispose();
         }
 
         /// <summary>

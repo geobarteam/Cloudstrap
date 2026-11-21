@@ -218,6 +218,46 @@ namespace Cloudstrap.TestInfrastructure.Tests
             });
         }
 
+        [Test]
+        public void NoTestProject_LinksASourceFileFromAnotherProject()
+        {
+            // Act
+            string[] links = [.. SourceFiles(Path.Combine(Src, "Test"), "*.csproj")
+                .SelectMany(project => XDocument.Load(project).Descendants()
+                    .Where(element => element.Name.LocalName == "Compile" && element.Attribute("Link") is not null)
+                    .Select(element => $"{Relative(project)}: {(string?)element.Attribute("Include")}"))];
+
+            // Assert
+            Assert.That(links, Is.Empty);
+        }
+
+        [TestCase("Cloudstrap.Hangfire.Tests")]
+        [TestCase("Cloudstrap.Messaging.Tests")]
+        [TestCase("Cloudstrap.Messaging.AzureBlob.Tests")]
+        [TestCase("Cloudstrap.WebApi.Tests")]
+        [TestCase("Cloudstrap.Mvc.Tests")]
+        public void RecordShapeSuite_DeclaresNoLogCaptureProvider(string suite)
+        {
+            // Arrange
+            string suiteDirectory = Path.Combine(Src, "Test", "UnitTest", suite);
+
+            // Act
+            string[] offenders = [.. SourceFiles(suiteDirectory, "*.cs")
+                .Where(path =>
+                {
+                    string source = File.ReadAllText(path);
+                    return source.Contains("class CapturingLoggerProvider", StringComparison.Ordinal)
+                        || source.Contains("CapturedLogEntry", StringComparison.Ordinal);
+                })
+                .Select(Relative)
+                .Concat(SourceFiles(suiteDirectory, "*.csproj")
+                    .Where(project => File.ReadAllText(project).Contains("CapturingLoggerProvider", StringComparison.Ordinal))
+                    .Select(Relative))];
+
+            // Assert
+            Assert.That(offenders, Is.Empty);
+        }
+
         private static string[] WorkflowLines(string workflow)
         {
             return File.ReadAllLines(Path.Combine(_repoRoot.Value, ".github", "workflows", workflow));

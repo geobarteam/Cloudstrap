@@ -9,6 +9,7 @@ namespace Cloudstrap.WebApi.Tests
     using Microsoft.AspNetCore.TestHost;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
 
     /// <summary>
@@ -47,20 +48,20 @@ namespace Cloudstrap.WebApi.Tests
         public async Task Throwing_InProduction_LogsTheExceptionExactlyOnce()
         {
             // Arrange
-            CapturingLoggerProvider logs = new();
+            FakeLogCollector logs = new();
             await using WebApplication app = await WebApiTestHost.StartAsync(
-                beforeBuild: builder => builder.Logging.AddProvider(logs));
+                beforeBuild: builder => builder.Logging.AddProvider(new FakeLoggerProvider(logs)));
 
             // Act
             using HttpResponseMessage response = await Boom(app);
 
             // Assert
-            CapturedLogEntry[] errors =
+            FakeLogRecord[] errors =
             [
-                .. logs.Entries.Where(entry =>
+                .. logs.GetSnapshot().Where(entry =>
                     entry.Level == LogLevel.Error
                     && entry.Exception is not null
-                    && entry.Category.StartsWith("Cloudstrap.WebApi", StringComparison.Ordinal)),
+                    && entry.Category?.StartsWith("Cloudstrap.WebApi", StringComparison.Ordinal) == true),
             ];
 
             Assert.That(errors, Has.Length.EqualTo(1));

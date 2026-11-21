@@ -6,6 +6,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using OpenTelemetry;
     using OpenTelemetry.Trace;
     using Wolverine;
@@ -24,7 +25,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure
         private const string _contractsNamespace = "Cloudstrap.Messaging.AzureBlob.Tests.Fixtures.Contracts";
         private const string _transportSchema = "claimcheck_transport";
 
-        private TwoNodeHarness(IHost sender, IHost listener, CapturingLoggerProvider listenerLogs, List<Activity> listenerActivities)
+        private TwoNodeHarness(IHost sender, IHost listener, FakeLogCollector listenerLogs, List<Activity> listenerActivities)
         {
             Sender = sender;
             Listener = listener;
@@ -45,7 +46,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure
         }
 
         /// <summary>Gets everything the listener logged.</summary>
-        public CapturingLoggerProvider ListenerLogs
+        public FakeLogCollector ListenerLogs
         {
             get;
         }
@@ -82,7 +83,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure
             IHost listenerHost = Build(
                 listener,
                 blobs,
-                out CapturingLoggerProvider logs,
+                out FakeLogCollector logs,
                 builder => builder.Services.AddOpenTelemetry().WithTracing(tracing => tracing.AddInMemoryExporter(activities)),
                 listenerWolverine);
             IHost senderHost = Build(sender, blobs, out _, wolverine: options => options.Policies.DisableConventionalLocalRouting());
@@ -131,13 +132,13 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure
         private static IHost Build(
             Dictionary<string, string?> settings,
             InMemoryBlobContainerClient blobs,
-            out CapturingLoggerProvider logs,
+            out FakeLogCollector logs,
             Action<HostApplicationBuilder>? extra = null,
             Action<WolverineOptions>? wolverine = null)
         {
             HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
-            CapturingLoggerProvider provider = new();
-            builder.Logging.AddProvider(provider);
+            FakeLogCollector provider = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(provider));
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.Services.AddSingleton<AttemptCounter>();
             extra?.Invoke(builder);

@@ -15,4 +15,9 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- #8 D-3: log capture through Microsoft's fake logger (FakeLoggerProvider / FakeLogCollector) -->
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" />
+  </ItemGroup>
+
 </Project>

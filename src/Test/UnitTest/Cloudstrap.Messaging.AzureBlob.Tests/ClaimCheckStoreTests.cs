@@ -3,8 +3,8 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
     using System.Text;
     using Azure;
     using Cloudstrap.Messaging.AzureBlob.Tests.Fixtures;
-    using Cloudstrap.Messaging.AzureBlob.Tests.Infrastructure;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
     using Wolverine.ClaimCheck.AzureBlobStorage;
     using Wolverine.Persistence;
@@ -25,7 +25,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         {
             // Arrange — an account where the container does not exist yet.
             InMemoryBlobContainerClient blobs = new() { RequireCreate = true };
-            ClaimCheckStore store = CreateStore(blobs, new CapturingLoggerProvider());
+            ClaimCheckStore store = CreateStore(blobs, new FakeLogCollector());
 
             // Act
             ClaimCheckToken token = await store.StoreAsync(_payload, "application/json");
@@ -45,7 +45,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         {
             // Arrange
             InMemoryBlobContainerClient blobs = new();
-            ClaimCheckStore store = CreateStore(blobs, new CapturingLoggerProvider());
+            ClaimCheckStore store = CreateStore(blobs, new FakeLogCollector());
 
             // Act
             await store.StoreAsync(_payload, "application/json");
@@ -64,7 +64,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         {
             // Arrange — the payload is stored, then every download answers 404.
             InMemoryBlobContainerClient blobs = new();
-            CapturingLoggerProvider logs = new();
+            FakeLogCollector logs = new();
             ClaimCheckStore store = CreateStore(blobs, logs);
             ClaimCheckToken token = await store.StoreAsync(Encoding.UTF8.GetBytes("payload-sentinel-never-logged"), "text/plain");
             blobs.DownloadFailure = new RequestFailedException(404, "The specified blob does not exist.", "BlobNotFound", null);
@@ -73,7 +73,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
             RequestFailedException? failure = Assert.ThrowsAsync<RequestFailedException>(() => store.LoadAsync(token));
 
             // Assert
-            string[] lines = [.. logs.Entries.Select(entry => entry.Message)];
+            string[] lines = [.. logs.GetSnapshot().Select(entry => entry.Message)];
             Assert.Multiple(() =>
             {
                 Assert.That(failure!.Status, Is.EqualTo(404), "the SDK's exception continues unchanged");
@@ -82,9 +82,9 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
             });
         }
 
-        private static ClaimCheckStore CreateStore(InMemoryBlobContainerClient blobs, CapturingLoggerProvider logs)
+        private static ClaimCheckStore CreateStore(InMemoryBlobContainerClient blobs, FakeLogCollector logs)
         {
-            ILogger logger = logs.CreateLogger("Cloudstrap.Messaging.AzureBlob");
+            ILogger logger = new FakeLogger(logs, "Cloudstrap.Messaging.AzureBlob");
             return new ClaimCheckStore(new AzureBlobClaimCheckStore(blobs), blobs, logger);
         }
     }

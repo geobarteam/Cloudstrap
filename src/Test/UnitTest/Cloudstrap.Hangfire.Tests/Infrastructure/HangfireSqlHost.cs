@@ -1,10 +1,10 @@
 namespace Cloudstrap.Hangfire.Tests.Infrastructure
 {
-    using Cloudstrap.Messaging.Tests.Infrastructure;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
 
     /// <summary>
     /// Builds real hosts on the suite's <c>CloudstrapHangfireTests</c> SQL Server catalog (LocalDB, or the <c>CLOUDSTRAP_TEST_SQL</c> server): Hangfire in
@@ -25,7 +25,7 @@ namespace Cloudstrap.Hangfire.Tests.Infrastructure
         /// <param name="schema">The Hangfire schema.</param>
         /// <param name="prepareSchema">Whether Hangfire installs its schema at startup.</param>
         public static HostApplicationBuilder CreateBuilder(
-            CapturingLoggerProvider? logs = null,
+            FakeLogCollector? logs = null,
             bool runServer = true,
             string schema = Schema,
             bool prepareSchema = true)
@@ -46,7 +46,7 @@ namespace Cloudstrap.Hangfire.Tests.Infrastructure
             builder.Services.Configure<HostOptions>(host => host.ShutdownTimeout = TimeSpan.FromSeconds(10));
             if (logs is not null)
             {
-                builder.Logging.AddProvider(logs);
+                builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             }
 
             builder.AddCloudstrapHangfire(hangfire =>

@@ -2,11 +2,11 @@ namespace Cloudstrap.Hangfire.Tests
 {
     using Cloudstrap.Hangfire.Tests.Fakes;
     using Cloudstrap.Hangfire.Tests.Infrastructure;
-    using Cloudstrap.Messaging.Tests.Infrastructure;
     using global::Hangfire;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
 
     /// <summary>
@@ -20,9 +20,8 @@ namespace Cloudstrap.Hangfire.Tests
         public async Task StartAsync_LogsThePostureLine_AndOneLinePerJob_WithIdCronAndTimeZone_NeverTheConnectionString()
         {
             // Arrange
-            (IHost host, RecordingRecurringJobManager manager, CapturingLoggerProvider logs, _) = BuildHost();
+            (IHost host, RecordingRecurringJobManager manager, FakeLogCollector logs, _) = BuildHost();
             using (host)
-            using (logs)
             {
                 RecurringTaskSchedulingService service = host.Services.GetServices<IHostedService>().OfType<RecurringTaskSchedulingService>().Single();
 
@@ -30,7 +29,7 @@ namespace Cloudstrap.Hangfire.Tests
                 await service.StartAsync(CancellationToken.None);
 
                 // Assert
-                string[] summary = [.. logs.Entries
+                string[] summary = [.. logs.GetSnapshot()
                     .Where(entry => entry.Category == "Cloudstrap.Hangfire" && entry.Level == LogLevel.Information)
                     .Select(entry => entry.Message)];
                 Assert.Multiple(() =>
@@ -39,8 +38,8 @@ namespace Cloudstrap.Hangfire.Tests
                     Assert.That(summary, Has.Some.Contains("run server True").And.Some.Contains("prepare schema False"));
                     Assert.That(summary, Has.Some.Contains("'NightlyCleanupTask'").And.Contains("'0 3 * * *'").And.Contains("'UTC'"));
                     Assert.That(summary, Has.Some.Contains("'DisabledInCodeTask' disabled"));
-                    Assert.That(logs.Entries.Select(entry => entry.Message), Has.None.Contains("fixture-password"));
-                    Assert.That(logs.Entries.Select(entry => entry.Message), Has.None.Contains("unreachable.invalid"));
+                    Assert.That(logs.GetSnapshot().Select(entry => entry.Message), Has.None.Contains("fixture-password"));
+                    Assert.That(logs.GetSnapshot().Select(entry => entry.Message), Has.None.Contains("unreachable.invalid"));
                 });
             }
         }
@@ -49,9 +48,8 @@ namespace Cloudstrap.Hangfire.Tests
         public void StartAsync_WhenSchedulingThrows_TheExceptionPropagates()
         {
             // Arrange
-            (IHost host, RecordingRecurringJobManager manager, CapturingLoggerProvider logs, _) = BuildHost();
+            (IHost host, RecordingRecurringJobManager manager, FakeLogCollector logs, _) = BuildHost();
             using (host)
-            using (logs)
             {
                 manager.FailEveryAddOrUpdate = true;
                 RecurringTaskSchedulingService service = host.Services.GetServices<IHostedService>().OfType<RecurringTaskSchedulingService>().Single();
@@ -65,9 +63,8 @@ namespace Cloudstrap.Hangfire.Tests
         public async Task HostStart_WhenSchedulingFails_FaultsStartup_AndTheHangfireServerNeverStarts()
         {
             // Arrange
-            (IHost host, RecordingRecurringJobManager manager, CapturingLoggerProvider logs, FakeJobStorage storage) = BuildHost();
+            (IHost host, RecordingRecurringJobManager manager, FakeLogCollector logs, FakeJobStorage storage) = BuildHost();
             using (host)
-            using (logs)
             {
                 manager.FailEveryAddOrUpdate = true;
 
@@ -80,13 +77,13 @@ namespace Cloudstrap.Hangfire.Tests
             }
         }
 
-        private static (IHost Host, RecordingRecurringJobManager Manager, CapturingLoggerProvider Logs, FakeJobStorage Storage) BuildHost()
+        private static (IHost Host, RecordingRecurringJobManager Manager, FakeLogCollector Logs, FakeJobStorage Storage) BuildHost()
         {
             FakeJobStorage storage = new();
             RecordingRecurringJobManager manager = new();
-            CapturingLoggerProvider logs = new();
+            FakeLogCollector logs = new();
             HostApplicationBuilder builder = HangfireTestHost.CreateBuilder();
-            builder.Logging.AddProvider(logs);
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             builder.AddCloudstrapHangfire(hangfire => hangfire.Storage = configuration => configuration.UseStorage(storage));
 
             // Registered after the call: the last registration wins, replacing the Hangfire manager.

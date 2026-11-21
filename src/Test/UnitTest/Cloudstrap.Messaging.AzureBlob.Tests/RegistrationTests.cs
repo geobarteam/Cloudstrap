@@ -7,6 +7,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
     using Wolverine;
 
@@ -98,8 +99,8 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
         {
             // Arrange — the container client AddCloudstrapBlobStorage would register (route b of the ladder).
             HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(CloudstrapTestHost.ValidSettings());
-            CapturingLoggerProvider logs = new();
-            builder.Logging.AddProvider(logs);
+            FakeLogCollector logs = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             ClaimCheckTestHost.RegisterApplicationContainerClient(builder.Services);
             builder.AddCloudstrapMessaging().UseAzureBlobClaimCheck();
             using IHost host = builder.Build();
@@ -109,15 +110,15 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
             await host.StopAsync();
 
             // Assert
-            CapturedLogEntry[] posture = [.. logs.Entries.Where(entry => entry.Category == "Cloudstrap.Messaging.AzureBlob")];
+            FakeLogRecord[] posture = [.. logs.GetSnapshot().Where(entry => entry.Category == "Cloudstrap.Messaging.AzureBlob")];
             Assert.Multiple(() =>
             {
                 Assert.That(posture, Has.Length.EqualTo(1));
                 Assert.That(posture[0].Message, Does.Contain("contoso-claimcheck"));
                 Assert.That(posture[0].Message, Does.Contain("204800"));
                 Assert.That(posture[0].Message, Does.Contain("AddCloudstrapBlobStorage"));
-                Assert.That(logs.Entries.Select(entry => entry.Message), Has.None.Contains("devstoreaccount1"));
-                Assert.That(logs.Entries.Select(entry => entry.Message), Has.None.Contains("UseDevelopmentStorage"));
+                Assert.That(logs.GetSnapshot().Select(entry => entry.Message), Has.None.Contains("devstoreaccount1"));
+                Assert.That(logs.GetSnapshot().Select(entry => entry.Message), Has.None.Contains("UseDevelopmentStorage"));
             });
         }
     }

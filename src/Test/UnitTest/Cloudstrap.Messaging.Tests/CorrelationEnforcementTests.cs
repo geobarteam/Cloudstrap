@@ -2,12 +2,12 @@ namespace Cloudstrap.Messaging.Tests
 {
     using Cloudstrap.Core;
     using Cloudstrap.Messaging.Tests.Fixtures;
-    using Cloudstrap.Messaging.Tests.Infrastructure;
     using Cloudstrap.Observability.Correlation;
     using Cloudstrap.TestInfrastructure;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using Microsoft.Extensions.Options;
     using NUnit.Framework;
     using Wolverine;
@@ -32,7 +32,7 @@ namespace Cloudstrap.Messaging.Tests
             // Arrange
             Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings[_requireAllKey] = "true";
-            (IHost host, CapturingLoggerProvider logs) = BuildHost(settings);
+            (IHost host, FakeLogCollector logs) = BuildHost(settings);
             await host.StartAsync();
 
             // Act — inline invocation carries no correlation header: the handler must be blocked.
@@ -40,7 +40,7 @@ namespace Cloudstrap.Messaging.Tests
             await host.StopAsync();
 
             // Assert
-            string[] messages = [.. logs.Entries.Where(e => e.Level >= LogLevel.Error).Select(e => e.Message + " " + e.Exception)];
+            string[] messages = [.. logs.GetSnapshot().Where(e => e.Level >= LogLevel.Error).Select(e => e.Message + " " + e.Exception)];
             Assert.Multiple(() =>
             {
                 Assert.That(failure, Is.Not.Null, "a typed error");
@@ -54,7 +54,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task Enforcement_CorrelationRequiredOnHandlerHierarchy_BlocksWithoutTheFlag()
         {
             // Arrange — RequireForAll off; the requirement sits on the handler's base class.
-            (IHost host, CapturingLoggerProvider logs) = BuildHost(CloudstrapTestHost.ValidSettings());
+            (IHost host, FakeLogCollector logs) = BuildHost(CloudstrapTestHost.ValidSettings());
             await host.StartAsync();
 
             // Act
@@ -66,7 +66,7 @@ namespace Cloudstrap.Messaging.Tests
             {
                 Assert.That(failure, Is.Not.Null);
                 Assert.That(failure!.ToString(), Does.Contain(nameof(DerivedRequiredHandler)));
-                Assert.That(logs.Entries.Select(e => e.Message), Has.Some.Contains(nameof(DerivedRequiredHandler)));
+                Assert.That(logs.GetSnapshot().Select(e => e.Message), Has.Some.Contains(nameof(DerivedRequiredHandler)));
                 Assert.That(host.Services.GetRequiredService<InvocationRecorder>().Received, Is.Empty);
             });
         }
@@ -191,11 +191,11 @@ namespace Cloudstrap.Messaging.Tests
             });
         }
 
-        private static (IHost Host, CapturingLoggerProvider Logs) BuildHost(Dictionary<string, string?> settings)
+        private static (IHost Host, FakeLogCollector Logs) BuildHost(Dictionary<string, string?> settings)
         {
             HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
-            CapturingLoggerProvider logs = new();
-            builder.Logging.AddProvider(logs);
+            FakeLogCollector logs = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             builder.Services.AddSingleton<InvocationRecorder>();
             builder.AddCloudstrapMessaging();
             return (builder.Build(), logs);

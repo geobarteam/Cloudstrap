@@ -8,6 +8,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
 
     /// <summary>
@@ -96,8 +97,8 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
             Dictionary<string, string?> settings = CloudstrapTestHost.ValidSettings();
             settings["Cloudstrap:Messaging:ClaimCheck:ContainerName"] = "ignored-name";
             HostApplicationBuilder builder = CloudstrapTestHost.CreateBuilder(settings);
-            CapturingLoggerProvider logs = new();
-            builder.Logging.AddProvider(logs);
+            FakeLogCollector logs = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             ClaimCheckTestHost.RegisterApplicationContainerClient(builder.Services);
             builder.Services.AddSingleton(new BlobServiceClient(ClaimCheckTestHost.ConnectionStringFor("other")));
             builder.AddCloudstrapMessaging().UseAzureBlobClaimCheck(claimCheck =>
@@ -111,7 +112,7 @@ namespace Cloudstrap.Messaging.AzureBlob.Tests
 
             // Assert
             Assert.That(resolution, Is.Not.Null);
-            string posture = logs.Entries.Single(entry => entry.Category == "Cloudstrap.Messaging.AzureBlob").Message;
+            string posture = logs.GetSnapshot().Single(entry => entry.Category == "Cloudstrap.Messaging.AzureBlob").Message;
             Assert.Multiple(() =>
             {
                 Assert.That(resolution!.Container.Name, Is.EqualTo("handed-in"));

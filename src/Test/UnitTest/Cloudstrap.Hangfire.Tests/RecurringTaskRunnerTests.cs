@@ -4,9 +4,9 @@ namespace Cloudstrap.Hangfire.Tests
     using Cloudstrap.Hangfire.Tests.Fakes;
     using Cloudstrap.Hangfire.Tests.Fixtures;
     using Cloudstrap.Hangfire.Tests.Fixtures.Tasks;
-    using Cloudstrap.Messaging.Tests.Infrastructure;
     using global::Hangfire;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
 
     /// <summary>
@@ -21,7 +21,7 @@ namespace Cloudstrap.Hangfire.Tests
         private static readonly string[] _recordingRun = ["recording-task"];
 
         private FakeJobStorage _storage = null!;
-        private CapturingLoggerProvider _logs = null!;
+        private FakeLogCollector _logs = null!;
         private ILoggerFactory _loggerFactory = null!;
 
         [SetUp]
@@ -29,15 +29,14 @@ namespace Cloudstrap.Hangfire.Tests
         {
             TaskRunLog.Reset();
             _storage = new FakeJobStorage();
-            _logs = new CapturingLoggerProvider();
-            _loggerFactory = LoggerFactory.Create(logging => logging.AddProvider(_logs).SetMinimumLevel(LogLevel.Trace));
+            _logs = new FakeLogCollector();
+            _loggerFactory = LoggerFactory.Create(logging => logging.AddProvider(new FakeLoggerProvider(_logs)).SetMinimumLevel(LogLevel.Trace));
         }
 
         [TearDown]
         public void TearDown()
         {
             _loggerFactory.Dispose();
-            _logs.Dispose();
         }
 
         [Test]
@@ -97,7 +96,7 @@ namespace Cloudstrap.Hangfire.Tests
             await runner.RunAsync("recording-task", CancellationToken.None);
 
             // Assert
-            CapturedLogEntry[] warnings = [.. _logs.Entries.Where(entry => entry.Level == LogLevel.Warning)];
+            FakeLogRecord[] warnings = [.. _logs.GetSnapshot().Where(entry => entry.Level == LogLevel.Warning)];
             Assert.Multiple(() =>
             {
                 Assert.That(TaskRunLog.Runs, Is.Empty);
@@ -134,7 +133,7 @@ namespace Cloudstrap.Hangfire.Tests
             Assert.That(() => runner.RunAsync(nameof(ThrowingTask), CancellationToken.None), Throws.InvalidOperationException);
 
             // Assert
-            CapturedLogEntry failure = _logs.Entries.Single(entry => entry.Level == LogLevel.Error);
+            FakeLogRecord failure = _logs.GetSnapshot().Single(entry => entry.Level == LogLevel.Error);
             Assert.Multiple(() =>
             {
                 Assert.That(failure.Message, Does.Contain(nameof(ThrowingTask)).And.Contain("failed after").And.Contain("ms"));
@@ -154,7 +153,7 @@ namespace Cloudstrap.Hangfire.Tests
             await runner.RunAsync(nameof(TokenCapturingTask), CancellationToken.None);
 
             // Assert
-            string[] messages = [.. _logs.Entries.Select(entry => entry.Message)];
+            string[] messages = [.. _logs.GetSnapshot().Select(entry => entry.Message)];
             Assert.Multiple(() =>
             {
                 Assert.That(messages, Has.Some.EqualTo($"Recurring task {nameof(TokenCapturingTask)} started"));

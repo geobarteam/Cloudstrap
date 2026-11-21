@@ -9,6 +9,7 @@ namespace Cloudstrap.Mvc.Tests
     using Microsoft.AspNetCore.TestHost;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
 
     /// <summary>
@@ -269,14 +270,14 @@ namespace Cloudstrap.Mvc.Tests
         public async Task Throwing_IsLoggedExactlyOnce_OnTheJsonPath()
         {
             // Arrange
-            CapturingLoggerProvider capture = new();
-            await using WebApplication app = await MvcTestHost.StartAsync(loggerProvider: capture);
+            FakeLogCollector capture = new();
+            await using WebApplication app = await MvcTestHost.StartAsync(loggerProvider: new FakeLoggerProvider(capture));
 
             // Act
             using HttpResponseMessage response = await SendAsync(app, accept: "application/json");
-            CapturedLogEntry[] errors =
+            FakeLogRecord[] errors =
             [
-                .. capture.Entries.Where(entry =>
+                .. capture.GetSnapshot().Where(entry =>
                     entry.Level == LogLevel.Error && entry.Exception is not null),
             ];
 
@@ -288,14 +289,14 @@ namespace Cloudstrap.Mvc.Tests
         public async Task Throwing_IsLoggedExactlyOnce_OnTheHtmlPath()
         {
             // Arrange — the handler falls through without logging; the framework middleware logs once
-            CapturingLoggerProvider capture = new();
-            await using WebApplication app = await MvcTestHost.StartAsync(loggerProvider: capture);
+            FakeLogCollector capture = new();
+            await using WebApplication app = await MvcTestHost.StartAsync(loggerProvider: new FakeLoggerProvider(capture));
 
             // Act
             using HttpResponseMessage response = await SendAsync(app, accept: "text/html");
-            CapturedLogEntry[] errors =
+            FakeLogRecord[] errors =
             [
-                .. capture.Entries.Where(entry =>
+                .. capture.GetSnapshot().Where(entry =>
                     entry.Level == LogLevel.Error && entry.Exception is not null),
             ];
 

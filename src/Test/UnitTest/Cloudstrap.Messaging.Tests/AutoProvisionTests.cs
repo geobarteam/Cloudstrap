@@ -1,12 +1,12 @@
 namespace Cloudstrap.Messaging.Tests
 {
-    using Cloudstrap.Messaging.Tests.Infrastructure;
     using Cloudstrap.TestInfrastructure;
     using JasperFx;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.Testing;
     using NUnit.Framework;
     using Wolverine;
 
@@ -22,7 +22,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task AutoProvision_NullInDevelopment_IsOn()
         {
             // Arrange
-            (IHost host, CapturingLoggerProvider logs) = BuildHost(Environments.Development, explicitValue: null);
+            (IHost host, FakeLogCollector logs) = BuildHost(Environments.Development, explicitValue: null);
             using (host)
             {
                 // Act
@@ -44,7 +44,7 @@ namespace Cloudstrap.Messaging.Tests
         public async Task AutoProvision_NullInProduction_IsOff()
         {
             // Arrange
-            (IHost host, CapturingLoggerProvider logs) = BuildHost(Environments.Production, explicitValue: null);
+            (IHost host, FakeLogCollector logs) = BuildHost(Environments.Production, explicitValue: null);
             using (host)
             {
                 // Act
@@ -66,8 +66,8 @@ namespace Cloudstrap.Messaging.Tests
         public async Task AutoProvision_ExplicitValue_WinsInEitherDirection()
         {
             // Arrange — off in Development, on in Production: the explicit value always wins.
-            (IHost developmentOff, CapturingLoggerProvider developmentLogs) = BuildHost(Environments.Development, explicitValue: false);
-            (IHost productionOn, CapturingLoggerProvider productionLogs) = BuildHost(Environments.Production, explicitValue: true);
+            (IHost developmentOff, FakeLogCollector developmentLogs) = BuildHost(Environments.Development, explicitValue: false);
+            (IHost productionOn, FakeLogCollector productionLogs) = BuildHost(Environments.Production, explicitValue: true);
             using (developmentOff)
             using (productionOn)
             {
@@ -92,7 +92,7 @@ namespace Cloudstrap.Messaging.Tests
             }
         }
 
-        private static (IHost Host, CapturingLoggerProvider Logs) BuildHost(string environment, bool? explicitValue)
+        private static (IHost Host, FakeLogCollector Logs) BuildHost(string environment, bool? explicitValue)
         {
             HostApplicationBuilder builder = Host.CreateApplicationBuilder(
                 new HostApplicationBuilderSettings { EnvironmentName = environment });
@@ -103,15 +103,15 @@ namespace Cloudstrap.Messaging.Tests
             }
 
             builder.Configuration.AddInMemoryCollection(settings);
-            CapturingLoggerProvider logs = new();
-            builder.Logging.AddProvider(logs);
+            FakeLogCollector logs = new();
+            builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             builder.AddCloudstrapMessaging();
             return (builder.Build(), logs);
         }
 
-        private static string SummaryLine(CapturingLoggerProvider logs)
+        private static string SummaryLine(FakeLogCollector logs)
         {
-            return logs.Entries
+            return logs.GetSnapshot()
                 .Single(entry => entry.Category == typeof(MessagingStartupSummaryLogger).FullName)
                 .Message;
         }
