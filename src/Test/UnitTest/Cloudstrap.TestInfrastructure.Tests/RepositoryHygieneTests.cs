@@ -258,6 +258,75 @@ namespace Cloudstrap.TestInfrastructure.Tests
             Assert.That(offenders, Is.Empty);
         }
 
+        [Test]
+        public void NoCloudstrapOwnedLogCaptureType_RemainsAnywhere()
+        {
+            // Arrange
+            string[] forbidden = ["CapturingLoggerProvider", "CapturedLogEntry"];
+
+            // Act
+            string[] offenders = [.. SourceFiles(Src, "*.cs")
+                .Concat(SourceFiles(Src, "*.csproj"))
+                .Where(path =>
+                {
+                    string source = File.ReadAllText(path);
+                    return forbidden.Any(name => source.Contains(name, StringComparison.Ordinal));
+                })
+                .Select(Relative)];
+
+            // Assert
+            Assert.That(offenders, Is.Empty);
+        }
+
+        /// <summary>Characterization tripwire (green on arrival): a permanent closure guard for AC-TS10, not a behavior driver.</summary>
+        [Test]
+        public void DroppedSourceMembers_AndMvcTesting_AppearNowhere()
+        {
+            // Arrange
+            string[] droppedMembers = ["CustomWebApplicationFactory", "ReplaceAsSingleton", "ReplaceDbContextAsSingleton"];
+            const string mvcTesting = "Microsoft.AspNetCore.Mvc.Testing";
+
+            // Act
+            string[] memberOffenders = [.. SourceFiles(Src, "*.cs")
+                .Where(path =>
+                {
+                    string source = File.ReadAllText(path);
+                    return droppedMembers.Any(member => source.Contains(member, StringComparison.Ordinal));
+                })
+                .Select(Relative)];
+            string[] mvcTestingOffenders = [.. SourceFiles(Src, "*.csproj")
+                .Append(Path.Combine(Src, "Directory.Packages.props"))
+                .Where(path => File.ReadAllText(path).Contains(mvcTesting, StringComparison.OrdinalIgnoreCase))
+                .Select(Relative)];
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(memberOffenders, Is.Empty, "Dropped source members");
+                Assert.That(mvcTestingOffenders, Is.Empty, mvcTesting);
+            });
+        }
+
+        /// <summary>Characterization tripwire (green on arrival): a permanent closure guard for AC-TS12, not a behavior driver.</summary>
+        [Test]
+        public void TestInfrastructureLibrary_CarriesNoEnterpriseIdentifiers()
+        {
+            // Arrange
+            string libraryDirectory = Path.Combine(Src, "Test", "TestInfrastructure", _libraryName);
+
+            // Act
+            string[] offenders = [.. SourceFiles(libraryDirectory, "*")
+                .Where(path => EnterpriseIdentifier().IsMatch(File.ReadAllText(path)))
+                .Select(Relative)];
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(Directory.Exists(libraryDirectory), Is.True, libraryDirectory);
+                Assert.That(offenders, Is.Empty);
+            });
+        }
+
         private static string[] WorkflowLines(string workflow)
         {
             return File.ReadAllLines(Path.Combine(_repoRoot.Value, ".github", "workflows", workflow));
@@ -329,6 +398,10 @@ namespace Cloudstrap.TestInfrastructure.Tests
         /// <summary>A suite's catalog declaration: <c>new("X")</c> on a <c>SqlServerTestDatabase</c> holder, or <c>new SqlServerTestDatabase("X")</c>.</summary>
         [GeneratedRegex(@"(?:SqlServerTestDatabase\s+\w+\s*\{[^}]*\}\s*=\s*new|new\s+SqlServerTestDatabase)\(""(?<catalog>[A-Za-z0-9_]+)""\)")]
         private static partial Regex CatalogDeclaration();
+
+        /// <summary>Enterprise identifiers (AC-TS12): Nihdi/Riziv in any case, the enterprise auth switch, or a <c>"UnitTest"</c> environment name.</summary>
+        [GeneratedRegex(@"(?i:nihdi|riziv)|Security:EnableAuthentication|""UnitTest""")]
+        private static partial Regex EnterpriseIdentifier();
 
         private static string FindRepoRoot()
         {
