@@ -580,8 +580,9 @@ After this step:
   warnings (144 NU190x advisories unchanged), `dotnet format` exit 0.)*
 
 **Scope**:
-- `CloudstrapForwarderHttpClientFactory.cs` *(modify)*: the `User` / `None` branches; metadata parsing
-  (case-insensitive `Enum.TryParse`, numeric values rejected).
+- `CloudstrapForwarderHttpClientFactory.cs` *(modify)*: the `User` / `None` branches; metadata parsing by a
+  strict name check (the value must equal a `ProxyTokenMode` member name, case-insensitively, with no surrounding
+  whitespace; not `Enum.TryParse`, which accepts numbers, combined values and padding).
 - `CloudstrapProxyOptionsValidator.cs` *(modify)*: `DefaultTokenMode` defined.
 - `src/Test/UnitTest/Cloudstrap.Proxy.Tests/TokenModeTests.cs` *(create)*.
 

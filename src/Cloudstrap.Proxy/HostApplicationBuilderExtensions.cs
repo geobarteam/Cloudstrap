@@ -57,7 +57,9 @@ namespace Cloudstrap.Proxy
         /// <see cref="ProxyTokenMode.User"/> cluster forwards with the signed-in user's token from the registered
         /// <c>IUserAccessTokenHandlerProvider</c>, on the same terms; a <see cref="ProxyTokenMode.None"/> cluster
         /// attaches no token. A token mode that is not one of these names fails host startup. A route that forwards the
-        /// caller's credentials to a <see cref="ProxyTokenMode.Client"/> cluster fails host startup too. This replaces
+        /// caller's credentials to a <see cref="ProxyTokenMode.Client"/> cluster, through its route metadata or through
+        /// <see cref="CloudstrapProxyOptions.StripInboundCredentials"/> = <see langword="false"/>, fails host startup
+        /// too. This replaces
         /// YARP's <c>IForwarderHttpClientFactory</c>.
         /// </para>
         /// <para>Map the routes with <see cref="EndpointRouteBuilderExtensions.MapCloudstrapProxy"/>.</para>

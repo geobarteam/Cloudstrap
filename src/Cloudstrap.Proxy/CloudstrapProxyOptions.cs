@@ -47,7 +47,8 @@ namespace Cloudstrap.Proxy
         /// </summary>
         /// <value>
         /// <see langword="true"/> (the default) to keep the caller's credentials at the front door. Setting it to
-        /// <see langword="false"/> is unsafe for the trusted-subsystem pattern.
+        /// <see langword="false"/> is unsafe for the trusted-subsystem pattern, and fails host startup when a route
+        /// forwards to a cluster in <see cref="ProxyTokenMode.Client"/> mode.
         /// </value>
         public bool StripInboundCredentials { get; set; } = true;
     }

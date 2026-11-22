@@ -35,6 +35,8 @@ receives the caller's own credentials.
 - Per route: route metadata `"Cloudstrap.ForwardInboundCredentials": "true"`.
 - Globally: `Cloudstrap:Proxy:StripInboundCredentials = false`.
 
+Neither opt-out is allowed on a route to a `Client` cluster: startup fails (see below).
+
 The stripping applies to routes added by a configuration reload too. A caller's `Proxy-Authorization` is never
 forwarded either (YARP drops it as a hop-by-hop header). Note that an application transform registered after
 `AddCloudstrapProxy` (for example `.AddTransforms(...)` on the builder it returns) runs after the stripping and
@@ -74,9 +76,10 @@ every forwarded request carries `Authorization: Bearer <application token>` from
   gets the retry's answer.
 - **A route that forwards the caller's credentials to a `Client` cluster fails startup** (fail closed). The
   client-credentials handler keeps an `Authorization` header that is already on the request. With
-  `"Cloudstrap.ForwardInboundCredentials": "true"` the caller's token would reach the destination instead of the
-  application's. The message names the route, the cluster and both metadata keys. A reloaded configuration with this
-  combination is rejected, and YARP keeps the previous one.
+  `"Cloudstrap.ForwardInboundCredentials": "true"` on the route, or `Cloudstrap:Proxy:StripInboundCredentials =
+  false`, the caller's token would reach the destination instead of the application's. The message names the
+  route, the cluster and the opt-out that caused it. A reloaded configuration with this combination is rejected,
+  and YARP keeps the previous one.
 - Cloudstrap replaces YARP's `IForwarderHttpClientFactory` to build this handler chain. Registering your own
   factory takes the chain over, token included.
 
@@ -96,8 +99,11 @@ without it):
   the package.
 - `None` attaches nothing. The caller's `Authorization` is still removed unless the route opts out.
 - Only the names `None`, `Client` and `User` are accepted, in any case. Anything else, including a number such as
-  `1` or a combination such as `Client, User`, fails startup and lists the allowed values. This holds for the
-  cluster metadata and for `Cloudstrap:Proxy:DefaultTokenMode`.
+  `1`, a combination such as `Client, User`, a name with surrounding spaces (`" Client"`) or an empty value, fails
+  startup and lists the allowed values. This holds for the cluster metadata and for
+  `Cloudstrap:Proxy:DefaultTokenMode`.
+- A `User` cluster whose signed-in user has no token in the session answers 502, and nothing is forwarded.
+- A configuration reload that changes a cluster's `Cloudstrap.TokenMode` applies the new mode.
 - No mode ever adds a header carrying the user's identity. The destination learns who the user is only from a
   `User`-mode token.
 

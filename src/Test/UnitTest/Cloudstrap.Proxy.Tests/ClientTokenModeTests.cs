@@ -291,6 +291,51 @@ namespace Cloudstrap.Proxy.Tests
             });
         }
 
+        /// <summary>
+        /// Central's decision (fail closed): the global opt-out keeps the caller's <c>Authorization</c> on every route,
+        /// so with a <c>Client</c> cluster the caller's token would reach the destination instead of the application's.
+        /// Whether set in configuration or in code, that combination fails startup.
+        /// </summary>
+        /// <param name="tokenMode">The cluster's token mode metadata; <see langword="null"/> means the default, <c>Client</c>.</param>
+        /// <param name="inConfiguration">Whether the opt-out is set in configuration rather than in code.</param>
+        [TestCase(nameof(ProxyTokenMode.Client), false)]
+        [TestCase(null, false)]
+        [TestCase(null, true)]
+        public void ClientCluster_StripInboundCredentialsFalse_StartFailsNamingClusterAndKey(string? tokenMode, bool inConfiguration)
+        {
+            // Arrange
+            Dictionary<string, string?> settings = ProxyConfig.SingleRoute(_echo.Address, tokenMode: tokenMode);
+            if (inConfiguration)
+            {
+                settings["Cloudstrap:Proxy:StripInboundCredentials"] = "false";
+            }
+
+            WebApplicationBuilder builder = FrontDoor.CreateBuilder(settings);
+            builder.Services.AddSingleton<IClientAccessTokenHandlerProvider>(new FakeClientTokenHandlerProvider());
+            builder.AddCloudstrapProxy(options =>
+            {
+                if (!inConfiguration)
+                {
+                    options.StripInboundCredentials = false;
+                }
+            });
+
+            // Act
+            Exception? failure = Assert.CatchAsync(() => FrontDoor.StartAsync(builder));
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(failure, Is.Not.Null, "startup succeeded");
+                Assert.That(
+                    failure?.ToString(),
+                    Does.Contain($"'{ProxyConfig.ClusterId}'")
+                        .And.Contain("Cloudstrap:Proxy:StripInboundCredentials")
+                        .And.Contain(ProxyMetadataKeys.TokenMode));
+                Assert.That(_echo.Requests, Is.Empty);
+            });
+        }
+
         [Test]
         public void ClientCluster_ProviderReturnsHandlerWithInnerHandlerSet_IsNotSupported()
         {

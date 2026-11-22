@@ -8,6 +8,7 @@ namespace Cloudstrap.Proxy.Tests
     using Microsoft.AspNetCore.Http;
     using Microsoft.Extensions.DependencyInjection;
     using NUnit.Framework;
+    using Yarp.ReverseProxy.Configuration;
 
     /// <summary>
     /// AC-PX6, AC-PX10 token mode, D-6: a <c>User</c> cluster forwards with the signed-in user's token, a <c>None</c>
@@ -89,6 +90,67 @@ namespace Cloudstrap.Proxy.Tests
         }
 
         /// <summary>
+        /// Regression guard (green on arrival): a signed-in user whose session holds no token makes the user-token
+        /// handler fail before anything is sent. The front door answers 502 and the destination receives nothing; the
+        /// request is never forwarded without the token.
+        /// </summary>
+        [Test]
+        [Category(TestCategories.RegressionGuard)]
+        public async Task UserCluster_SessionWithoutToken_Returns502_AndForwardsNothing()
+        {
+            // Arrange
+            WebApplicationBuilder builder = FrontDoor.CreateBuilder(ProxyConfig.SingleRoute(_echo.Address, tokenMode: nameof(ProxyTokenMode.User)));
+            RegisterFakeProviders(builder);
+            builder.AddCloudstrapProxy();
+            await using FrontDoor frontDoor = await FrontDoor.StartAsync(builder);
+            UserProvider(frontDoor).UsersWithoutToken["alice"] = true;
+
+            // Act
+            using HttpResponseMessage response = await frontDoor.GetAsync("/api/orders", user: "alice");
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadGateway));
+                Assert.That(_echo.Requests, Is.Empty, "a request was forwarded without the user's token");
+            });
+        }
+
+        /// <summary>
+        /// Regression guard (green on arrival): Step 4's <c>CanReuseOldClient</c> override compares the token-mode
+        /// metadata, so a reload that only changes a cluster's <c>Cloudstrap.TokenMode</c> rebuilds its client and the
+        /// new mode applies. YARP's own check compares the HTTP client settings only and would keep the old client.
+        /// </summary>
+        [Test]
+        [Category(TestCategories.RegressionGuard)]
+        public async Task ConfigReload_ClusterTokenModeChanged_NewModeApplies()
+        {
+            // Arrange: an in-memory cluster in None mode, reloaded with the same destination in Client mode
+            const string memoryCluster = "memory-cluster";
+            WebApplicationBuilder builder = FrontDoor.CreateBuilder(ProxyConfig.SingleRoute(_echo.Address));
+            FakeClientTokenHandlerProvider clientProvider = RegisterFakeProviders(builder);
+            builder.AddCloudstrapProxy().LoadFromMemory([MemoryRoute(memoryCluster)], [MemoryCluster(memoryCluster, ProxyTokenMode.None)]);
+            await using FrontDoor frontDoor = await FrontDoor.StartAsync(builder);
+            using (HttpResponseMessage before = await frontDoor.GetAsync("/memory/orders"))
+            {
+                Assert.That(before.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(_echo.Requests.Single().Headers.ContainsKey("Authorization"), Is.False, "the None cluster attached a token");
+            }
+
+            // Act
+            frontDoor.App.Services.GetRequiredService<InMemoryConfigProvider>()
+                .Update([MemoryRoute(memoryCluster)], [MemoryCluster(memoryCluster, ProxyTokenMode.Client)]);
+            string? authorization = await WaitForAuthorizationAsync(frontDoor, "/memory/orders");
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(authorization, Is.EqualTo($"Bearer app:{memoryCluster}"), "the old None client was reused");
+                Assert.That(clientProvider.Requests.Select(request => request.ClientName), Does.Contain(memoryCluster));
+            });
+        }
+
+        /// <summary>
         /// Regression guard (green on arrival): Step 4 already attaches nothing for a <c>None</c> cluster. An anonymous
         /// caller on an anonymous route sends no <c>Authorization</c>, so any header downstream would be the proxy's.
         /// </summary>
@@ -143,12 +205,19 @@ namespace Cloudstrap.Proxy.Tests
             });
         }
 
-        /// <summary>Only the three names count, case-insensitively; numbers and combined values are refused.</summary>
+        /// <summary>
+        /// Only the three names count, case-insensitively; numbers and combined values are refused. The padded and
+        /// empty cases were green on arrival (regression guards of the strict name check of Step 5): a name with
+        /// surrounding whitespace is not a name.
+        /// </summary>
         /// <param name="value">The cluster's token mode metadata.</param>
         [TestCase("Machine")]
         [TestCase("1")]
         [TestCase("2")]
         [TestCase("Client, User")]
+        [TestCase(" Client", Category = TestCategories.RegressionGuard)]
+        [TestCase("None ", Category = TestCategories.RegressionGuard)]
+        [TestCase("", Category = TestCategories.RegressionGuard)]
         public void UnknownTokenModeMetadata_StartFailsListingTheAllowedValues(string value)
         {
             // Arrange: both seams registered, so only the value can fail
@@ -194,10 +263,19 @@ namespace Cloudstrap.Proxy.Tests
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         }
 
+        /// <summary>
+        /// Any value that is not a member name fails startup, naming the key and the allowed values. The padded cases
+        /// were green on arrival (regression guards); the empty value drove its own fix: it used to skip the name check
+        /// and fail in the configuration binder without listing the allowed values.
+        /// </summary>
         /// <param name="value">The configured <c>Cloudstrap:Proxy:DefaultTokenMode</c>.</param>
         [TestCase("Machine")]
         [TestCase("1")]
         [TestCase("Client, User")]
+        [TestCase(" Client", Category = TestCategories.RegressionGuard)]
+        [TestCase("User ", Category = TestCategories.RegressionGuard)]
+        [TestCase(" ", Category = TestCategories.RegressionGuard)]
+        [TestCase("")]
         public void UnknownDefaultTokenMode_ValidateOnStartFailsNamingTheKey(string value)
         {
             // Arrange: the cluster has no metadata, so the default applies
@@ -301,6 +379,44 @@ namespace Cloudstrap.Proxy.Tests
             builder.Services.AddSingleton<FakeUserTokenHandlerProvider>();
             builder.Services.AddSingleton<IUserAccessTokenHandlerProvider>(services => services.GetRequiredService<FakeUserTokenHandlerProvider>());
             return client;
+        }
+
+        /// <summary>A route matching <c>/memory/{**catch-all}</c> to <paramref name="clusterId"/>.</summary>
+        private static RouteConfig MemoryRoute(string clusterId)
+        {
+            return new RouteConfig { RouteId = "memory-route", ClusterId = clusterId, Match = new RouteMatch { Path = "/memory/{**catch-all}" } };
+        }
+
+        /// <summary>A cluster on the echo server with the given token-mode metadata.</summary>
+        private ClusterConfig MemoryCluster(string clusterId, ProxyTokenMode mode)
+        {
+            return new ClusterConfig
+            {
+                ClusterId = clusterId,
+                Destinations = new Dictionary<string, DestinationConfig> { ["primary"] = new() { Address = _echo.Address.ToString() } },
+                Metadata = new Dictionary<string, string> { [ProxyMetadataKeys.TokenMode] = mode.ToString() },
+            };
+        }
+
+        /// <summary>
+        /// Sends requests until the destination receives one with an <c>Authorization</c> header, or 10 s pass.
+        /// </summary>
+        /// <returns>The last <c>Authorization</c> the destination received, or <see langword="null"/>.</returns>
+        private async Task<string?> WaitForAuthorizationAsync(FrontDoor frontDoor, string path)
+        {
+            DateTime deadline = DateTime.UtcNow.AddSeconds(10);
+            string? authorization = null;
+            while (authorization is null && DateTime.UtcNow < deadline)
+            {
+                using HttpResponseMessage probe = await frontDoor.GetAsync(path);
+                authorization = _echo.Requests[^1].Headers.GetValueOrDefault("Authorization");
+                if (authorization is null)
+                {
+                    await Task.Delay(50);
+                }
+            }
+
+            return authorization;
         }
 
         /// <summary>Gets the user-token seam of a started front door.</summary>

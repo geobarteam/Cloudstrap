@@ -24,14 +24,15 @@ namespace Cloudstrap.Proxy
         internal const string Key = $"{CloudstrapProxyOptions.SectionName}:{nameof(CloudstrapProxyOptions.DefaultTokenMode)}";
 
         /// <summary>
-        /// Throws when the setting is present and not a <see cref="ProxyTokenMode"/> member name.
+        /// Throws when the setting is present and not a <see cref="ProxyTokenMode"/> member name. An empty value is
+        /// present, and fails like any other value that is not a name.
         /// </summary>
         /// <param name="configuration">The application configuration.</param>
         /// <exception cref="InvalidOperationException">The setting is not a member name.</exception>
         public static void Check(IConfiguration configuration)
         {
             string? value = configuration[Key];
-            if (string.IsNullOrEmpty(value) || ProxyMetadataReader.TryParseTokenMode(value, out _))
+            if (value is null || ProxyMetadataReader.TryParseTokenMode(value, out _))
             {
                 return;
             }
