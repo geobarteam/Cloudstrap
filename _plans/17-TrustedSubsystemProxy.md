@@ -108,9 +108,27 @@ The executor records what it actually observes. Afterwards only `Cloudstrap.Prox
 
 | Executable | Baseline tests (passed / total) |
 |---|---|
-| 17 pre-existing unit executables (one row each, as in `_plans/8-TestHelpers.md`) | *(executor)* |
-| Cloudstrap.Demo.E2E.Tests | *(executor)* |
-| Recorded on / by | *(executor)* |
+| Cloudstrap.Core.Tests | 54 / 54 |
+| Cloudstrap.Extensions.Tests | 76 / 76 |
+| Cloudstrap.Observability.Tests | 106 / 106 |
+| Cloudstrap.Observability.AzureMonitor.Tests | 38 / 38 |
+| Cloudstrap.WebApi.Tests | 109 / 109 |
+| Cloudstrap.Mvc.Tests | 66 / 66 |
+| Cloudstrap.Worker.Tests | 30 / 30 |
+| Cloudstrap.Authentication.ClientCredentials.Tests | 41 / 41 |
+| Cloudstrap.Authentication.OpenIdConnect.Tests | 66 / 66 |
+| Cloudstrap.BlazorCommon.Tests | 22 / 22 |
+| Cloudstrap.BlazorServer.Tests | 47 / 47 |
+| Cloudstrap.BlazorWasm.Tests | 41 / 41 |
+| Cloudstrap.Messaging.Tests | 62 / 62 |
+| Cloudstrap.Messaging.AzureBlob.Tests | 37 / 37 |
+| Cloudstrap.Hangfire.Tests | 105 / 105 |
+| Cloudstrap.TestIdentityProvider.Tests | 26 / 26 |
+| Cloudstrap.TestInfrastructure.Tests | 65 / 65 |
+| **Unit total (17 exes; #8's gate recorded 926 + 65)** | **991 / 991** |
+| Cloudstrap.Demo.E2E.Tests (#8's gate recorded 68) | 68 / 68 |
+| Build warnings at baseline | 0 code warnings; 144 `NU1902`/`NU1903` restore advisories already present on `System.Security.Cryptography.Pkcs` 9.0.11/10.0.10 and `System.Security.Cryptography.Xml` 10.0.10 (new advisories since #8; not raised by this deliverable, not fixed here, as a dependency update needs the owner) |
+| Recorded on / by | 2026-11-22, branch `zyggy/01M81J827ARHZRN913B3H8WZ3N` @ `768eb72`, `CLOUDSTRAP_TEST_SQL` unset (LocalDB) / executor (Claude, job 01M81J827ARHZRN913B3H8WZ3N) |
 
 **(b) Full-suite check** (`runTests` is not on the agent PATH, so every executable is run directly):
 1. `dotnet build src/Cloudstrap.sln`.
@@ -144,11 +162,11 @@ Before editing `src/Directory.Packages.props` the executor:
 
 | Item | Value |
 |---|---|
-| `Yarp.ReverseProxy` version pinned + license + dependency group as read | |
-| Transitive packages new to the solution (resolved versions) | |
-| Restore / audit warnings (expected none) | |
-| YARP facts (c)4 confirmed at this version | |
-| Verified on / source | |
+| `Yarp.ReverseProxy` version pinned + license + dependency group as read | **2.3.0**, the latest stable *and* the floor: `dotnet list package --outdated` (with and without `--include-prerelease`) against nuget.org reports no newer version. License MIT (.NET Foundation, `dotnet/yarp`), recorded from the package's known metadata. The job sandbox did not allow reading the nuspec in the global packages folder, so the owner may re-check it. The package ships `lib/net6.0`, `net7.0` and `net8.0` only (no net9.0/net10.0 group), so `net10.0` consumes the **net8.0** asset (`obj/project.assets.json`). Its dependency group lists one package: `System.IO.Hashing >= 8.0.0`. |
+| Transitive packages new to the solution (resolved versions) | **None**. `System.IO.Hashing` already resolves at 10.0.3 through the Azure SDK closure of `Cloudstrap.Extensions`. `dotnet list package --include-transitive` for `Cloudstrap.Proxy` shows only YARP plus Extensions' existing closure. |
+| Restore / audit warnings (expected none) | **None from YARP**: `dotnet list package --vulnerable --include-transitive` reports no vulnerable package for `Cloudstrap.Proxy`, and neither Proxy project raises a NU* warning. The 144 pre-existing Pkcs/Xml advisories (Baseline record) are unchanged. |
+| YARP facts (c)4 confirmed at this version | All six, checked by a throwaway probe (compiled and run against 2.3.0, not committed). (1) `ForwarderHttpClientFactory.WrapHandler(ForwarderHttpClientContext, HttpMessageHandler)` is `protected virtual`; the context exposes `ClusterId` and `NewMetadata`. (2) `IProxyConfigFilter.ConfigureRouteAsync(RouteConfig, ClusterConfig?, CancellationToken)` → `ValueTask<RouteConfig>`. (3) `Default` → anonymous caller 401 with no fallback policy; `Anonymous` → forwarded even under a fallback policy that requires a user. (4) `X-Forwarded-*` default is **Set**: spoofed `X-Forwarded-Prefix: /spoofed` → `/front` (from `PathBase`), and spoofed `X-Forwarded-Host` → the front door's host. (5) The destination sees its own `Host` (`127.0.0.1:<port>`), not the caller's. (6) `Yarp.ReverseProxy.ServiceDiscovery.IDestinationResolver` exists. **Harness note for Step 3**: `TestServer` has no remote IP, so YARP's Set action *removes* a caller's `X-Forwarded-For` instead of replacing it. `Destination_ReceivesXForwardedForProtoAndHost` must set `Connection.RemoteIpAddress`, for example through `TestServer.SendAsync`. |
+| Verified on / source | 2026-11-22, nuget.org v3 (via `dotnet list package`), `obj/project.assets.json`, and the pin-time probe, job 01M81J827ARHZRN913B3H8WZ3N |
 
 **(d) Per-cluster token request parameters (Step 4, Gate 3).** The parameters bind from
 `Cloudstrap:Proxy:Clusters:{clusterId}:TokenRequestParameters` to the shipped `Cloudstrap.Core.TokenRequestOptions`.
@@ -224,7 +242,17 @@ After this step:
 - In this step, routes without a policy still fall through to the app's fallback policy (the tests use an
   authenticated caller). Step 2 adds the default.
 
-- [ ] Done
+- [x] Done *(2026-11-22. RED: the test project did not compile against the missing `AddCloudstrapProxy` /
+  `MapCloudstrapProxy` / `HostApplicationBuilderExtensions` (CS1061/CS0103). The pin tests pass on arrival because
+  the pin is a Scope item made first. GREEN: `Cloudstrap.Proxy.Tests` 11/11. Full suite: 17 pre-existing unit
+  exes at baseline (991), E2E 68/68, 0 code warnings, `dotnet format` exit 0. Release pack:
+  `Cloudstrap.Proxy.1.0.0.nupkg` with MIT, icon, README and XML docs. **VERIFY 3 wording**: the nuspec lists
+  `Cloudstrap.Extensions` + `Yarp.ReverseProxy` plus Extensions' own pinned closure (Azure/OTel/Serilog/HealthChecks)
+  as direct dependencies. That is the repo-wide `CentralPackageTransitivePinningEnabled` packing effect;
+  `Cloudstrap.Extensions.1.0.0.nuspec` lists the same set. The only *new* dependencies are Extensions and YARP.
+  Deviations: the mechanic (h) fake token providers are deferred to Step 4, their first consumer (no unused test
+  types). Step 9's `RepositoryHygieneTests` must also exclude `DependencyPinTests.cs`, which names `Nihdi.` by design,
+  as every suite's AC-A3 tripwire does.)*
 
 **Scope**:
 - `_plans/17-TrustedSubsystemProxy.md` *(modify)*: the **Baseline record** filled before any code change, and the

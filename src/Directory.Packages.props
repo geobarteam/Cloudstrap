@@ -181,6 +181,15 @@
          pin also moves the version EF Core and Wolverine resolve in every test and demo project (6.1.3 → 6.1.7). -->
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.1.7" />
   </ItemGroup>
+  <!-- Cloudstrap.Proxy (deliverable #17) — MIT (.NET Foundation, dotnet/yarp): the forwarder for the
+       trusted-subsystem proxy; the suite's first YARP pin. 2.3.0 is the latest stable on nuget.org at pin time
+       (2026-11-22, `dotnet list package outdated` incl. prerelease: no newer version) and the spec's floor
+       (IDestinationResolver, ForwarderHttpClientFactory.WrapHandler). It ships lib/net6.0|net7.0|net8.0 only: net10.0
+       consumes the net8.0 asset. Its one dependency, System.IO.Hashing >= 8.0.0, already resolves at 10.0.3
+       through the Azure SDK: no new transitive package, no advisory. -->
+  <ItemGroup>
+    <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
+  </ItemGroup>
   <!-- Test/demo only — never referenced by a shipped package: the EF Core SQL Server provider behind the
        AC-M2-class transactional-outbox tests and the demo hosts' DbContexts (MIT, the repo's 10.0.x family). -->
   <ItemGroup>
