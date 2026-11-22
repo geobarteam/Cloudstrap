@@ -218,7 +218,7 @@ namespace Cloudstrap.Proxy.Tests
             configuration["ReverseProxy:Routes:reloaded-route:ClusterId"] = ProxyConfig.ClusterId;
             configuration["ReverseProxy:Routes:reloaded-route:Match:Path"] = "/reloaded/{**catch-all}";
             configuration.Reload();
-            await WaitUntilForwardedAsync(frontDoor, "/reloaded/orders");
+            await ReloadWaiter.WaitUntilForwardedAsync(frontDoor, "/reloaded/orders");
             int forwardedBefore = _echo.Requests.Count;
 
             // Act
@@ -230,27 +230,6 @@ namespace Cloudstrap.Proxy.Tests
                 Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
                 Assert.That(_echo.Requests, Has.Count.EqualTo(forwardedBefore));
             });
-        }
-
-        /// <summary>Polls as a signed-in user until the reloaded route forwards, so the reload is known applied.</summary>
-        private static async Task WaitUntilForwardedAsync(FrontDoor frontDoor, string path)
-        {
-            DateTime deadline = DateTime.UtcNow.AddSeconds(10);
-            while (true)
-            {
-                using HttpResponseMessage probe = await frontDoor.GetAsync(path, user: "alice");
-                if (probe.StatusCode == HttpStatusCode.OK)
-                {
-                    return;
-                }
-
-                if (DateTime.UtcNow > deadline)
-                {
-                    Assert.Fail($"The reloaded route '{path}' was not applied within 10 s (last status {probe.StatusCode}).");
-                }
-
-                await Task.Delay(50);
-            }
         }
     }
 }

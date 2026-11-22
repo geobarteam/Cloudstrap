@@ -35,6 +35,11 @@ receives the caller's own credentials.
 - Per route: route metadata `"Cloudstrap.ForwardInboundCredentials": "true"`.
 - Globally: `Cloudstrap:Proxy:StripInboundCredentials = false`.
 
+The stripping applies to routes added by a configuration reload too. A caller's `Proxy-Authorization` is never
+forwarded either (YARP drops it as a hop-by-hop header). Note that an application transform registered after
+`AddCloudstrapProxy` (for example `.AddTransforms(...)` on the builder it returns) runs after the stripping and
+can re-add these headers; doing so is equally unsafe.
+
 ## Forwarding headers
 
 `X-Forwarded-For`, `-Proto`, `-Host` and `-Prefix` follow YARP's defaults. A value the caller sends is replaced,

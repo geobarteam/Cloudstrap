@@ -4,6 +4,7 @@ namespace Cloudstrap.Proxy.Tests
     using System.Net.Http.Headers;
     using Cloudstrap.Proxy.Tests.Infrastructure;
     using Microsoft.AspNetCore.Builder;
+    using Microsoft.Extensions.Configuration;
     using NUnit.Framework;
 
     /// <summary>
@@ -139,16 +140,84 @@ namespace Cloudstrap.Proxy.Tests
         }
 
         /// <summary>
+        /// Regression guard (green on arrival): YARP already drops <c>Proxy-Authorization</c> as a hop-by-hop header,
+        /// so no Cloudstrap transform is needed; this guards that it keeps doing so.
+        /// </summary>
+        [Test]
+        [Category(TestCategories.RegressionGuard)]
+        public async Task ProxiedRequest_CallerProxyAuthorization_IsAbsentDownstream()
+        {
+            // Arrange: a caller-sent Proxy-Authorization is a credential for the front door's hop, not the destination
+            WebApplicationBuilder builder = FrontDoor.CreateBuilder(ProxyConfig.SingleRoute(_echo.Address));
+            builder.AddCloudstrapProxy();
+            await using FrontDoor frontDoor = await FrontDoor.StartAsync(builder);
+            using HttpRequestMessage request = CreateSignedInCallerRequest("/api/orders");
+            request.Headers.ProxyAuthorization = new AuthenticationHeaderValue("Basic", "Y2FsbGVyOnNlY3JldA==");
+
+            // Act
+            using HttpResponseMessage response = await frontDoor.Client.SendAsync(request);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(_echo.Requests, Has.Count.EqualTo(1));
+                Assert.That(_echo.Requests[0].Headers.ContainsKey("Proxy-Authorization"), Is.False, "the caller's Proxy-Authorization reached the destination");
+            });
+        }
+
+        /// <summary>
+        /// Regression guard (green on arrival): YARP rebuilds each route's transforms on reload through the same
+        /// <c>AddTransforms</c> callback, so a route added by a configuration reload is stripped like a startup one.
+        /// </summary>
+        [Test]
+        [Category(TestCategories.RegressionGuard)]
+        public async Task ConfigReload_AddedRoute_StripsCookieAndAuthorization()
+        {
+            // Arrange: start with one route, then add a second one through a configuration reload
+            WebApplicationBuilder builder = FrontDoor.CreateBuilder(ProxyConfig.SingleRoute(_echo.Address));
+            builder.AddCloudstrapProxy();
+            await using FrontDoor frontDoor = await FrontDoor.StartAsync(builder);
+            IConfigurationRoot configuration = (IConfigurationRoot)frontDoor.App.Configuration;
+            configuration["ReverseProxy:Routes:reloaded-route:ClusterId"] = ProxyConfig.ClusterId;
+            configuration["ReverseProxy:Routes:reloaded-route:Match:Path"] = "/reloaded/{**catch-all}";
+            configuration.Reload();
+            await ReloadWaiter.WaitUntilForwardedAsync(frontDoor, "/reloaded/orders");
+
+            // Act
+            using HttpRequestMessage request = CreateSignedInCallerRequest("/reloaded/orders");
+            using HttpResponseMessage response = await frontDoor.Client.SendAsync(request);
+
+            // Assert
+            RecordedRequest forwarded = _echo.Requests[^1];
+            Assert.Multiple(() =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(forwarded.Path, Is.EqualTo("/reloaded/orders"));
+                Assert.That(forwarded.Headers.ContainsKey("Cookie"), Is.False, "the caller's cookie reached the destination");
+                Assert.That(forwarded.Headers.ContainsKey("Authorization"), Is.False, "the caller's Authorization reached the destination");
+            });
+        }
+
+        /// <summary>
         /// Sends <c>GET /api/orders</c> as the signed-in caller <c>alice</c>, with a cookie and two ordinary headers.
         /// </summary>
         private static Task<HttpResponseMessage> SendAsSignedInCallerAsync(FrontDoor frontDoor)
         {
-            HttpRequestMessage request = new(HttpMethod.Get, "/api/orders");
+            return frontDoor.Client.SendAsync(CreateSignedInCallerRequest("/api/orders"));
+        }
+
+        /// <summary>
+        /// A <c>GET</c> as the signed-in caller <c>alice</c>, with a cookie and two ordinary headers.
+        /// </summary>
+        private static HttpRequestMessage CreateSignedInCallerRequest(string path)
+        {
+            HttpRequestMessage request = new(HttpMethod.Get, path);
             request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthenticationHandler.SchemeName, "alice");
             request.Headers.Add("Cookie", _callerCookie);
             request.Headers.Add("Accept-Language", "nl-BE");
             request.Headers.Add("X-Demo", "kept");
-            return frontDoor.Client.SendAsync(request);
+            return request;
         }
 
         private void AssertBothCredentialHeadersForwarded(HttpResponseMessage response)

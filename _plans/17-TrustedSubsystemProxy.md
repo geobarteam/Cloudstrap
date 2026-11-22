@@ -475,10 +475,11 @@ After this step:
   - confirmation that no environment/platform detection exists (D-11).
 - **Characterization tests**: the four `ForwardedHeaderTests` green on arrival (YARP defaults, D-14).
 
-- [ ] Behavioral verification: `AuthorizationDefaultTests`, `InboundCredentialTests`, `ForwardedHeaderTests` green;
+- [x] Behavioral verification: `AuthorizationDefaultTests`, `InboundCredentialTests`, `ForwardedHeaderTests` green;
   every other exe at baseline.
-- [ ] Code review: filter + transform code; README notes on the opt-outs ("unsafe for the trusted-subsystem pattern").
-- [ ] User approved: implementation may continue past this gate.
+- [x] Code review: filter + transform code; README notes on the opt-outs ("unsafe for the trusted-subsystem pattern").
+- [x] User approved: implementation may continue past this gate. *(Approved by the owner 2026-11-22. A blank
+  policy name keeps failing startup (Central's decision).)*
 
 ---
 
