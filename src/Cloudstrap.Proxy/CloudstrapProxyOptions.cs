@@ -32,7 +32,13 @@ namespace Cloudstrap.Proxy
         /// <summary>
         /// Gets or sets the token mode of clusters that carry no <see cref="ProxyMetadataKeys.TokenMode"/> metadata.
         /// </summary>
-        /// <value>The default token mode. Defaults to <see cref="ProxyTokenMode.Client"/>.</value>
+        /// <value>
+        /// The default token mode. Defaults to <see cref="ProxyTokenMode.Client"/>. In configuration only a member name
+        /// is accepted (<c>None</c>, <c>Client</c>, <c>User</c>, any case); a number or any other value fails host
+        /// startup naming this key.
+        /// </value>
+        [EnumDataType(typeof(ProxyTokenMode), ErrorMessage = "'Cloudstrap:Proxy:DefaultTokenMode' is not a defined token"
+            + " mode. Use one of: None, Client, User.")]
         public ProxyTokenMode DefaultTokenMode { get; set; } = ProxyTokenMode.Client;
 
         /// <summary>

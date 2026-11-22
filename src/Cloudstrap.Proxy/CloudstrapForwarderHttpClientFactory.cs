@@ -77,7 +77,12 @@ namespace Cloudstrap.Proxy
             {
                 ProxyTokenMode.None => inner,
                 ProxyTokenMode.Client => Chain(context.ClusterId, CreateClientTokenHandler(context.ClusterId), inner),
-                _ => throw ProxyMetadataReader.UnsupportedTokenMode(context.ClusterId, mode.ToString()),
+                ProxyTokenMode.User => Chain(context.ClusterId, CreateUserTokenHandler(context.ClusterId), inner),
+
+                // Unreachable once the options validator has run; kept so an undefined value never forwards.
+                _ => throw new InvalidOperationException(
+                    $"Proxy cluster '{context.ClusterId}' resolved the undefined token mode '{mode}'. Use one of:"
+                    + $" {ProxyMetadataReader.AllowedTokenModes}."),
             };
         }
 
@@ -111,6 +116,18 @@ namespace Cloudstrap.Proxy
                     + " token.");
 
             return provider.CreateClientTokenHandler(clusterId, ProxyClusterTokenOptions.Read(_configuration, clusterId));
+        }
+
+        private DelegatingHandler CreateUserTokenHandler(string clusterId)
+        {
+            IUserAccessTokenHandlerProvider provider = _services.GetService<IUserAccessTokenHandlerProvider>()
+                ?? throw new InvalidOperationException(
+                    $"Proxy cluster '{clusterId}' attaches the signed-in user's token ('{ProxyMetadataKeys.TokenMode}' ="
+                    + $" '{nameof(ProxyTokenMode.User)}'), but no {nameof(IUserAccessTokenHandlerProvider)} is registered."
+                    + " Reference Cloudstrap.Authentication.OpenIdConnect and call AddCloudstrapOpenIdConnect, or change"
+                    + $" the cluster metadata '{ProxyMetadataKeys.TokenMode}'. No request is sent without the token.");
+
+            return provider.CreateUserTokenHandler(clusterId, ProxyClusterTokenOptions.Read(_configuration, clusterId));
         }
     }
 }

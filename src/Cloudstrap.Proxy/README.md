@@ -11,7 +11,7 @@ app.MapCloudstrapProxy();
 Routes and clusters use YARP's own `ReverseProxy` configuration schema, unchanged. Both calls return YARP's
 own builders, so every YARP extension stays reachable.
 
-> This README is still a skeleton. Token modes and the anonymous-route guard are documented as they are built.
+> This README is still a skeleton. The anonymous-route guard is documented when it is built.
 
 ## Routes require a signed-in user by default
 
@@ -77,9 +77,29 @@ every forwarded request carries `Authorization: Bearer <application token>` from
   `"Cloudstrap.ForwardInboundCredentials": "true"` the caller's token would reach the destination instead of the
   application's. The message names the route, the cluster and both metadata keys. A reloaded configuration with this
   combination is rejected, and YARP keeps the previous one.
-- `"Cloudstrap.TokenMode": "None"` on a cluster attaches no token.
 - Cloudstrap replaces YARP's `IForwarderHttpClientFactory` to build this handler chain. Registering your own
   factory takes the chain over, token included.
+
+## Other token modes: `User` and `None`
+
+Set `Cloudstrap.TokenMode` in a cluster's metadata (or `Cloudstrap:Proxy:DefaultTokenMode` for every cluster
+without it):
+
+| Mode | The destination receives | Needs |
+|---|---|---|
+| `Client` (default) | the application's token | `IClientAccessTokenHandlerProvider` (`Cloudstrap.Authentication.ClientCredentials`) |
+| `User` | the signed-in user's token | `IUserAccessTokenHandlerProvider` (`Cloudstrap.Authentication.OpenIdConnect`, `AddCloudstrapOpenIdConnect`) |
+| `None` | no token | nothing |
+
+- `User` follows the same rules as `Client`: the provider is asked with the cluster id and the cluster's
+  `TokenRequestParameters`; a missing provider fails startup naming the cluster, `Cloudstrap.TokenMode` and
+  the package.
+- `None` attaches nothing. The caller's `Authorization` is still removed unless the route opts out.
+- Only the names `None`, `Client` and `User` are accepted, in any case. Anything else, including a number such as
+  `1` or a combination such as `Client, User`, fails startup and lists the allowed values. This holds for the
+  cluster metadata and for `Cloudstrap:Proxy:DefaultTokenMode`.
+- No mode ever adds a header carrying the user's identity. The destination learns who the user is only from a
+  `User`-mode token.
 
 ## Forwarding headers
 

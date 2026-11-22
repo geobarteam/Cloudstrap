@@ -560,7 +560,24 @@ After this step:
 - An unknown `Cloudstrap.TokenMode` value or `DefaultTokenMode` fails start, listing `None`, `Client`, `User`.
 - No user-identity header is ever added in any mode (D-6).
 
-- [ ] Done
+- [x] Done *(2026-11-22. First, the Step 4 follow-ups (Central's decision): the client-token fake now keeps an
+  existing `Authorization` like the real `ClientCredentialsTokenHandler` (line 63) and records what each request
+  arrived with; `ClientCluster_CallerAuthorization_IsRemovedBeforeTheAppTokenIsAdded` is green on arrival
+  (`RegressionGuard`). RED then GREEN: a route with `Cloudstrap.ForwardInboundCredentials: true` on a cluster whose
+  effective mode is `Client` fails startup naming the route, the cluster and both keys (fail closed, in
+  `ProxyRouteConfigFilter`; 3 cases). README: a request with a body can end 502 after the handler's single retry on
+  401. Commit `fix(proxy): refuse forwarded caller credentials…`. Then Step 5. RED: `UserCluster_…` (2), the 4
+  `UnknownTokenModeMetadata_…` cases (`Machine`, `1`, `2`, `Client, User`), the 3 `UnknownDefaultTokenMode_…` cases
+  (`Machine`, `1`, `Client, User`), `UndefinedDefaultTokenModeInCode_…` and `AnyMode_…(User)` failed. **Green on
+  arrival, labelled `RegressionGuard`**: `NoneCluster_ForwardedRequest_HasNoAuthorizationHeader`,
+  `NoneCluster_CallerAuthorization_IsStillStripped`, `TokenModeMetadata_NameInAnyCase_IsAccepted` (2) and
+  `AnyMode_…(None|Client)`. GREEN: `User` branch with the fail-loud message naming `IUserAccessTokenHandlerProvider`,
+  `Cloudstrap.TokenMode` and `Cloudstrap.Authentication.OpenIdConnect`; an internal `ProxyMetadataReader` accepts only
+  member names (any case) and lists `None, Client, User` on failure; `DefaultTokenMode` gets `[EnumDataType]` in the
+  generated validator, plus a raw-setting check registered before the binding (the binder accepts `1` and
+  `Client, User`). The plan's `AnyMode` header allow-list includes `X-Correlation-ID` ahead of Step 7 and W3C trace
+  headers. `Cloudstrap.Proxy.Tests` 60/60. Full suite: 17 pre-existing unit exes at baseline (991), E2E 68/68, 0 code
+  warnings (144 NU190x advisories unchanged), `dotnet format` exit 0.)*
 
 **Scope**:
 - `CloudstrapForwarderHttpClientFactory.cs` *(modify)*: the `User` / `None` branches; metadata parsing

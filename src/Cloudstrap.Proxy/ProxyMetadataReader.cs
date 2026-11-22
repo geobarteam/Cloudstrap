@@ -38,22 +38,39 @@ namespace Cloudstrap.Proxy
                 return defaultMode;
             }
 
-            return Enum.TryParse(value, ignoreCase: true, out ProxyTokenMode mode)
+            return TryParseTokenMode(value, out ProxyTokenMode mode)
                 ? mode
-                : throw UnsupportedTokenMode(clusterId, value);
+                : throw new InvalidOperationException(
+                    $"Proxy cluster '{clusterId}' has '{ProxyMetadataKeys.TokenMode}' = '{value}', which is not a"
+                    + $" supported token mode. Use one of: {AllowedTokenModes}.");
         }
 
         /// <summary>
-        /// Creates the failure for a token mode value that is not supported.
+        /// Gets the token mode names a setting accepts, comma-separated, for failure messages.
         /// </summary>
-        /// <param name="clusterId">The cluster id.</param>
-        /// <param name="value">The unsupported value.</param>
-        /// <returns>The exception to throw.</returns>
-        public static InvalidOperationException UnsupportedTokenMode(string clusterId, string value)
+        public static string AllowedTokenModes => string.Join(", ", Enum.GetNames<ProxyTokenMode>());
+
+        /// <summary>
+        /// Parses a token mode setting. Only a <see cref="ProxyTokenMode"/> member name is accepted, in any case:
+        /// unlike <see cref="Enum.TryParse{TEnum}(string?, bool, out TEnum)"/>, numeric values (<c>1</c>) and combined
+        /// values (<c>Client, User</c>) are refused, so a setting can never select a mode by accident.
+        /// </summary>
+        /// <param name="value">The setting value.</param>
+        /// <param name="mode">The parsed mode, when the method returns <see langword="true"/>.</param>
+        /// <returns><see langword="true"/> when <paramref name="value"/> is a member name.</returns>
+        public static bool TryParseTokenMode(string? value, out ProxyTokenMode mode)
         {
-            return new InvalidOperationException(
-                $"Proxy cluster '{clusterId}' has '{ProxyMetadataKeys.TokenMode}' = '{value}', which is not a supported"
-                + " token mode.");
+            foreach (ProxyTokenMode candidate in Enum.GetValues<ProxyTokenMode>())
+            {
+                if (string.Equals(value, candidate.ToString(), StringComparison.OrdinalIgnoreCase))
+                {
+                    mode = candidate;
+                    return true;
+                }
+            }
+
+            mode = default;
+            return false;
         }
 
         /// <summary>

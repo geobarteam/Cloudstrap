@@ -14,6 +14,35 @@ namespace Cloudstrap.Proxy
     }
 
     /// <summary>
+    /// Checks the raw <c>Cloudstrap:Proxy:DefaultTokenMode</c> setting before the options are bound. The configuration
+    /// binder accepts numbers (<c>1</c>) and combined values (<c>Client, User</c>) for an enum and fails on an unknown
+    /// name without listing the allowed ones, so the setting is checked here, by name, first.
+    /// </summary>
+    internal static class ProxyDefaultTokenModeSetting
+    {
+        /// <summary>The configuration key checked.</summary>
+        internal const string Key = $"{CloudstrapProxyOptions.SectionName}:{nameof(CloudstrapProxyOptions.DefaultTokenMode)}";
+
+        /// <summary>
+        /// Throws when the setting is present and not a <see cref="ProxyTokenMode"/> member name.
+        /// </summary>
+        /// <param name="configuration">The application configuration.</param>
+        /// <exception cref="InvalidOperationException">The setting is not a member name.</exception>
+        public static void Check(IConfiguration configuration)
+        {
+            string? value = configuration[Key];
+            if (string.IsNullOrEmpty(value) || ProxyMetadataReader.TryParseTokenMode(value, out _))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"'{Key}' = '{value}' is not a supported token mode. Use one of: {ProxyMetadataReader.AllowedTokenModes}"
+                + " (by name; numbers are not accepted).");
+        }
+    }
+
+    /// <summary>
     /// Validates the rule the data annotations cannot express: the YARP configuration section named by
     /// <see cref="CloudstrapProxyOptions.ConfigurationSection"/> exists, so a typo in the section name fails startup
     /// instead of silently proxying nothing.

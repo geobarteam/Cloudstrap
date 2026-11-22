@@ -53,8 +53,12 @@ namespace Cloudstrap.Proxy
         /// </para>
         /// <para>
         /// A cluster in <see cref="ProxyTokenMode.Client"/> mode (the default) forwards with the application's token
-        /// from the registered <c>IClientAccessTokenHandlerProvider</c>; without a provider, host startup fails. This
-        /// replaces YARP's <c>IForwarderHttpClientFactory</c>.
+        /// from the registered <c>IClientAccessTokenHandlerProvider</c>; without a provider, host startup fails. A
+        /// <see cref="ProxyTokenMode.User"/> cluster forwards with the signed-in user's token from the registered
+        /// <c>IUserAccessTokenHandlerProvider</c>, on the same terms; a <see cref="ProxyTokenMode.None"/> cluster
+        /// attaches no token. A token mode that is not one of these names fails host startup. A route that forwards the
+        /// caller's credentials to a <see cref="ProxyTokenMode.Client"/> cluster fails host startup too. This replaces
+        /// YARP's <c>IForwarderHttpClientFactory</c>.
         /// </para>
         /// <para>Map the routes with <see cref="EndpointRouteBuilderExtensions.MapCloudstrapProxy"/>.</para>
         /// </remarks>
@@ -73,7 +77,9 @@ namespace Cloudstrap.Proxy
 
             builder.Services.AddSingleton<ProxyRegistrationMarker>();
 
+            // The raw DefaultTokenMode check is registered before the binding, so it runs first.
             OptionsBuilder<CloudstrapProxyOptions> options = builder.Services.AddOptions<CloudstrapProxyOptions>()
+                .Configure<IConfiguration>((_, configuration) => ProxyDefaultTokenModeSetting.Check(configuration))
                 .BindConfiguration(CloudstrapProxyOptions.SectionName);
             if (configure is not null)
             {
