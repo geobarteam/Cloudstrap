@@ -55,8 +55,8 @@ namespace Cloudstrap.Proxy
         {
             return base.CanReuseOldClient(context)
                 && string.Equals(
-                    ReadTokenMode(context.OldMetadata),
-                    ReadTokenMode(context.NewMetadata),
+                    ProxyMetadataReader.ReadTokenMode(context.OldMetadata),
+                    ProxyMetadataReader.ReadTokenMode(context.NewMetadata),
                     StringComparison.OrdinalIgnoreCase);
         }
 
@@ -68,26 +68,17 @@ namespace Cloudstrap.Proxy
         protected override HttpMessageHandler WrapHandler(ForwarderHttpClientContext context, HttpMessageHandler handler)
         {
             HttpMessageHandler inner = base.WrapHandler(context, handler);
-            ProxyTokenMode mode = ResolveTokenMode(context.ClusterId, context.NewMetadata);
+            ProxyTokenMode mode = ProxyMetadataReader.ResolveTokenMode(
+                context.ClusterId,
+                context.NewMetadata,
+                _options.Value.DefaultTokenMode);
 
             return mode switch
             {
                 ProxyTokenMode.None => inner,
                 ProxyTokenMode.Client => Chain(context.ClusterId, CreateClientTokenHandler(context.ClusterId), inner),
-                _ => throw UnsupportedTokenMode(context.ClusterId, mode.ToString()),
+                _ => throw ProxyMetadataReader.UnsupportedTokenMode(context.ClusterId, mode.ToString()),
             };
-        }
-
-        private static InvalidOperationException UnsupportedTokenMode(string clusterId, string value)
-        {
-            return new InvalidOperationException(
-                $"Proxy cluster '{clusterId}' has '{ProxyMetadataKeys.TokenMode}' = '{value}', which is not a supported"
-                + " token mode.");
-        }
-
-        private static string? ReadTokenMode(IReadOnlyDictionary<string, string>? metadata)
-        {
-            return metadata is not null && metadata.TryGetValue(ProxyMetadataKeys.TokenMode, out string? value) ? value : null;
         }
 
         /// <summary>
@@ -106,19 +97,6 @@ namespace Cloudstrap.Proxy
 
             tokenHandler.InnerHandler = inner;
             return tokenHandler;
-        }
-
-        private ProxyTokenMode ResolveTokenMode(string clusterId, IReadOnlyDictionary<string, string>? metadata)
-        {
-            string? value = ReadTokenMode(metadata);
-            if (value is null)
-            {
-                return _options.Value.DefaultTokenMode;
-            }
-
-            return Enum.TryParse(value, ignoreCase: true, out ProxyTokenMode mode)
-                ? mode
-                : throw UnsupportedTokenMode(clusterId, value);
         }
 
         private DelegatingHandler CreateClientTokenHandler(string clusterId)

@@ -227,6 +227,70 @@ namespace Cloudstrap.Proxy.Tests
             });
         }
 
+        /// <summary>
+        /// Regression guard (green on arrival): the stripping transform of Step 3 already runs before the forwarder's
+        /// handler chain. With the fake now keeping an existing <c>Authorization</c> as the real client-credentials
+        /// handler does, this proves the caller's header is gone before the token handler runs; were it not, the
+        /// caller's own credentials would reach the destination instead of the application token.
+        /// </summary>
+        [Test]
+        [Category(TestCategories.RegressionGuard)]
+        public async Task ClientCluster_CallerAuthorization_IsRemovedBeforeTheAppTokenIsAdded()
+        {
+            // Arrange
+            FakeClientTokenHandlerProvider provider = new();
+            WebApplicationBuilder builder = FrontDoor.CreateBuilder(ProxyConfig.SingleRoute(_echo.Address, tokenMode: nameof(ProxyTokenMode.Client)));
+            builder.Services.AddSingleton<IClientAccessTokenHandlerProvider>(provider);
+            builder.AddCloudstrapProxy();
+            await using FrontDoor frontDoor = await FrontDoor.StartAsync(builder);
+
+            // Act: the caller signs in with its own "Authorization: Test alice"
+            using HttpResponseMessage response = await frontDoor.GetAsync("/api/orders", user: "alice");
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(provider.ArrivingAuthorizations, Is.EqualTo(new string?[] { null }), "the caller's Authorization reached the token handler");
+                Assert.That(_echo.Requests, Has.Count.EqualTo(1));
+                Assert.That(_echo.Requests[0].Headers.GetValueOrDefault("Authorization"), Is.EqualTo(_expectedToken));
+            });
+        }
+
+        /// <summary>
+        /// Central's decision (fail closed): the client-credentials handler keeps an <c>Authorization</c> already on the
+        /// request, so a route that forwards the caller's credentials to a <c>Client</c> cluster would send the
+        /// caller's token instead of the application's. That combination fails startup.
+        /// </summary>
+        /// <param name="tokenMode">The cluster's token mode metadata; <see langword="null"/> means the default, <c>Client</c>.</param>
+        [TestCase(nameof(ProxyTokenMode.Client))]
+        [TestCase("client")]
+        [TestCase(null)]
+        public void ClientCluster_RouteForwardsInboundCredentials_StartFailsNamingRouteClusterAndKey(string? tokenMode)
+        {
+            // Arrange
+            Dictionary<string, string?> settings = ProxyConfig.SingleRoute(_echo.Address, tokenMode: tokenMode);
+            settings[$"ReverseProxy:Routes:{ProxyConfig.RouteId}:Metadata:{ProxyMetadataKeys.ForwardInboundCredentials}"] = "true";
+            WebApplicationBuilder builder = FrontDoor.CreateBuilder(settings);
+            builder.Services.AddSingleton<IClientAccessTokenHandlerProvider>(new FakeClientTokenHandlerProvider());
+            builder.AddCloudstrapProxy();
+
+            // Act
+            Exception? failure = Assert.CatchAsync(() => FrontDoor.StartAsync(builder));
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(failure, Is.Not.Null, "startup succeeded");
+                Assert.That(
+                    failure?.ToString(),
+                    Does.Contain($"'{ProxyConfig.RouteId}'")
+                        .And.Contain($"'{ProxyConfig.ClusterId}'")
+                        .And.Contain(ProxyMetadataKeys.ForwardInboundCredentials));
+                Assert.That(_echo.Requests, Is.Empty);
+            });
+        }
+
         [Test]
         public void ClientCluster_ProviderReturnsHandlerWithInnerHandlerSet_IsNotSupported()
         {

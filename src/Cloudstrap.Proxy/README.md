@@ -67,7 +67,16 @@ every forwarded request carries `Authorization: Bearer <application token>` from
   cluster added by a configuration reload is checked when it loads. No request is ever sent without the token.
 - **The token cannot be obtained**: the front door answers 502 and nothing is forwarded; there is no
   unauthenticated retry.
-- A 401 from the destination is passed through unchanged.
+- A 401 from the destination is passed through unchanged. The client-credentials handler of
+  `Cloudstrap.Authentication.ClientCredentials` first renews the token and re-sends the request once. A request
+  **with a body** (for example a `POST`) cannot be re-sent: YARP streams the caller's body and can send it only once.
+  Such a request can then end with **502** at the front door instead of the destination's 401. A body-less request
+  gets the retry's answer.
+- **A route that forwards the caller's credentials to a `Client` cluster fails startup** (fail closed). The
+  client-credentials handler keeps an `Authorization` header that is already on the request. With
+  `"Cloudstrap.ForwardInboundCredentials": "true"` the caller's token would reach the destination instead of the
+  application's. The message names the route, the cluster and both metadata keys. A reloaded configuration with this
+  combination is rejected, and YARP keeps the previous one.
 - `"Cloudstrap.TokenMode": "None"` on a cluster attaches no token.
 - Cloudstrap replaces YARP's `IForwarderHttpClientFactory` to build this handler chain. Registering your own
   factory takes the chain over, token included.

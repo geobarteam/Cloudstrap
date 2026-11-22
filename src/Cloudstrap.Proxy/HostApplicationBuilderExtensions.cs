@@ -103,20 +103,13 @@ namespace Cloudstrap.Proxy
         private static void AddInboundCredentialRemoval(TransformBuilderContext context)
         {
             CloudstrapProxyOptions options = context.Services.GetRequiredService<IOptions<CloudstrapProxyOptions>>().Value;
-            if (!options.StripInboundCredentials || ForwardsInboundCredentials(context.Route))
+            if (!options.StripInboundCredentials || ProxyMetadataReader.ForwardsInboundCredentials(context.Route))
             {
                 return;
             }
 
             context.AddRequestHeaderRemove(HeaderNames.Cookie);
             context.AddRequestHeaderRemove(HeaderNames.Authorization);
-        }
-
-        private static bool ForwardsInboundCredentials(RouteConfig route)
-        {
-            return route.Metadata is not null
-                && route.Metadata.TryGetValue(ProxyMetadataKeys.ForwardInboundCredentials, out string? value)
-                && string.Equals(value, bool.TrueString, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
