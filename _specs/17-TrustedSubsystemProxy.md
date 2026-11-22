@@ -274,7 +274,8 @@ Each item is a Decision Log entry. The source fact and its reference are in the 
    none. Cloudstrap defaults to `Client`. A missing provider **fails loudly** (startup or first use) and never
    forwards unauthenticated. `None` must be chosen explicitly.
 5. **D-13: TLS.** The source's custom certificate validator (trusted chain + host name re-checked against the BFF
-   host) is **not carried**. Platform default validation applies. Out of scope for v1, recommended.
+   host) is **not carried**. Platform default validation applies. Out of scope for v1, **decided by the owner
+   2026-11-22**.
 6. **D-14: `Host` / `X-Forwarded-Prefix`.** Not a behavior change. The source transformer's contract (clear `Host`;
    replace a caller's `X-Forwarded-Prefix` with `PathBase`) is kept through YARP defaults. The bespoke transformer
    class is dropped.
@@ -332,7 +333,7 @@ Owner's answers recorded 2026-11-22. Every recommended option was accepted.
 | D-10 | Source difference: authorization | Authenticated by default replaces "no authorization, caller secures the builder". | Analyst (follows D-4) |
 | D-11 | Source difference: credential stripping | Always remove `Cookie` + `Authorization`. Replaces "remove `Cookie` outside AKS only, keep `Authorization`". No platform detection. | Analyst (follows D-5) |
 | D-12 | Source difference: token default | `Client` by default with fail-loud. Replaces "opt-in flag, default off, otherwise no token". | Analyst (follows D-6) |
-| D-13 | Source difference: TLS validator | Not carried; platform default validation; **out of scope for v1** (recommended). | Analyst. ⚠️ **Not part of the owner's OQ answers.** Owner to confirm at plan approval. |
+| D-13 | Source difference: TLS validator | **Decided.** Not carried; .NET's standard TLS validation applies; **out of scope for v1**. | Owner, 2026-11-22 (confirmed with Gate 1) |
 | D-14 | Source contract kept: `Host` / `X-Forwarded-Prefix` | Kept through YARP defaults; asserted in AC-PX8. | Analyst |
 | D-15 | Source `Hangfire.Proxy` | Out of scope, stays #18. Facts recorded for #18 (role policy; empty role = any signed-in user). | Analyst (roadmap order) |
 

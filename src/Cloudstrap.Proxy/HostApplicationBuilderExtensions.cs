@@ -32,6 +32,11 @@ namespace Cloudstrap.Proxy
         /// <c>Cloudstrap:Proxy:ConfigurationSection</c> <em>before</em> calling it. A section that does not exist fails
         /// host startup with a message naming that key.
         /// </para>
+        /// <para>
+        /// A route without an <c>AuthorizationPolicy</c> requires the application's default authorization policy (a
+        /// signed-in user unless the application changed it); nothing is forwarded for a caller who fails it. Set the
+        /// route's policy to <c>Anonymous</c> for a deliberately public route.
+        /// </para>
         /// <para>Map the routes with <see cref="EndpointRouteBuilderExtensions.MapCloudstrapProxy"/>.</para>
         /// </remarks>
         public static IReverseProxyBuilder AddCloudstrapProxy(
@@ -62,7 +67,8 @@ namespace Cloudstrap.Proxy
 
             string section = ResolveConfigurationSection(builder.Configuration, configure);
             return builder.Services.AddReverseProxy()
-                .LoadFromConfig(builder.Configuration.GetSection(section));
+                .LoadFromConfig(builder.Configuration.GetSection(section))
+                .AddConfigFilter<ProxyRouteConfigFilter>();
         }
 
         /// <summary>

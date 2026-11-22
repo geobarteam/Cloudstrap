@@ -335,9 +335,11 @@ After this step:
 - **Planner interpretations to confirm**: second `AddCloudstrapProxy` call throws (rather than being idempotent);
   Kestrel loopback echo server in unit tests (mechanic (h)).
 
-- [ ] Behavioral verification: `RegistrationTests` + `DependencyPinTests` green; every other exe at baseline.
-- [ ] Code review: csproj closure (Extensions + YARP only); public types sealed and documented; validator pattern.
-- [ ] User approved: implementation may continue past this gate.
+- [x] Behavioral verification: `RegistrationTests` + `DependencyPinTests` green; every other exe at baseline.
+- [x] Code review: csproj closure (Extensions + YARP only); public types sealed and documented; validator pattern.
+- [x] User approved: implementation may continue past this gate. *(Approved by the owner 2026-11-22: Yarp.ReverseProxy
+  2.3.0, MIT licence, test setup (second call throws; Kestrel loopback echo). D-13 decided at the same time: no
+  custom TLS validator in v1, .NET's standard TLS validation; recorded in the spec Decision Log.)*
 
 ---
 
@@ -350,7 +352,18 @@ After this step:
   Step 6; the tests here use clusters with `Cloudstrap.TokenMode: None`, whose metadata key is read from Step 4 on.
 - A route with a named policy keeps it.
 
-- [ ] Done
+- [x] Done *(2026-11-22. RED: 3 of the 6 `AuthorizationDefaultTests` failed before the filter existed, each with the
+  anonymous caller forwarded (200, echo recorded the request): `RouteWithoutPolicy_AnonymousCaller_Returns401_…`,
+  `…_CookieFrontDoor_IsChallenged_…` and `…_AppWithoutFallbackPolicy_StillRequiresASignedInUser`. The other 3 were
+  **green on arrival**, as they characterize behavior YARP already has and that the filter must keep:
+  `RouteWithoutPolicy_SignedInCaller_IsForwarded`, `RouteWithNamedPolicy_CallerFailingIt_Returns403_…` and
+  `RouteMarkedAnonymous_AnonymousCaller_IsForwarded`. GREEN: internal sealed `ProxyRouteConfigFilter` gives a route
+  with a null/empty policy YARP's reserved `Default`, registered with `AddConfigFilter` in `AddCloudstrapProxy`.
+  `Cloudstrap.Proxy.Tests` 17/17. Full suite: the 17 pre-existing unit exes at baseline (991), E2E 68/68, 0 code
+  warnings, `dotnet format` exit 0. The build shows 144 NU190x restore advisories; besides the Pkcs/Xml ones of the
+  Baseline record, these now include `Microsoft.AspNetCore.Components.WebAssembly.Server` 10.0.10 on the demo Bff
+  (new advisory data, not raised by this step, left for the owner). Also removed: the stray empty
+  `ZzYarpFactsProbe.cs` committed by `856e92d`.)*
 
 **Scope**:
 - `src/Cloudstrap.Proxy/ProxyRouteConfigFilter.cs` *(create, internal sealed, `IProxyConfigFilter`)*: the
