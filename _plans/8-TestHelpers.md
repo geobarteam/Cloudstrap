@@ -909,12 +909,13 @@ Step 5's override mode on the Linux SQL container.*
   unchanged.
 - **Regression**: the per-executable counts table (baseline vs final) for all 16 pre-existing unit exes + E2E.
 
-- [ ] Behavioral verification (Step 7): `RepositoryHygieneTests.NoCloudstrapOwnedLogCaptureType_RemainsAnywhere`
+- [x] Behavioral verification (Step 7) *(approved by the owner 2026-11-22)*: `RepositoryHygieneTests.NoCloudstrapOwnedLogCaptureType_RemainsAnywhere`
   passes; the OpenIdConnect and ClientCredentials exes are green at baseline counts.
-- [ ] Regression: the full-suite check (build + every unit exe + E2E exe + `dotnet format --verify-no-changes`) is
+- [x] Regression *(approved by the owner 2026-11-22; re-verify job 01M8084CG698YCD582QTMDPEPF: build 0 code
+  warnings, unit 926/926 + TestInfrastructure 65/65, E2E 68/68, format clean)*: the full-suite check (build + every unit exe + E2E exe + `dotnet format --verify-no-changes`) is
   green end to end. Every pre-existing executable's count equals the Baseline record, and the only new executable is
   `Cloudstrap.TestInfrastructure.Tests`.
-- [ ] Spec acceptance sign-off:
+- [x] Spec acceptance sign-off *(approved by the owner 2026-11-22; D-5 deviation recorded)*:
   - Walk **AC-ASP2 and AC-TS1…AC-TS13** against the step evidence using the AC coverage map; all must be met.
   - **AC-TS13 / D-5**: record the user-approved deviation from workflow rule 9: no demonstration slice and no new
     E2E test. The demonstration is the E2E suite consuming the shared helper (Step 5), and the proof is the unchanged
@@ -929,7 +930,7 @@ Step 5's override mode on the Linux SQL container.*
     - no shipped-package or demo-code change;
     - `src/Test/TestIdentityProvider/` untouched;
     - the Observability sentinel provider untouched.
-- [ ] Docs review: the `ci.yml` / `release.yml` comments, the `src/demo/README.md` harness bullet, and the
+- [x] Docs review *(approved by the owner 2026-11-22)*: the `ci.yml` / `release.yml` comments, the `src/demo/README.md` harness bullet, and the
   library's type summaries (CREATE DATABASE permission, the parallel-fixture constraint, Entra ID pass-through).
   **Recorded follow-ups (not in this plan)**:
   - CLAUDE.md "Project Structure" still lists `Cloudstrap.Testing/ # Test helper utilities`; it should name the
@@ -942,4 +943,4 @@ Step 5's override mode on the Linux SQL container.*
   - the `Microsoft.Extensions.*` 10.0.12 family bump that would allow `Diagnostics.Testing` 10.10.0;
   - opportunistic adoption of `CloudstrapTestHost` by other suites;
   - the intra-E2E `CLOUDSTRAP_TEST_BLOB` tidy.
-- [ ] User approved: deliverable #8 is done; the project-manager flips the ROADMAP row to ✅.
+- [x] User approved *(approved by the owner 2026-11-22)*: deliverable #8 is done; the project-manager flips the ROADMAP row to ✅.
