@@ -112,8 +112,19 @@ without it):
 
 A route with `"AuthorizationPolicy": "Anonymous"` (any case) to a cluster whose mode is `Client` or `User`
 (including `Client` by default) **fails startup**: any caller could otherwise reach the destination with the
-application's identity (a confused deputy). The message names the route, the cluster and the override key. A
-reloaded configuration with such a route is rejected, and YARP keeps the previous one.
+application's identity (a confused deputy). The message names the route, the cluster and the override key. This
+holds for routes and clusters supplied in code (`LoadFromMemory`) too.
+
+After startup, the app never fails because of this guard. A configuration reload (or an
+`InMemoryConfigProvider.Update`) that would create the combination is **rejected as a whole**: YARP logs the error
+and keeps the previous configuration, so nothing changes until a valid one arrives. This covers a reload that:
+
+- sets a route to `Anonymous` while its cluster is `Client` or `User` (the route keeps requiring a signed-in user);
+- moves an `Anonymous` route to a `Client` or `User` cluster (the route keeps its old cluster);
+- switches the cluster behind an `Anonymous` route from `None` to `Client` or `User` (the cluster stays `None`);
+- adds an `Anonymous` route to a `Client` or `User` cluster (the route is not added).
+
+Exceptions:
 
 - An `Anonymous` route to a `None` cluster starts normally.
 - For a deliberately public route that must carry the application's token, set the route metadata
