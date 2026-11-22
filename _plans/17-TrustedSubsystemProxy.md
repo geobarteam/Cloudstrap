@@ -409,7 +409,19 @@ After this step:
   replaced by the front door's `PathBase`, and `Host` is the destination's own. This is the source transformer's
   contract, now met by YARP defaults.
 
-- [ ] Done
+- [x] Done *(2026-11-22. First, the Step 2 verify follow-ups: the 3 green-on-arrival `AuthorizationDefaultTests` are
+  labelled `[Category("RegressionGuard")]` with a doc comment, and 2 tests are added, both green on arrival and labelled
+  the same way: `RouteWithWhitespaceOnlyPolicy_FailsStart` (YARP rejects the blank policy name; the filter does not
+  widen it to `Default`) and `ConfigReload_AddedRouteWithoutPolicy_StillRequiresASignedInUser`. RED: the 2 planned
+  drivers failed before the transform, each with the header reaching the echo: `ProxiedRequest_CallerCookie_…` and
+  `ProxiedRequest_CallerAuthorization_…`. **Green on arrival, labelled `RegressionGuard`**: the 4
+  `ForwardedHeaderTests` (YARP defaults, D-14), `ProxiedRequest_OtherHeaders_AreForwardedUnchanged` and both opt-out
+  tests (trivially green while nothing stripped; they now guard the opt-outs). GREEN: an `AddTransforms` callback in
+  `AddCloudstrapProxy` removes `Cookie` and `Authorization` unless `StripInboundCredentials` is `false` or the route
+  metadata `Cloudstrap.ForwardInboundCredentials` is case-insensitive `"true"`. No environment/platform check exists
+  (D-11). README: default-authorization, stripping/opt-outs ("unsafe") and forwarding-header sections.
+  `Cloudstrap.Proxy.Tests` 28/28. Full suite: 17 pre-existing unit exes at baseline (991), E2E 68/68, 0 code warnings
+  (144 NU190x advisories unchanged), `dotnet format` exit 0.)*
 
 **Scope**:
 - `src/Cloudstrap.Proxy/HostApplicationBuilderExtensions.cs` *(modify)*: the mechanic (g) transform.

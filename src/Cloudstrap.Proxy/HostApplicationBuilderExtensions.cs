@@ -4,6 +4,10 @@ namespace Cloudstrap.Proxy
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Options;
+    using Microsoft.Net.Http.Headers;
+    using Yarp.ReverseProxy.Configuration;
+    using Yarp.ReverseProxy.Transforms;
+    using Yarp.ReverseProxy.Transforms.Builder;
 
     /// <summary>
     /// Registers the trusted-subsystem proxy on the generic host: YARP over its own configuration section, plus the
@@ -37,6 +41,14 @@ namespace Cloudstrap.Proxy
         /// signed-in user unless the application changed it); nothing is forwarded for a caller who fails it. Set the
         /// route's policy to <c>Anonymous</c> for a deliberately public route.
         /// </para>
+        /// <para>
+        /// The caller's <c>Cookie</c> and <c>Authorization</c> headers are removed from every proxied request, so the
+        /// caller's credentials never reach the destination. The route metadata
+        /// <see cref="ProxyMetadataKeys.ForwardInboundCredentials"/> = <c>true</c>, or
+        /// <see cref="CloudstrapProxyOptions.StripInboundCredentials"/> = <see langword="false"/>, keeps them; both are
+        /// unsafe for the trusted-subsystem pattern. <c>X-Forwarded-*</c> headers follow YARP's defaults (a caller-sent
+        /// value is replaced), and the destination receives its own <c>Host</c>.
+        /// </para>
         /// <para>Map the routes with <see cref="EndpointRouteBuilderExtensions.MapCloudstrapProxy"/>.</para>
         /// </remarks>
         public static IReverseProxyBuilder AddCloudstrapProxy(
@@ -68,7 +80,34 @@ namespace Cloudstrap.Proxy
             string section = ResolveConfigurationSection(builder.Configuration, configure);
             return builder.Services.AddReverseProxy()
                 .LoadFromConfig(builder.Configuration.GetSection(section))
-                .AddConfigFilter<ProxyRouteConfigFilter>();
+                .AddConfigFilter<ProxyRouteConfigFilter>()
+                .AddTransforms(AddInboundCredentialRemoval);
+        }
+
+        /// <summary>
+        /// Removes the caller's <c>Cookie</c> and <c>Authorization</c> request headers on every route, so the caller's
+        /// credentials stay at the front door. Skipped when <see cref="CloudstrapProxyOptions.StripInboundCredentials"/>
+        /// is <see langword="false"/> or the route's <see cref="ProxyMetadataKeys.ForwardInboundCredentials"/> metadata
+        /// is <c>true</c>. Transforms run before the forwarder's handler chain, so an outbound token set there is never
+        /// removed.
+        /// </summary>
+        private static void AddInboundCredentialRemoval(TransformBuilderContext context)
+        {
+            CloudstrapProxyOptions options = context.Services.GetRequiredService<IOptions<CloudstrapProxyOptions>>().Value;
+            if (!options.StripInboundCredentials || ForwardsInboundCredentials(context.Route))
+            {
+                return;
+            }
+
+            context.AddRequestHeaderRemove(HeaderNames.Cookie);
+            context.AddRequestHeaderRemove(HeaderNames.Authorization);
+        }
+
+        private static bool ForwardsInboundCredentials(RouteConfig route)
+        {
+            return route.Metadata is not null
+                && route.Metadata.TryGetValue(ProxyMetadataKeys.ForwardInboundCredentials, out string? value)
+                && string.Equals(value, bool.TrueString, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

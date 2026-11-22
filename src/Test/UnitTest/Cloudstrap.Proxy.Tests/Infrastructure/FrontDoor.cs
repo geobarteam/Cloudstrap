@@ -55,10 +55,14 @@ namespace Cloudstrap.Proxy.Tests.Infrastructure
 
         /// <summary>Builds the app, maps the proxy behind authentication and authorization, and starts it.</summary>
         /// <param name="builder">A builder from <see cref="CreateBuilder"/> with the proxy registered.</param>
+        /// <param name="beforeRouting">
+        /// Optional middleware added before routing, for example <c>UsePathBase</c>.
+        /// </param>
         /// <returns>The running front door.</returns>
-        public static async Task<FrontDoor> StartAsync(WebApplicationBuilder builder)
+        public static async Task<FrontDoor> StartAsync(WebApplicationBuilder builder, Action<WebApplication>? beforeRouting = null)
         {
             WebApplication app = builder.Build();
+            beforeRouting?.Invoke(app);
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
