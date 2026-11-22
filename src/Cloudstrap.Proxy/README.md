@@ -40,6 +40,38 @@ forwarded either (YARP drops it as a hop-by-hop header). Note that an applicatio
 `AddCloudstrapProxy` (for example `.AddTransforms(...)` on the builder it returns) runs after the stripping and
 can re-add these headers; doing so is equally unsafe.
 
+## The destination receives the application's token (`Client` mode, the default)
+
+A cluster without `Cloudstrap.TokenMode` metadata uses `Cloudstrap:Proxy:DefaultTokenMode`, which is `Client`:
+every forwarded request carries `Authorization: Bearer <application token>` from the registered
+`IClientAccessTokenHandlerProvider` (install `Cloudstrap.Authentication.ClientCredentials` and call
+`AddCloudstrapClientCredentials`). The token is set after the caller's own `Authorization` is removed.
+
+```json
+{
+  "Cloudstrap": {
+    "Proxy": {
+      "Clusters": {
+        "orders-api": {
+          "TokenRequestParameters": { "Scope": "orders.read" }
+        }
+      }
+    }
+  }
+}
+```
+
+- The provider is asked with the **cluster id** as the client name, and the cluster's
+  `Cloudstrap:Proxy:Clusters:{clusterId}:TokenRequestParameters` (absent: the provider's defaults).
+- **No provider registered**: startup fails, naming the cluster, `Cloudstrap.TokenMode` and the package. A
+  cluster added by a configuration reload is checked when it loads. No request is ever sent without the token.
+- **The token cannot be obtained**: the front door answers 502 and nothing is forwarded; there is no
+  unauthenticated retry.
+- A 401 from the destination is passed through unchanged.
+- `"Cloudstrap.TokenMode": "None"` on a cluster attaches no token.
+- Cloudstrap replaces YARP's `IForwarderHttpClientFactory` to build this handler chain. Registering your own
+  factory takes the chain over, token included.
+
 ## Forwarding headers
 
 `X-Forwarded-For`, `-Proto`, `-Host` and `-Prefix` follow YARP's defaults. A value the caller sends is replaced,

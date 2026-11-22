@@ -2,10 +2,12 @@ namespace Cloudstrap.Proxy
 {
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.DependencyInjection.Extensions;
     using Microsoft.Extensions.Hosting;
     using Microsoft.Extensions.Options;
     using Microsoft.Net.Http.Headers;
     using Yarp.ReverseProxy.Configuration;
+    using Yarp.ReverseProxy.Forwarder;
     using Yarp.ReverseProxy.Transforms;
     using Yarp.ReverseProxy.Transforms.Builder;
 
@@ -49,6 +51,11 @@ namespace Cloudstrap.Proxy
         /// unsafe for the trusted-subsystem pattern. <c>X-Forwarded-*</c> headers follow YARP's defaults (a caller-sent
         /// value is replaced), and the destination receives its own <c>Host</c>.
         /// </para>
+        /// <para>
+        /// A cluster in <see cref="ProxyTokenMode.Client"/> mode (the default) forwards with the application's token
+        /// from the registered <c>IClientAccessTokenHandlerProvider</c>; without a provider, host startup fails. This
+        /// replaces YARP's <c>IForwarderHttpClientFactory</c>.
+        /// </para>
         /// <para>Map the routes with <see cref="EndpointRouteBuilderExtensions.MapCloudstrapProxy"/>.</para>
         /// </remarks>
         public static IReverseProxyBuilder AddCloudstrapProxy(
@@ -78,10 +85,12 @@ namespace Cloudstrap.Proxy
             builder.Services.AddSingleton<IValidateOptions<CloudstrapProxyOptions>, ProxyConfigurationSectionValidator>();
 
             string section = ResolveConfigurationSection(builder.Configuration, configure);
-            return builder.Services.AddReverseProxy()
+            IReverseProxyBuilder proxy = builder.Services.AddReverseProxy()
                 .LoadFromConfig(builder.Configuration.GetSection(section))
                 .AddConfigFilter<ProxyRouteConfigFilter>()
                 .AddTransforms(AddInboundCredentialRemoval);
+            builder.Services.Replace(ServiceDescriptor.Singleton<IForwarderHttpClientFactory, CloudstrapForwarderHttpClientFactory>());
+            return proxy;
         }
 
         /// <summary>

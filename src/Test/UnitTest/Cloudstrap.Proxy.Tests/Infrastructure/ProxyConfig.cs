@@ -17,17 +17,29 @@ namespace Cloudstrap.Proxy.Tests.Infrastructure
         /// </summary>
         /// <param name="destination">The destination address, typically <see cref="EchoServer.Address"/>.</param>
         /// <param name="section">The configuration section holding the routes and clusters.</param>
+        /// <param name="tokenMode">
+        /// The cluster's <see cref="ProxyMetadataKeys.TokenMode"/> metadata, or <see langword="null"/> to leave it
+        /// unset (the cluster then uses <see cref="CloudstrapProxyOptions.DefaultTokenMode"/>). Defaults to
+        /// <c>None</c>, so suites that are not about tokens need no token provider.
+        /// </param>
         /// <returns>The settings.</returns>
-        public static Dictionary<string, string?> SingleRoute(Uri destination, string section = "ReverseProxy")
+        public static Dictionary<string, string?> SingleRoute(Uri destination, string section = "ReverseProxy", string? tokenMode = nameof(ProxyTokenMode.None))
         {
             ArgumentNullException.ThrowIfNull(destination);
 
-            return new Dictionary<string, string?>
+            Dictionary<string, string?> settings = new()
             {
                 [$"{section}:Routes:{RouteId}:ClusterId"] = ClusterId,
                 [$"{section}:Routes:{RouteId}:Match:Path"] = "/api/{**catch-all}",
                 [$"{section}:Clusters:{ClusterId}:Destinations:primary:Address"] = destination.ToString(),
             };
+
+            if (tokenMode is not null)
+            {
+                settings[$"{section}:Clusters:{ClusterId}:Metadata:{ProxyMetadataKeys.TokenMode}"] = tokenMode;
+            }
+
+            return settings;
         }
     }
 }

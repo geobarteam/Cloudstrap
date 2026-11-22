@@ -497,7 +497,22 @@ After this step:
 - A failing token handler → the front door answers 502 and the destination records nothing.
 - A downstream 401 passes through unchanged.
 
-- [ ] Done
+- [x] Done *(2026-11-22. First, the Step 3 verify follow-ups, both green on arrival and labelled `RegressionGuard`:
+  `ProxiedRequest_CallerProxyAuthorization_IsAbsentDownstream` (YARP drops it as hop-by-hop; no fix needed) and
+  `ConfigReload_AddedRoute_StripsCookieAndAuthorization`; README notes that an app transform registered after
+  `AddCloudstrapProxy` can re-add the headers. RED: all 9 `ClientTokenModeTests` failed before the factory existed
+  (no token downstream; start not failing without a provider or with a pre-set `InnerHandler`; 200 instead of 502).
+  The plan's parameters test is split in two (`…_AndItsTokenRequestParameters` + `…_NoTokenRequestParameters_
+  ProviderIsAskedWithNull`). GREEN: internal sealed `CloudstrapForwarderHttpClientFactory` replaces YARP's factory;
+  `WrapHandler` puts the seam's handler (resolved lazily, cluster id as client name) in front of YARP's handler;
+  missing provider → `InvalidOperationException` naming the cluster, `Cloudstrap.TokenMode` and
+  `Cloudstrap.Authentication.ClientCredentials`, which fails startup; a pre-set `InnerHandler` fails the same way.
+  `CanReuseOldClient` also compares the token-mode metadata. `ProxyClusterTokenOptions` reads mechanic (d). Scope
+  note: `None` attaches nothing (needed by the existing suites, whose `ProxyConfig.SingleRoute` now defaults the
+  cluster to `None`); `User` and unparsable values fail start with a generic "not supported" message until Step 5.
+  The reload test chains `LoadFromMemory` and uses `InMemoryConfigProvider.Update`. `Cloudstrap.Proxy.Tests` 39/39.
+  Full suite: 17 pre-existing unit exes at baseline (991), E2E 68/68, 0 code warnings (144 NU190x advisories
+  unchanged), `dotnet format` exit 0.)*
 
 **Scope**:
 - `src/Cloudstrap.Proxy/CloudstrapForwarderHttpClientFactory.cs` *(create, internal sealed)*: mechanic (e), with

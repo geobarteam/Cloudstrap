@@ -32,6 +32,9 @@ namespace Cloudstrap.Proxy.Tests.Infrastructure
         /// <summary>Gets the requests received so far, in arrival order.</summary>
         public IReadOnlyList<RecordedRequest> Requests => [.. _requests];
 
+        /// <summary>Gets or sets the status code the echo answers with. Defaults to 200.</summary>
+        public int StatusCode { get; set; } = StatusCodes.Status200OK;
+
         /// <summary>Starts an echo server on a free loopback port.</summary>
         /// <returns>The running server.</returns>
         public static async Task<EchoServer> StartAsync()
@@ -66,6 +69,7 @@ namespace Cloudstrap.Proxy.Tests.Infrastructure
 
             string path = context.Request.Path.Value ?? string.Empty;
             _requests.Enqueue(new RecordedRequest(path, headers));
+            context.Response.StatusCode = StatusCode;
             await context.Response.WriteAsJsonAsync(new { echo = "downstream", path });
         }
     }
