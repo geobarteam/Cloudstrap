@@ -1,5 +1,6 @@
 namespace Cloudstrap.Proxy
 {
+    using Cloudstrap.Observability.Correlation;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -64,6 +65,12 @@ namespace Cloudstrap.Proxy
         /// too. This replaces
         /// YARP's <c>IForwarderHttpClientFactory</c>.
         /// </para>
+        /// <para>
+        /// Every proxied request carries the front door's ambient correlation id in the configured correlation header
+        /// (<c>Cloudstrap:Correlation:HeaderName</c>, <c>X-Correlation-ID</c> by default) unless it already has one,
+        /// and YARP continues the trace through <c>traceparent</c>. No resilience handler, no
+        /// <c>ConfigureHttpClientDefaults</c> handler and no OpenTelemetry pipeline is added to the forwarder.
+        /// </para>
         /// <para>Map the routes with <see cref="EndpointRouteBuilderExtensions.MapCloudstrapProxy"/>.</para>
         /// </remarks>
         public static IReverseProxyBuilder AddCloudstrapProxy(
@@ -100,6 +107,9 @@ namespace Cloudstrap.Proxy
                 .AddConfigFilter<ProxyRouteConfigFilter>()
                 .AddTransforms(AddInboundCredentialRemoval);
             builder.Services.Replace(ServiceDescriptor.Singleton<IForwarderHttpClientFactory, CloudstrapForwarderHttpClientFactory>());
+
+            // The forwarder's correlation handler reads the ambient id; additive, as for the typed clients.
+            builder.Services.AddCloudstrapCorrelation();
             return proxy;
         }
 

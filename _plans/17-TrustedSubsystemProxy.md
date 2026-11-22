@@ -693,10 +693,12 @@ After this step:
   - the `Cloudstrap:Proxy:Clusters:{clusterId}:TokenRequestParameters` key.
 - **D-13** (not part of the owner's OQ answers): confirm that the source's custom TLS validator stays out of v1.
 
-- [ ] Behavioral verification: `ClientTokenModeTests`, `TokenModeTests`, `ConfusedDeputyGuardTests` green; every
+- [x] Behavioral verification: `ClientTokenModeTests`, `TokenModeTests`, `ConfusedDeputyGuardTests` green; every
   other exe at baseline.
-- [ ] Code review: no Duende / auth-package reference; the seam is resolved lazily; no resilience handler.
-- [ ] User approved: implementation may continue past this gate.
+- [x] Code review: no Duende / auth-package reference; the seam is resolved lazily; no resilience handler.
+- [x] User approved: implementation may continue past this gate. *(Approved by the owner 2026-11-22: the token
+  chain, the fail-closed startup rules, 502 on token failure, the public API; D-13 confirmed (no custom TLS
+  validator in v1).)*
 
 ---
 
@@ -713,7 +715,21 @@ After this step:
 - A host that configured `ConfigureHttpClientDefaults` resilience keeps it for its typed clients. The forwarder gets
   no resilience handler and no second OTel pipeline.
 
-- [ ] Done
+- [x] Done *(2026-11-22. RED: 4 of the 8 `ObservabilityCompositionTests` failed: `ProxiedRequest_CarriesTheFrontDoors
+  CorrelationId` and `…_CustomCorrelationHeaderName_IsHonoured` (no header downstream),
+  `ConfigureHttpClientDefaultsResilience_IsNotAppliedToTheForwarder` and the added
+  `NoneCluster_ForwarderChain_IsCorrelationThenYarpsHandler` (chain was token -> YARP handler). **Green on arrival,
+  labelled `RegressionGuard`** (characterization): `ProxiedRequest_Traceparent_ContinuesTheFrontDoorsTrace` (trace id
+  kept, caller span replaced by YARP's propagator), `AddCloudstrapProxy_RegistersNoTracerOrMeterProviderOrExporter`,
+  the added `ProxiedRequest_CallerSentCorrelationId_IsKept` (YARP copies it; set-if-absent) and the added
+  `ProxiedRequest_ApplicationToken_AppearsInNoActivityOrLogEntry` (Client mode: no activity name/tag/event/baggage and
+  no log entry at Trace level carries the token). GREEN: `WrapHandler` puts #4's `CorrelationHttpDelegatingHandler`
+  outermost (correlation -> token -> YARP's `SocketsHttpHandler`; `None`: correlation -> YARP's handler);
+  `AddCloudstrapProxy` calls the additive `AddCloudstrapCorrelation()` as the typed clients do. No new package
+  reference (Observability was already in Extensions' closure). The resilience test uses a recording
+  `ConfigureHttpClientDefaults` handler in place of a resilience package: it runs for a typed client, never on the
+  proxied hop. `Cloudstrap.Proxy.Tests` 97/97. Full suite: 17 pre-existing unit exes at baseline (991), E2E 68/68,
+  0 code warnings (144 NU190x advisories unchanged), `dotnet format` exit 0.)*
 
 **Scope**:
 - `CloudstrapForwarderHttpClientFactory.cs` *(modify)*: the correlation handler as the outermost wrapper.

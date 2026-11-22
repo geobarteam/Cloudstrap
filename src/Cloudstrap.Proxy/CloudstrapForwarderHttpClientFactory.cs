@@ -1,6 +1,8 @@
 namespace Cloudstrap.Proxy
 {
+    using Cloudstrap.Core;
     using Cloudstrap.Extensions;
+    using Cloudstrap.Observability.Correlation;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
@@ -8,9 +10,9 @@ namespace Cloudstrap.Proxy
     using Yarp.ReverseProxy.Forwarder;
 
     /// <summary>
-    /// Mechanic (e): YARP's forwarder client factory with Cloudstrap's handler chain. Each cluster's client gets the
-    /// token handler of the cluster's mode in front of YARP's <see cref="SocketsHttpHandler"/>, so every forwarded
-    /// request carries the token, or none is sent at all.
+    /// Mechanic (e): YARP's forwarder client factory with Cloudstrap's handler chain. Outer to inner: the correlation
+    /// handler, the token handler of the cluster's mode (none in <see cref="ProxyTokenMode.None"/>), then YARP's
+    /// <see cref="SocketsHttpHandler"/>. Every forwarded request carries the token, or none is sent at all.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -19,7 +21,11 @@ namespace Cloudstrap.Proxy
     /// registration time, so a missing provider fails startup (or the reload) naming the cluster, the metadata key and
     /// the package to install.
     /// </para>
-    /// <para>No resilience or timeout handler is added (AC-PX9).</para>
+    /// <para>
+    /// No resilience or timeout handler is added, and handlers from <c>ConfigureHttpClientDefaults</c> do not apply:
+    /// YARP's client does not come from <c>IHttpClientFactory</c> (AC-PX9). <c>traceparent</c> is YARP's own
+    /// propagation on the outgoing hop; no OpenTelemetry pipeline is registered here.
+    /// </para>
     /// </remarks>
     internal sealed class CloudstrapForwarderHttpClientFactory : ForwarderHttpClientFactory
     {
@@ -73,7 +79,7 @@ namespace Cloudstrap.Proxy
                 context.NewMetadata,
                 _options.Value.DefaultTokenMode);
 
-            return mode switch
+            HttpMessageHandler tokenized = mode switch
             {
                 ProxyTokenMode.None => inner,
                 ProxyTokenMode.Client => Chain(context.ClusterId, CreateClientTokenHandler(context.ClusterId), inner),
@@ -83,6 +89,23 @@ namespace Cloudstrap.Proxy
                 _ => throw new InvalidOperationException(
                     $"Proxy cluster '{context.ClusterId}' resolved the undefined token mode '{mode}'. Use one of:"
                     + $" {ProxyMetadataReader.AllowedTokenModes}."),
+            };
+
+            return CreateCorrelationHandler(tokenized);
+        }
+
+        /// <summary>
+        /// The outermost handler: the front door's ambient correlation id, in the header
+        /// <see cref="CorrelationOptions.HeaderName"/> names, set only when the request does not carry one already
+        /// (a caller-sent value that YARP copied is kept). It reads nothing but the correlation id and logs nothing.
+        /// </summary>
+        private CorrelationHttpDelegatingHandler CreateCorrelationHandler(HttpMessageHandler inner)
+        {
+            return new CorrelationHttpDelegatingHandler(
+                _services.GetRequiredService<ICorrelationContextAccessor>(),
+                _services.GetRequiredService<IOptions<CorrelationOptions>>())
+            {
+                InnerHandler = inner,
             };
         }
 
