@@ -41,7 +41,9 @@ namespace Cloudstrap.Proxy
         /// <para>
         /// A route without an <c>AuthorizationPolicy</c> requires the application's default authorization policy (a
         /// signed-in user unless the application changed it); nothing is forwarded for a caller who fails it. Set the
-        /// route's policy to <c>Anonymous</c> for a deliberately public route.
+        /// route's policy to <c>Anonymous</c> for a deliberately public route. An <c>Anonymous</c> route to a cluster
+        /// that attaches a token (<see cref="ProxyTokenMode.Client"/> or <see cref="ProxyTokenMode.User"/>) fails host
+        /// startup unless its route metadata <see cref="ProxyMetadataKeys.AllowAnonymousWithToken"/> is <c>true</c>.
         /// </para>
         /// <para>
         /// The caller's <c>Cookie</c> and <c>Authorization</c> headers are removed from every proxied request, so the

@@ -11,7 +11,7 @@ app.MapCloudstrapProxy();
 Routes and clusters use YARP's own `ReverseProxy` configuration schema, unchanged. Both calls return YARP's
 own builders, so every YARP extension stays reachable.
 
-> This README is still a skeleton. The anonymous-route guard is documented when it is built.
+> This README is still a skeleton; it is completed with the package.
 
 ## Routes require a signed-in user by default
 
@@ -21,7 +21,8 @@ no fallback policy, and to routes added by a configuration reload. A caller who 
 front door (401, or a redirect to sign-in for a cookie front door), and nothing is forwarded.
 
 - A named policy is kept as written.
-- `"AuthorizationPolicy": "Anonymous"` makes a route deliberately public.
+- `"AuthorizationPolicy": "Anonymous"` makes a route deliberately public. On a cluster that attaches a token, this
+  needs an explicit override (see [An anonymous route never carries a token by accident](#an-anonymous-route-never-carries-a-token-by-accident)).
 - A blank policy name (whitespace only) is not treated as "no policy": YARP rejects it and startup fails.
 
 ## The caller's credentials stay at the front door
@@ -106,6 +107,34 @@ without it):
 - A configuration reload that changes a cluster's `Cloudstrap.TokenMode` applies the new mode.
 - No mode ever adds a header carrying the user's identity. The destination learns who the user is only from a
   `User`-mode token.
+
+## An anonymous route never carries a token by accident
+
+A route with `"AuthorizationPolicy": "Anonymous"` (any case) to a cluster whose mode is `Client` or `User`
+(including `Client` by default) **fails startup**: any caller could otherwise reach the destination with the
+application's identity (a confused deputy). The message names the route, the cluster and the override key. A
+reloaded configuration with such a route is rejected, and YARP keeps the previous one.
+
+- An `Anonymous` route to a `None` cluster starts normally.
+- For a deliberately public route that must carry the application's token, set the route metadata
+  `"Cloudstrap.AllowAnonymousWithToken": "true"` (only `true`, in any case, counts):
+
+```json
+{
+  "ReverseProxy": {
+    "Routes": {
+      "public-catalog": {
+        "ClusterId": "catalog-api",
+        "AuthorizationPolicy": "Anonymous",
+        "Match": { "Path": "/catalog/{**catch-all}" },
+        "Metadata": { "Cloudstrap.AllowAnonymousWithToken": "true" }
+      }
+    }
+  }
+}
+```
+
+A `User` cluster behind an anonymous route has no signed-in user to take a token from: its requests answer 502.
 
 ## Forwarding headers
 

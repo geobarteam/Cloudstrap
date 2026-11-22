@@ -622,7 +622,27 @@ After this step:
 - With that route metadata set to `true`, it starts and forwards with the app token (a deliberate public route).
 - `Anonymous` + `None` starts normally.
 
-- [ ] Done
+- [x] Done *(2026-11-22. First, the Step 5 follow-ups (Central's decisions; commit `fix(proxy): fail start on an empty
+  DefaultTokenMode…`). RED then GREEN: an empty `Cloudstrap:Proxy:DefaultTokenMode` skipped the name check and failed
+  in the binder without listing the allowed values (now checked like any value); `StripInboundCredentials = false`
+  with a `Client` cluster started (3 cases: metadata `Client`, default, set in configuration; now refused in
+  `ProxyRouteConfigFilter`, fail closed, naming the key, route and cluster). **Green on arrival, labelled
+  `RegressionGuard`**: padded names (`" Client"`, `"None "`) and empty metadata; padded/blank `DefaultTokenMode`
+  (`" Client"`, `"User "`, `" "`); `UserCluster_SessionWithoutToken_Returns502_AndForwardsNothing` (the fake user seam
+  can now simulate a session without a token, as the real handler fails); `ConfigReload_ClusterTokenModeChanged_
+  NewModeApplies` (Step 4's `CanReuseOldClient` override). Plan Step 5 Scope reworded: strict name check, not
+  `Enum.TryParse`. Then Step 6. RED: 8 of the 11 `ConfusedDeputyGuardTests` cases failed (startup succeeded):
+  `AnonymousRoute_ClientCluster_…` (`Anonymous`, `anonymous`), `…_UserCluster_StartFails`,
+  `…_DefaultModeCluster_StartFails`, `OverrideValueNotTrue_IsIgnored` (`yes`, `1`, `false`, `" true"`). **Green on
+  arrival, labelled `RegressionGuard`**: `AnonymousRoute_NoneCluster_Starts` and
+  `AnonymousRoute_ClientCluster_WithOverride_…` (`true`, `TRUE`; trivially green while no guard existed). GREEN: the
+  guard half of mechanic (f) in `ProxyRouteConfigFilter`: policy `Anonymous` (case-insensitive, as YARP's reserved
+  names) on an effective `Client`/`User` cluster throws naming the route, the cluster, the mode and
+  `Cloudstrap.AllowAnonymousWithToken`, unless that route metadata is a case-insensitive `"true"`. **Mechanism
+  (Gate 3)**: the filter alone. YARP's initial load rethrows a filter exception and `app.StartAsync()` fails (as the
+  Step 4/5 fail-closed checks already showed), so no `IHostedLifecycleService` startup check was added. README section
+  "An anonymous route never carries a token by accident". `Cloudstrap.Proxy.Tests` 83/83. Full suite: 17 pre-existing
+  unit exes at baseline (991), E2E 68/68, 0 code warnings (144 NU190x advisories unchanged), `dotnet format` exit 0.)*
 
 **Scope**:
 - `ProxyRouteConfigFilter.cs` *(modify)*: the guard half of mechanic (f). If YARP does not fail start on a filter

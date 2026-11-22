@@ -81,8 +81,25 @@ namespace Cloudstrap.Proxy
         /// <returns><see langword="true"/> when the route forwards the caller's credentials.</returns>
         public static bool ForwardsInboundCredentials(RouteConfig route)
         {
+            return IsTrue(route, ProxyMetadataKeys.ForwardInboundCredentials);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether an <c>Anonymous</c> route may forward to a token-bearing cluster: its
+        /// <see cref="ProxyMetadataKeys.AllowAnonymousWithToken"/> metadata is a case-insensitive <c>true</c>.
+        /// </summary>
+        /// <param name="route">The route.</param>
+        /// <returns><see langword="true"/> when the route is a deliberately public route that carries a token.</returns>
+        public static bool AllowsAnonymousWithToken(RouteConfig route)
+        {
+            return IsTrue(route, ProxyMetadataKeys.AllowAnonymousWithToken);
+        }
+
+        /// <summary>Only a case-insensitive <c>true</c> counts; any other value, padded ones included, is false.</summary>
+        private static bool IsTrue(RouteConfig route, string key)
+        {
             return route.Metadata is not null
-                && route.Metadata.TryGetValue(ProxyMetadataKeys.ForwardInboundCredentials, out string? value)
+                && route.Metadata.TryGetValue(key, out string? value)
                 && string.Equals(value, bool.TrueString, StringComparison.OrdinalIgnoreCase);
         }
     }
