@@ -782,7 +782,15 @@ After this step:
 - This is the seam `Microsoft.Extensions.ServiceDiscovery.Yarp` uses. Neither it nor any `Aspire.*` package is
   referenced.
 
-- [ ] Done
+- [x] Done *(2026-11-24. RED: the suite did not compile (CS0246, `StaticDestinationResolver` missing). Once the
+  test-local resolver existed, all 3 `DestinationResolverCompositionTests` passed with **no production change**, so
+  the fixture is labelled `RegressionGuard`: the token handler and the credential-stripping transform sit in the
+  forwarder's handler chain and route transforms, which do not depend on how the destination address was obtained.
+  The cluster's configured address is the logical `http://downstream-api/`; the resolver is registered on the
+  `IReverseProxyBuilder` that `AddCloudstrapProxy()` returns and maps it to the echo server. Each test also asserts the
+  resolver was consulted. Neither `Microsoft.Extensions.ServiceDiscovery.Yarp` nor any `Aspire.*` package is
+  referenced. `Cloudstrap.Proxy.Tests` 102/102. Full suite: 17 other unit exes at baseline (991), E2E 68/68, 0 code
+  warnings (144 NU190x advisories unchanged), `dotnet format` exit 0.)*
 
 **Scope**:
 - `src/Test/UnitTest/Cloudstrap.Proxy.Tests/Infrastructure/StaticDestinationResolver.cs`,
