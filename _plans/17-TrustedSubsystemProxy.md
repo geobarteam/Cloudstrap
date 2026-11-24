@@ -729,10 +729,18 @@ After this step:
   reference (Observability was already in Extensions' closure). The resilience test uses a recording
   `ConfigureHttpClientDefaults` handler in place of a resilience package: it runs for a typed client, never on the
   proxied hop. `Cloudstrap.Proxy.Tests` 97/97. Full suite: 17 pre-existing unit exes at baseline (991), E2E 68/68,
-  0 code warnings (144 NU190x advisories unchanged), `dotnet format` exit 0.)*
+  0 code warnings (144 NU190x advisories unchanged), `dotnet format` exit 0.
+  **Verify corrections (2026-11-24)**: the leak check now also covers a token-acquisition failure (502) and a
+  downstream 401, with a distinctive token whose every 8-character window is searched in every log record (Trace and
+  up), every activity started during the request (any source: name, status description, trace state, tags, events,
+  links, baggage), every exception thrown in the process (first-chance) and the response. All three are
+  `RegressionGuard`, green on arrival: no leak found, no production change. A mutation (token fragment in the
+  exception message) made the failure test fail, so the check can see a leak. `Cloudstrap.Proxy.Tests` 99/99.)*
 
 **Scope**:
 - `CloudstrapForwarderHttpClientFactory.cs` *(modify)*: the correlation handler as the outermost wrapper.
+- `HostApplicationBuilderExtensions.cs` *(modify)*: `AddCloudstrapProxy` calls the additive
+  `AddCloudstrapCorrelation()`, as #4's typed clients do.
 - `src/Test/UnitTest/Cloudstrap.Proxy.Tests/ObservabilityCompositionTests.cs` *(create)*.
 
 **RED**:

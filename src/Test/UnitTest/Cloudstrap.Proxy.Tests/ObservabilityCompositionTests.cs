@@ -9,6 +9,7 @@ namespace Cloudstrap.Proxy.Tests
     using Cloudstrap.Observability.Correlation;
     using Cloudstrap.Proxy.Tests.Infrastructure;
     using Microsoft.AspNetCore.Builder;
+    using Microsoft.AspNetCore.Http;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Logging.Testing;
@@ -28,7 +29,6 @@ namespace Cloudstrap.Proxy.Tests
         private const string _traceId = "0af7651916cd43dd8448eb211c80319c";
         private const string _callerSpanId = "b7ad6b7169203331";
         private const string _callerTraceparent = $"00-{_traceId}-{_callerSpanId}-01";
-        private const string _appToken = $"app:{ProxyConfig.ClusterId}";
 
         private EchoServer _echo = null!;
 
@@ -229,39 +229,143 @@ namespace Cloudstrap.Proxy.Tests
 
         /// <summary>
         /// Regression guard (green on arrival): the application's token travels only in the outgoing
-        /// <c>Authorization</c> header. No activity (name, tag, event, baggage) and no log entry at any level carries
-        /// it, with the correlation handler now in the chain.
+        /// <c>Authorization</c> header. No activity, log record or exception carries it, or any part of it, with the
+        /// correlation handler now in the chain.
         /// </summary>
         [Test]
         [Category(TestCategories.RegressionGuard)]
         public async Task ProxiedRequest_ApplicationToken_AppearsInNoActivityOrLogEntry()
         {
+            // Act
+            TokenLeakRecording recording = await ProxyAndRecordAsync(failTokenAcquisition: false);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(recording.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(_echo.Requests.SingleOrDefault()?.Headers.GetValueOrDefault("Authorization"), Is.EqualTo($"Bearer {SecretTokenHandlerProvider.Token}"), "the token was not attached, so the check below proves nothing");
+                AssertTokenAppearsNowhere(recording);
+            });
+        }
+
+        /// <summary>
+        /// Regression guard (green on arrival): the token handler fails after it has put the token on the request (the
+        /// worst case of a failed acquisition). YARP logs and traces the failure and answers 502; neither the token nor
+        /// any part of it reaches a log record, an activity, an exception or the response.
+        /// </summary>
+        [Test]
+        [Category(TestCategories.RegressionGuard)]
+        public async Task TokenAcquisitionFailure_ApplicationToken_AppearsInNoActivityLogOrException()
+        {
+            // Act
+            TokenLeakRecording recording = await ProxyAndRecordAsync(failTokenAcquisition: true);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(recording.StatusCode, Is.EqualTo(HttpStatusCode.BadGateway));
+                Assert.That(_echo.Requests, Is.Empty);
+                Assert.That(recording.ExceptionTexts, Is.Not.Empty, "the failure raised no exception, so the check below proves nothing");
+                AssertTokenAppearsNowhere(recording);
+            });
+        }
+
+        /// <summary>
+        /// Regression guard (green on arrival): the destination rejects the application's token with a 401. The 401 is
+        /// passed through, and the token appears in no log record, activity, exception or response.
+        /// </summary>
+        [Test]
+        [Category(TestCategories.RegressionGuard)]
+        public async Task Downstream401_ApplicationToken_AppearsInNoActivityLogOrException()
+        {
             // Arrange
+            _echo.StatusCode = StatusCodes.Status401Unauthorized;
+
+            // Act
+            TokenLeakRecording recording = await ProxyAndRecordAsync(failTokenAcquisition: false);
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(recording.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+                Assert.That(_echo.Requests.SingleOrDefault()?.Headers.GetValueOrDefault("Authorization"), Is.EqualTo($"Bearer {SecretTokenHandlerProvider.Token}"), "the token was not attached, so the check below proves nothing");
+                AssertTokenAppearsNowhere(recording);
+            });
+        }
+
+        /// <summary>
+        /// Every 8-character window of the token: a match on any of them is a leak of part of the token.
+        /// </summary>
+        private static string[] TokenFragments()
+        {
+            const int length = 8;
+            string token = SecretTokenHandlerProvider.Token;
+            return [.. Enumerable.Range(0, token.Length - length + 1).Select(start => token.Substring(start, length))];
+        }
+
+        private static void AssertTokenAppearsNowhere(TokenLeakRecording recording)
+        {
+            string[] fragments = TokenFragments();
+            static string[] Leaks(IEnumerable<string> texts, string[] fragments) =>
+                [.. texts.Where(text => fragments.Any(fragment => text.Contains(fragment, StringComparison.Ordinal)))];
+
+            Assert.That(recording.ActivityTexts, Is.Not.Empty, "no activity was recorded, so the check proves nothing");
+            Assert.That(recording.LogTexts, Is.Not.Empty, "no log record was written, so the check proves nothing");
+            Assert.That(Leaks(recording.ActivityTexts, fragments), Is.Empty, "the token leaked into an activity");
+            Assert.That(Leaks(recording.LogTexts, fragments), Is.Empty, "the token leaked into a log record");
+            Assert.That(Leaks(recording.ExceptionTexts, fragments), Is.Empty, "the token leaked into an exception");
+            Assert.That(Leaks(recording.ResponseTexts, fragments), Is.Empty, "the token leaked into the response");
+        }
+
+        /// <summary>
+        /// Sends one traced, signed-in request through a <c>Client</c> cluster whose token is
+        /// <see cref="SecretTokenHandlerProvider.Token"/>, recording every activity started during it (any source),
+        /// every log record at every level, every exception thrown in the process and the response.
+        /// </summary>
+        private async Task<TokenLeakRecording> ProxyAndRecordAsync(bool failTokenAcquisition)
+        {
             ConcurrentQueue<Activity> activities = new();
-            using ActivityListener listener = ListenToEverything(activities);
+            ConcurrentQueue<string> exceptions = new();
+            using ActivityListener listener = new()
+            {
+                ShouldListenTo = _ => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activities.Enqueue,
+            };
+            ActivitySource.AddActivityListener(listener);
             FakeLogCollector logs = new();
             WebApplicationBuilder builder = CreateCorrelatedBuilder(nameof(ProxyTokenMode.Client));
-            builder.Services.AddSingleton<IClientAccessTokenHandlerProvider>(new FakeClientTokenHandlerProvider());
+            builder.Services.AddSingleton<IClientAccessTokenHandlerProvider>(new SecretTokenHandlerProvider(failTokenAcquisition));
             builder.Logging.SetMinimumLevel(LogLevel.Trace);
             builder.Logging.AddProvider(new FakeLoggerProvider(logs));
             builder.AddCloudstrapProxy();
             await using FrontDoor frontDoor = await StartCorrelatedAsync(builder);
 
-            // Act
-            using HttpResponseMessage response = await SendTracedAsync(frontDoor);
+            void OnFirstChance(object? sender, System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs args) =>
+                exceptions.Enqueue(args.Exception.ToString());
 
-            // Assert
-            string[] activityTexts = [.. activities.Where(activity => activity.TraceId.ToHexString() == _traceId).SelectMany(Describe)];
-            string[] logTexts = [.. logs.GetSnapshot().SelectMany(Describe)];
-            Assert.Multiple(() =>
+            AppDomain.CurrentDomain.FirstChanceException += OnFirstChance;
+            HttpStatusCode statusCode;
+            List<string> responseTexts = [];
+            try
             {
-                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                Assert.That(_echo.Requests.SingleOrDefault()?.Headers.GetValueOrDefault("Authorization"), Is.EqualTo($"Bearer {_appToken}"), "the token was not attached, so the check below proves nothing");
-                Assert.That(activityTexts, Is.Not.Empty);
-                Assert.That(logTexts, Is.Not.Empty);
-                Assert.That(activityTexts.Where(text => text.Contains(_appToken, StringComparison.Ordinal)), Is.Empty);
-                Assert.That(logTexts.Where(text => text.Contains(_appToken, StringComparison.Ordinal)), Is.Empty);
-            });
+                using HttpResponseMessage response = await SendTracedAsync(frontDoor);
+                statusCode = response.StatusCode;
+                responseTexts.Add(await response.Content.ReadAsStringAsync());
+                responseTexts.AddRange(response.Headers.Concat(response.Content.Headers).Select(header => $"{header.Key}={string.Join(",", header.Value)}"));
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.FirstChanceException -= OnFirstChance;
+            }
+
+            IReadOnlyList<FakeLogRecord> records = logs.GetSnapshot();
+            return new TokenLeakRecording(
+                statusCode,
+                [.. activities.SelectMany(Describe)],
+                [.. records.SelectMany(Describe)],
+                [.. exceptions, .. records.Where(record => record.Exception is not null).Select(record => record.Exception!.ToString())],
+                [.. responseTexts]);
         }
 
         /// <summary>
@@ -329,6 +433,17 @@ namespace Cloudstrap.Proxy.Tests
         {
             yield return activity.DisplayName;
             yield return activity.OperationName;
+            yield return activity.StatusDescription ?? string.Empty;
+            yield return activity.TraceStateString ?? string.Empty;
+            foreach (ActivityLink link in activity.Links)
+            {
+                yield return $"{link.Context.TraceId}-{link.Context.SpanId} {link.Context.TraceState}";
+                foreach (KeyValuePair<string, object?> tag in link.Tags ?? [])
+                {
+                    yield return $"{tag.Key}={tag.Value}";
+                }
+            }
+
             foreach (KeyValuePair<string, object?> tag in activity.TagObjects)
             {
                 yield return $"{tag.Key}={tag.Value}";
@@ -383,6 +498,38 @@ namespace Cloudstrap.Proxy.Tests
         private sealed class FixedCorrelationSource(string correlationId) : ICorrelationSource
         {
             public string GenerateCorrelation() => correlationId;
+        }
+
+        /// <summary>What one proxied request left behind, as text.</summary>
+        private sealed record TokenLeakRecording(
+            HttpStatusCode StatusCode,
+            string[] ActivityTexts,
+            string[] LogTexts,
+            string[] ExceptionTexts,
+            string[] ResponseTexts);
+
+        /// <summary>
+        /// A client-token seam with a distinctive token that shares no 8-character window with a cluster id, a path or
+        /// a header name, so any fragment of it found elsewhere is a leak. When <c>fail</c> is set, the handler puts the
+        /// token on the request and then fails, as a token endpoint that errors mid-acquisition would.
+        /// </summary>
+        private sealed class SecretTokenHandlerProvider(bool fail) : IClientAccessTokenHandlerProvider
+        {
+            public const string Token = "q7XvMp2RLw9z.Zt4nKe8sHd3J.uY6cBf1GaW5o";
+
+            public DelegatingHandler CreateClientTokenHandler(string clientName, TokenRequestOptions? tokenRequest) =>
+                new SecretTokenHandler(fail);
+
+            private sealed class SecretTokenHandler(bool fail) : DelegatingHandler
+            {
+                protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+                {
+                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
+                    return fail
+                        ? throw new HttpRequestException("The token endpoint returned an error (simulated).")
+                        : base.SendAsync(request, cancellationToken);
+                }
+            }
         }
 
         private sealed class RecordingHandler(ConcurrentQueue<string> calls) : DelegatingHandler
