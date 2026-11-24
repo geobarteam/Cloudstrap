@@ -294,13 +294,74 @@ namespace Cloudstrap.Proxy.Tests
         }
 
         /// <summary>
-        /// Every 8-character window of the token: a match on any of them is a leak of part of the token.
+        /// The leak check itself: its fragments find the token in base64 (inside <c>Bearer &lt;token&gt;</c>), base64url
+        /// and URL-encoded text, and none of them is made only of hex digits, so a random trace or span id cannot match.
+        /// </summary>
+        [Test]
+        public void TokenFragments_FindEncodedFormsAndAreNeverPureHex()
+        {
+            // Arrange
+            string token = SecretTokenHandlerProvider.Token;
+            string base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"Bearer {token}"));
+            string base64Url = base64.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+            string urlEncoded = $"?access_token={Uri.EscapeDataString(token)}";
+            string lowerEscapes = urlEncoded.Replace("%2B", "%2b", StringComparison.Ordinal).Replace("%2F", "%2f", StringComparison.Ordinal);
+
+            // Act
+            string[] fragments = TokenFragments();
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(urlEncoded, Does.Not.Contain(token), "the token must differ from its URL-encoded form");
+                Assert.That(fragments.Any(fragment => base64.Contains(fragment, StringComparison.Ordinal)), Is.True, "base64");
+                Assert.That(fragments.Any(fragment => base64Url.Contains(fragment, StringComparison.Ordinal)), Is.True, "base64url");
+                Assert.That(fragments.Any(fragment => urlEncoded.Contains(fragment, StringComparison.Ordinal)), Is.True, "URL-encoded");
+                Assert.That(fragments.Any(fragment => lowerEscapes.Contains(fragment, StringComparison.Ordinal)), Is.True, "URL-encoded, lower-case escapes");
+                Assert.That(fragments.Where(fragment => fragment.All(char.IsAsciiHexDigit)), Is.Empty, "a pure-hex fragment could match a trace id");
+            });
+        }
+
+        /// <summary>
+        /// Every 6-character window of every form the token could be written in: the raw token, its URL-encoded form
+        /// (upper- and lower-case escapes), and its base64 and base64url encodings at each of the three byte alignments
+        /// (so the token is found even when it was encoded inside a longer value, such as <c>Bearer &lt;token&gt;</c>).
+        /// A match on any window is a leak of part of the token.
         /// </summary>
         private static string[] TokenFragments()
         {
-            const int length = 8;
+            const int length = 6;
             string token = SecretTokenHandlerProvider.Token;
-            return [.. Enumerable.Range(0, token.Length - length + 1).Select(start => token.Substring(start, length))];
+            string urlEncoded = Uri.EscapeDataString(token);
+            List<string> forms = [token, urlEncoded, PercentEscapesToLower(urlEncoded)];
+
+            foreach (int offset in new[] { 0, 1, 2 })
+            {
+                // Encode the token behind 'offset' filler bytes, then keep only the characters the token alone decides:
+                // drop the ones that mix in the filler and the trailing partial group.
+                string base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(new string('\0', offset) + token));
+                int skip = (offset == 0) ? 0 : 4;
+                int fullGroups = (offset + token.Length) / 3;
+                string stable = base64[skip..(fullGroups * 4)];
+                forms.Add(stable);
+                forms.Add(stable.Replace('+', '-').Replace('/', '_'));
+            }
+
+            return [.. forms
+                .SelectMany(form => Enumerable.Range(0, form.Length - length + 1).Select(start => form.Substring(start, length)))
+                .Distinct(StringComparer.Ordinal)];
+        }
+
+        private static string PercentEscapesToLower(string urlEncoded)
+        {
+            System.Text.StringBuilder lowered = new(urlEncoded.Length);
+            for (int index = 0; index < urlEncoded.Length; index++)
+            {
+                bool inEscape = (index >= 1 && urlEncoded[index - 1] == '%') || (index >= 2 && urlEncoded[index - 2] == '%');
+                lowered.Append(inEscape ? char.ToLowerInvariant(urlEncoded[index]) : urlEncoded[index]);
+            }
+
+            return lowered.ToString();
         }
 
         private static void AssertTokenAppearsNowhere(TokenLeakRecording recording)
@@ -509,13 +570,14 @@ namespace Cloudstrap.Proxy.Tests
             string[] ResponseTexts);
 
         /// <summary>
-        /// A client-token seam with a distinctive token that shares no 8-character window with a cluster id, a path or
-        /// a header name, so any fragment of it found elsewhere is a leak. When <c>fail</c> is set, the handler puts the
-        /// token on the request and then fails, as a token endpoint that errors mid-acquisition would.
+        /// A client-token seam with a distinctive token that shares no 6-character window (in any encoded form) with a
+        /// cluster id, a path or a header name, so any fragment of it found elsewhere is a leak. It holds <c>+</c>,
+        /// <c>/</c> and <c>=</c>, so its URL-encoded form differs from the raw one. When <c>fail</c> is set, the handler
+        /// puts the token on the request and then fails, as a token endpoint that errors mid-acquisition would.
         /// </summary>
         private sealed class SecretTokenHandlerProvider(bool fail) : IClientAccessTokenHandlerProvider
         {
-            public const string Token = "q7XvMp2RLw9z.Zt4nKe8sHd3J.uY6cBf1GaW5o";
+            public const string Token = "q7XvMp2RLw9z+Zt4nKe8/sHd3J.uY6cBf1GaW5o=";
 
             public DelegatingHandler CreateClientTokenHandler(string clientName, TokenRequestOptions? tokenRequest) =>
                 new SecretTokenHandler(fail);

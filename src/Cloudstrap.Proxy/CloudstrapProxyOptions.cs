@@ -16,13 +16,13 @@ namespace Cloudstrap.Proxy
         /// <summary>
         /// The default name of the YARP configuration section.
         /// </summary>
-        public const string DefaultConfigurationSection = "ReverseProxy";
+        internal const string DefaultConfigurationSection = "ReverseProxy";
 
         /// <summary>
         /// Gets or sets the name of the configuration section holding YARP's routes and clusters.
         /// </summary>
         /// <value>
-        /// The section name. Defaults to <see cref="DefaultConfigurationSection"/>. The section must exist: a missing
+        /// The section name. Defaults to <c>ReverseProxy</c>. The section must exist: a missing
         /// section fails host startup naming this key.
         /// </value>
         [Required(ErrorMessage = "'Cloudstrap:Proxy:ConfigurationSection' is required — the name of the configuration"

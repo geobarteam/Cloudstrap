@@ -790,7 +790,17 @@ After this step:
   `IReverseProxyBuilder` that `AddCloudstrapProxy()` returns and maps it to the echo server. Each test also asserts the
   resolver was consulted. Neither `Microsoft.Extensions.ServiceDiscovery.Yarp` nor any `Aspire.*` package is
   referenced. `Cloudstrap.Proxy.Tests` 102/102. Full suite: 17 other unit exes at baseline (991), E2E 68/68, 0 code
-  warnings (144 NU190x advisories unchanged), `dotnet format` exit 0.)*
+  warnings (144 NU190x advisories unchanged), `dotnet format` exit 0.
+  **Verify follow-ups (2026-11-24, accepted verify 01M871EVQNAHNK80DDQTGP2BC3)**, all green on arrival, **no production
+  change**: `ClusterWithNoDestination_SignedInCaller_Gets503AndNothingIsSent` (no destination configured: 503, token
+  handler never runs, anonymous still 401), `ResolvedToNoDestination_SignedInCaller_Gets503AndNothingIsSent` (the
+  resolver returns none: same), `ConfigReload_DestinationChanged_IsResolvedAgainAndKeepsTokenAndStripping` (a reload
+  points the cluster at a second logical address: resolved again, the new echo gets the token and no cookie, the old
+  one gets nothing more). The Step 7 leak check now searches every 6-character window of the raw token, its
+  URL-encoded form (upper- and lower-case escapes) and its base64/base64url forms at all three byte alignments; the
+  token now holds `+`, `/`, `=` so its URL-encoded form differs, and `TokenFragments_FindEncodedFormsAndAreNeverPureHex`
+  proves the forms are found and no fragment can match a hex trace id. Mutation: a 7-character base64 slice of
+  `Bearer <token>` in the failure's exception message made the failure test fail (log + exception), then reverted.)*
 
 **Scope**:
 - `src/Test/UnitTest/Cloudstrap.Proxy.Tests/Infrastructure/StaticDestinationResolver.cs`,
@@ -839,7 +849,23 @@ After this step:
   - the D-13 note (platform TLS validation; no custom validator).
 - Permanent tripwires guard the surface and the vocabulary.
 
-- [ ] Done
+- [x] Done *(2026-11-24. RED: 3 of the 9 new tests failed: `PackageReadme_CoversTheTrustedSubsystemRules` (skeleton
+  README, no `IDestinationResolver`, no fail-closed/TLS/WebSocket sections), `PublicMembers_AreExactlyTheApprovedMembers`
+  (extra public `CloudstrapProxyOptions.DefaultConfigurationSection`, not named at Gate 3) and
+  `ProxyFiles_CarryNoEnterpriseIdentifiers` (a `Nihdi.` literal in `DependencyPinTests`). GREEN:
+  `DefaultConfigurationSection` made `internal` (the only production change); `DependencyPinTests` drops the
+  enterprise prefix (the closure tripwire now covers it over the whole resolved closure) and shares
+  `Infrastructure/RepositoryPaths`; README completed (pattern, getting started, settings + metadata tables, fail-closed
+  startup rules, 502, one owner for destination resolution, WebSocket/SSE, factory takeover, TLS/D-13). Added beyond
+  the plan: `PublicMembers_AreExactlyTheApprovedMembers`, `ProxyTokenMode_HasTheSpecifiedNamesAndValues`,
+  `ProxyDocs_CarryNoSecretOrTenantValue`; the identifier regex also covers `inami`. Public surface now: the 5 types;
+  `CloudstrapProxyOptions` {ctor, `SectionName` (suite-wide convention, not named at Gate 3), `ConfigurationSection`,
+  `DefaultTokenMode`, `StripInboundCredentials`}; `AddCloudstrapProxy`; `MapCloudstrapProxy`; the 3 metadata keys;
+  `ProxyTokenMode` {None=0, Client=1, User=2}. `Cloudstrap.Proxy.Tests` 115/115. Full suite: 17 other unit exes at
+  baseline (991), E2E 68/68, 0 code warnings (NU190x restore advisories only; a `NU1903` on
+  `Microsoft.AspNetCore.Components.WebAssembly.Server` 10.0.10 in the demo Bff also appears, which the baseline record
+  does not name; it is not raised by this deliverable), `dotnet format` exit 0. Release build: the nuspec carries `README.md`, `icon.png`,
+  `lib/net10.0/Cloudstrap.Proxy.xml` and license expression `MIT`; nothing packed or published beyond the build.)*
 
 **Scope**:
 - `src/Cloudstrap.Proxy/README.md` *(complete)*.

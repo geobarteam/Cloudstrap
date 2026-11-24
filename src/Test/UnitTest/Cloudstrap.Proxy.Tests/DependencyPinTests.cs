@@ -1,19 +1,21 @@
 namespace Cloudstrap.Proxy.Tests
 {
     using System.Xml.Linq;
+    using Cloudstrap.Proxy.Tests.Infrastructure;
     using NUnit.Framework;
 
     /// <summary>
     /// Permanent tripwire on deliverable #17's dependency posture: <c>Yarp.ReverseProxy</c> is pinned at or above the
     /// 2.3.0 floor (the destination-resolver hook and the forwarder APIs the package uses), and neither the package
-    /// nor its test project references an Aspire, service-discovery, Duende or enterprise-auth package, nor either
-    /// Cloudstrap authentication package (AC-ASP2, AC-A3, D-8; spec finding 1).
+    /// nor its test project references an Aspire, service-discovery or Duende package, nor either Cloudstrap
+    /// authentication package (AC-ASP2, D-8; spec finding 1). The enterprise-package rule (AC-A3) is checked over the
+    /// whole resolved closure by <see cref="RepositoryHygieneTests"/>.
     /// </summary>
     [TestFixture]
     public sealed class DependencyPinTests
     {
         private static readonly string[] _forbiddenPackagePrefixes =
-            ["Aspire.", "Microsoft.Extensions.ServiceDiscovery", "Duende.", "Nihdi."];
+            ["Aspire.", "Microsoft.Extensions.ServiceDiscovery", "Duende."];
 
         private static readonly string[] _forbiddenProjectPrefixes = ["Cloudstrap.Authentication."];
 
@@ -21,7 +23,7 @@ namespace Cloudstrap.Proxy.Tests
         public void YarpReverseProxy_IsPinned_AtOrAbove_2_3_0()
         {
             // Arrange
-            string propsPath = Path.Combine(FindRepoRoot(), "src", "Directory.Packages.props");
+            string propsPath = Path.Combine(RepositoryPaths.Root, "src", "Directory.Packages.props");
             XElement? pin = XDocument.Load(propsPath)
                 .Descendants("PackageVersion")
                 .SingleOrDefault(element => (string?)element.Attribute("Include") == "Yarp.ReverseProxy");
@@ -37,10 +39,10 @@ namespace Cloudstrap.Proxy.Tests
 
         [TestCase("src/Cloudstrap.Proxy/Cloudstrap.Proxy.csproj")]
         [TestCase("src/Test/UnitTest/Cloudstrap.Proxy.Tests/Cloudstrap.Proxy.Tests.csproj")]
-        public void ProxyPackage_ReferencesNoAspireServiceDiscoveryDuendeOrNihdiAuthPackage(string projectPath)
+        public void ProxyPackage_ReferencesNoAspireServiceDiscoveryDuendeOrAuthenticationPackage(string projectPath)
         {
             // Arrange
-            XDocument project = XDocument.Load(Path.Combine(FindRepoRoot(), projectPath));
+            XDocument project = XDocument.Load(Path.Combine(RepositoryPaths.Root, projectPath));
 
             // Act
             string[] forbiddenPackages = [.. project.Descendants("PackageReference")
@@ -56,23 +58,6 @@ namespace Cloudstrap.Proxy.Tests
                 Assert.That(forbiddenPackages, Is.Empty);
                 Assert.That(forbiddenProjects, Is.Empty);
             });
-        }
-
-        private static string FindRepoRoot()
-        {
-            DirectoryInfo? current = new(AppContext.BaseDirectory);
-            while (current is not null)
-            {
-                if (File.Exists(Path.Combine(current.FullName, "src", "Cloudstrap.sln")))
-                {
-                    return current.FullName;
-                }
-
-                current = current.Parent;
-            }
-
-            throw new DirectoryNotFoundException(
-                $"Could not locate the repository root (a directory containing src/Cloudstrap.sln) above '{AppContext.BaseDirectory}'.");
         }
     }
 }

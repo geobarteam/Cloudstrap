@@ -2,16 +2,71 @@
 
 A trusted-subsystem front door on [YARP](https://github.com/dotnet/yarp) in one registration call.
 
+## The trusted-subsystem pattern
+
+The front door (a BFF, a Blazor Server app, an MVC site) signs the user in. A downstream API does not trust the
+user's browser; it trusts the front door. So the front door forwards selected routes to the API with **its own**
+access token, and keeps the user's credentials to itself:
+
+- a proxied route requires a signed-in user unless it says otherwise;
+- the caller's `Cookie` and `Authorization` headers never reach the API;
+- the API receives the application's token (`Client` mode, the default), the signed-in user's token (`User`) or
+  none (`None`), chosen per cluster;
+- an anonymous caller can never borrow the application's token, and every unsafe combination fails startup.
+
+## Getting started
+
 ```csharp
-builder.AddCloudstrapProxy();   // YARP routes/clusters from the "ReverseProxy" section
-// ...
-app.MapCloudstrapProxy();
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddAuthentication(/* your sign-in scheme */);
+builder.Services.AddAuthorization();
+builder.Services.AddCloudstrapClientCredentials();  // Cloudstrap.Authentication.ClientCredentials: the app's token
+builder.AddCloudstrapProxy();                       // YARP routes/clusters from the "ReverseProxy" section
+
+var app = builder.Build();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapCloudstrapProxy();                   // after UseAuthentication/UseAuthorization
+app.Run();
 ```
 
-Routes and clusters use YARP's own `ReverseProxy` configuration schema, unchanged. Both calls return YARP's
-own builders, so every YARP extension stays reachable.
+```json
+{
+  "ReverseProxy": {
+    "Routes": {
+      "orders": {
+        "ClusterId": "orders-api",
+        "Match": { "Path": "/proxy/orders/{**catch-all}" },
+        "Transforms": [ { "PathRemovePrefix": "/proxy" } ]
+      }
+    },
+    "Clusters": {
+      "orders-api": {
+        "Destinations": { "primary": { "Address": "https://orders.example.com/" } }
+      }
+    }
+  }
+}
+```
 
-> This README is still a skeleton; it is completed with the package.
+Routes and clusters use YARP's own `ReverseProxy` configuration schema, unchanged; the section name can be changed
+with `Cloudstrap:Proxy:ConfigurationSection`. `AddCloudstrapProxy` returns YARP's `IReverseProxyBuilder` and
+`MapCloudstrapProxy` returns YARP's `ReverseProxyConventionBuilder`, so every YARP extension stays reachable.
+`AddCloudstrapProxy` may be called once per host.
+
+| Setting (`Cloudstrap:Proxy:…`) | Default | Meaning |
+|---|---|---|
+| `ConfigurationSection` | `ReverseProxy` | The YARP section; it must exist |
+| `DefaultTokenMode` | `Client` | The token mode of clusters without `Cloudstrap.TokenMode` metadata |
+| `StripInboundCredentials` | `true` | Remove the caller's `Cookie` and `Authorization` (`false` is unsafe) |
+| `Clusters:{clusterId}:TokenRequestParameters` | absent | Per-cluster token request parameters (scope, resource) |
+
+| Metadata key | On | Meaning |
+|---|---|---|
+| `Cloudstrap.TokenMode` | cluster | `None`, `Client` or `User` |
+| `Cloudstrap.ForwardInboundCredentials` | route | `true` keeps the caller's `Cookie` and `Authorization` (unsafe) |
+| `Cloudstrap.AllowAnonymousWithToken` | route | `true` lets an `Anonymous` route forward with a token |
 
 ## Routes require a signed-in user by default
 
@@ -147,11 +202,76 @@ Exceptions:
 
 A `User` cluster behind an anonymous route has no signed-in user to take a token from: its requests answer 502.
 
+## Fail-closed startup rules
+
+Cloudstrap refuses to start rather than forward unsafely. Host startup fails, with a message naming the route,
+the cluster and the key to change, when:
+
+- a cluster in `Client` mode has no `IClientAccessTokenHandlerProvider` registered, or a `User` cluster has no
+  `IUserAccessTokenHandlerProvider`;
+- a token mode (cluster metadata or `Cloudstrap:Proxy:DefaultTokenMode`) is not exactly one of `None`, `Client`,
+  `User`;
+- a route forwards the caller's credentials (`Cloudstrap.ForwardInboundCredentials`, or
+  `StripInboundCredentials = false`) to a `Client` cluster;
+- an `Anonymous` route targets a `Client` or `User` cluster without `Cloudstrap.AllowAnonymousWithToken`;
+- the YARP configuration section does not exist, or `AddCloudstrapProxy` is called twice.
+
+A configuration reload that breaks one of these rules is rejected as a whole and YARP keeps the previous
+configuration. At request time the rule is the same: when the token cannot be obtained the front door answers
+**502** and forwards nothing; no request is ever sent without its token.
+
 ## Forwarding headers
 
 `X-Forwarded-For`, `-Proto`, `-Host` and `-Prefix` follow YARP's defaults. A value the caller sends is replaced,
 not passed through: `X-Forwarded-Prefix` comes from the front door's `PathBase`. The destination receives its
 own `Host` header, not the caller's.
+
+## Correlation and telemetry
+
+Every proxied request carries the front door's correlation id in the Cloudstrap correlation header
+(`Cloudstrap:Correlation:HeaderName`, `X-Correlation-ID` by default) unless the request already has one, and
+YARP continues the trace through `traceparent`. Cloudstrap adds no resilience handler, no
+`ConfigureHttpClientDefaults` handler and no OpenTelemetry exporter to the proxied hop: YARP's activities flow to
+the host's existing pipeline. The token is never written to a log record or an activity.
+
+## Destination resolution: one owner
+
+Destinations come from YARP's configuration. To resolve logical addresses (for example `http://orders-api`)
+through service discovery, register YARP's `IDestinationResolver` hook on the builder `AddCloudstrapProxy`
+returns, for example with `Microsoft.Extensions.ServiceDiscovery.Yarp`:
+
+```csharp
+builder.AddCloudstrapProxy()
+       .AddServiceDiscoveryDestinationResolver();   // your reference, not Cloudstrap's
+```
+
+Resolved destinations keep every Cloudstrap behavior: the token, the stripping and the signed-in default. Keep
+**one owner** for the proxy: configure YARP through `AddCloudstrapProxy` and chain service discovery on it; do not
+also call `AddReverseProxy()` with its own configuration (for example from an Aspire template) in the same host.
+Cloudstrap itself references no Aspire or service-discovery package. A cluster with no destination, or one that
+resolves to none, answers 503 and sends nothing.
+
+## WebSockets and Server-Sent Events
+
+YARP proxies WebSocket upgrades and streamed responses (Server-Sent Events) through the same handler chain. The
+token is attached to the upgrade request (or the streaming request) once, and the caller's `Cookie` and
+`Authorization` are stripped from it like any other request. A WebSocket connection then lives on with the
+identity it was opened with: a token that expires during the connection is not renewed until the client
+reconnects.
+
+## Replacing the forwarder's HTTP client factory
+
+Cloudstrap replaces YARP's `IForwarderHttpClientFactory` to build the handler chain (correlation, then the
+token handler, then YARP's handler). Registering your own `IForwarderHttpClientFactory` after
+`AddCloudstrapProxy` **takes the chain over**: the token and the correlation header are then yours to add.
+
+## TLS to the destination
+
+The connection to the destination uses the platform's standard TLS certificate validation. Cloudstrap ships
+**no custom certificate validator** and adds no switch to accept invalid or self-signed certificates. To reach a
+destination whose certificate comes from a private certificate authority, trust that authority in the operating
+system's trust store. YARP's own per-cluster `HttpClient` settings still apply unchanged; Cloudstrap neither sets
+nor overrides them.
 
 ## License
 
