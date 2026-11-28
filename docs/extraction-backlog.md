@@ -35,7 +35,7 @@ Their specs `_specs/<N>-<Deliverable>.md` are history: written before the spec-d
 | # | Deliverable | Packages | Depends on | Status |
 |---|---|---|---|---|
 | 17 | YARP trusted-subsystem proxy | Cloudstrap.Proxy | 4 ✅ (uses the #9/#10 token seams) | 📝 |
-| 18 | Hangfire dashboard proxy | Cloudstrap.Hangfire.Proxy | 16 ✅, 17 | ⬜ |
+| 18 | Hangfire dashboard proxy | Cloudstrap.Hangfire.Proxy | 16 ✅, 17 | 📝 |
 | 19 | Dashboard backend | Cloudstrap.Dashboard.Contracts + Cloudstrap.Dashboard.Api | 1 ✅, 14 ✅ | ⬜ |
 | 20 | Dashboard UI (MudBlazor) | Cloudstrap.Dashboard.Components.Shared + .Components + .Components.BlazorWasm | 11 ✅, 13 ✅, 19 | ⬜ |
 | 21 | Cookie consent | Cloudstrap.CookieConsent | 0 ✅ | ⬜ |
@@ -50,7 +50,12 @@ Source paths are relative to the read-only reference repo `D:\source\Nihdi-Core-
 - **Goal**: a front-door host (BFF / interactive web app) forwards selected routes to a downstream API with one registration call: the front door authenticates the user, the downstream API receives the application's access token, the user's cookie/token never leaves the front door, and an unauthenticated caller can never ride on the application's token.
 - **Source**: `Nihdi.Core.Configuration.Proxy\` (references Common; `Yarp.ReverseProxy`); consumed by `Hangfire.Proxy` (#18).
 - **Decisions already taken**: token attachment through the shipped #4 seams (`IClientAccessTokenHandlerProvider` / `IUserAccessTokenHandlerProvider`, no Duende reference in `Cloudstrap.Proxy`); fail loud when a token is configured but no provider is registered (#4 `AccessTokenHandlerWiring` rule); no resilience added (AC-ASP3); correlation propagated on the proxied hop (#2); `Duende.BFF` rejected (commercial, not OSI).
-- **State**: in flight. Spec `_specs/17-TrustedSubsystemProxy.md` approved 2026-11-22 after a source check (D-1…D-15); under the retired process, Steps 1–9 of `_plans/17-TrustedSubsystemProxy.md` are built on `dev` (package, auth default, credential stripping, token modes, confused-deputy guard, correlation, destination resolver, README). Open: Gate 4 review, and Step 10 (demo Bff → Api) with its E2E tests. Next: carry the spec and plan into `_specs/17-TrustedSubsystemProxy/spec.md` (Slices 1–3 built, the demo slice remaining), then build the rest with `build-slice`.
+- **State**: all four slices built; the final review ran on 2026-11-28 (job `01M8GT8NGG37JJVR8HERQZDG2J`). The spec is `_specs/17-TrustedSubsystemProxy/spec.md` (carried over from the approved `_specs/17-TrustedSubsystemProxy.md`, which stays as history). The retired build record `_plans/17-TrustedSubsystemProxy.md` was removed the same day; what it still held open is listed here:
+  - ✅ **Slice 3 accepted by the owner on 2026-11-28**. What was accepted (old Gate 4): the handler chain order (correlation → token → YARP's handler), the package surface pinned by `PackageSurfaceTests`, `src/Cloudstrap.Proxy/README.md` (the unsafe opt-outs, "one owner" for destination resolution, the D-13 TLS note), the characterization tests green on arrival (`RegressionGuard`), and the mutation evidence `_specs/17-TrustedSubsystemProxy/mutation-1-3.md` with its two `accepted` survivors.
+  - ✅ **Slice 4 accepted by the owner on 2026-11-28** (no mutation score for the demo-only code accepted) and merged into `dev`; #17 goes to `main` only when the owner asks. What was accepted (old final gate): the three AC-PX14 E2E results, the Bff `ReverseProxy` route/cluster, the `demo-bff` audience change (Q-1), the #18 shared contract (path-prefixed route + `X-Forwarded-Prefix`, `Client` mode, authenticated by default).
+  - **Follow-up (not in #17)**: the #9 `ClientCredentialsAccessTokenHandlerProvider` warnings name `Cloudstrap:HttpClients:{name}:TokenRequestParameters` even when the name is a proxy cluster id (the key is really `Cloudstrap:Proxy:Clusters:{clusterId}:TokenRequestParameters`). Cosmetic, internal; a `bugfix` when the owner wants it.
+  - **#18 hand-off**: the facts of D-15 in the approved spec (the source maps `/hangfire` with a role policy; an empty role means any signed-in user).
+  - Then: the owner pushes the branch and completes the pull request; the spec's Status gets "shipped" and this row moves to Done.
 - **Risks**: ⚠️ auth / credential handling (stock YARP forwards `Cookie` + `Authorization`); ⚠️ public API; ⚠️ new dependency `Yarp.ReverseProxy` (MIT); ⚠️ shared contract with #18 (forwarded-prefix headers, token mode); Aspire overlap with `Microsoft.Extensions.ServiceDiscovery.Yarp` — compose through YARP's destination-resolver seam, never reference.
 - **Demo**: proposed BlazorWasm Bff (5300) → Api (5330).
 
@@ -58,6 +63,7 @@ Source paths are relative to the read-only reference repo `D:\source\Nihdi-Core-
 - **Goal**: a consumer exposes the Hangfire dashboard securely through a proxy host.
 - **Source**: `Nihdi.Core.Configuration.Hangfire.Proxy\` (references Hangfire + Proxy; relied on `InternalsVisibleTo` from Hangfire — #16 provides a public seam instead).
 - **Risks**: ⚠️ dashboard auth path.
+- **State**: spec `_specs/18-HangfireDashboardProxy/spec.md` written as a **Draft** on 2026-11-28 (unattended job: investigation + spec + one critic pass, no interview). Open: the owner's answers to Q-1…Q-7, then approval. Build only after #17 is merged into `dev`.
 
 ### 19. Dashboard backend
 - **Goal**: a consumer mounts the ops-dashboard API: Azure Service Bus queue peek/purge/retry, diagnostics, claims viewer — without message decryption (dropped).

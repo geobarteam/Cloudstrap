@@ -28,5 +28,23 @@ namespace Cloudstrap.Demo.Api.Controllers
                 User.FindFirst("scope")?.Value ?? string.Empty,
                 "demo-api"));
         }
+
+        /// <summary>
+        /// Reports what crossed the hop: whether a <c>Cookie</c> header arrived and the scheme of the
+        /// <c>Authorization</c> header — the proof that a proxying front door kept its caller's session
+        /// to itself (deliverable #17). Never echoes a header value.
+        /// </summary>
+        /// <returns>The cookie presence, the authorization scheme and the host marker.</returns>
+        [HttpGet("inbound")]
+        public ActionResult<DownstreamInboundDto> GetInbound()
+        {
+            string authorization = Request.Headers.Authorization.ToString();
+            int separator = authorization.IndexOf(' ', StringComparison.Ordinal);
+            string? scheme = authorization.Length == 0
+                ? null
+                : separator < 0 ? authorization : authorization[..separator];
+
+            return Ok(new DownstreamInboundDto(Request.Headers.Cookie.Count > 0, scheme, "demo-api"));
+        }
     }
 }

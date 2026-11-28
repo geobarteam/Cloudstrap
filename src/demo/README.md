@@ -20,15 +20,17 @@ calls with `PackageReference Cloudstrap.*` instead — nothing else changes.
 └──────────────┬───────────────┘            │ BlazorWasm/Bff  http://127.0.0.1:5300      │
                │ tokens                      │ cookie OIDC + JWT bearer + M2M clients     │
                │                             │  · SelfApi  → itself   [machine token]     │
-               ▼                             │  · UserApi  → the Api  [user token]        │
+               │                             │  · UserApi  → the Api  [user token]        │
+               ▼                             │  · /proxy/api/** → the Api [machine token] │
 ┌──────────────────────────────┐            └──────────────┬────────────────────────────┘
-│ BlazorServer                  │                           │ Authorization: Bearer (user)
+│ BlazorServer                  │                           │ Authorization: Bearer (user / demo-bff)
 │ http://127.0.0.1:5340         │                           ▼
 │ OIDC login + DemoApi client ──┼──────────► ┌───────────────────────────────────────────┐
 └──────────────────────────────┘   user      │ Api  http://127.0.0.1:5330                 │
                                    token     │ pure JWT host — authenticated by DEFAULT   │
 ┌──────────────────────────────┐            │  · GET api/v1/downstream/whoami            │
-│ Mvc  http://127.0.0.1:5320    │            │  · /healthz anonymous (probe carve-out)    │
+│ Mvc  http://127.0.0.1:5320    │            │  · GET api/v1/downstream/inbound           │
+│                               │            │  · /healthz anonymous (probe carve-out)    │
 │ two-call MVC consumer example │            └───────────────────────────────────────────┘
 │ (anonymous by design)         │
 └──────────────────────────────┘

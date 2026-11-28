@@ -19,6 +19,7 @@ hardened versioned API host needs.
 | Authenticated **by default** — anonymous callers get 401 with no `[Authorize]` anywhere (#5) | `AddCloudstrapJwtBearer()` with `RequireAuthenticatedEndpoints` left at `true` | `ApiHost_AnonymousWhoAmI_Returns401` |
 | Probe carve-out coexists with the hardened default (#5/#4) | `UseCloudstrapWebApi()` maps `/healthz`/`/ready` anonymously | `ApiHost_AnonymousHealthz_Returns200` |
 | Cross-process user-token validation — this host's `demo-api` marker proves the hop (#9/#10 plumbing) | `GET api/v1/downstream/whoami` echoes the validated claims | `UserCall_SignedIn_ProvesTheApiHostValidatedTheUsersToken` |
+| The trusted-subsystem hop: the Bff's proxy arrives with the Bff's machine token and without the browser's cookie (#17) | `GET api/v1/downstream/whoami` and `GET api/v1/downstream/inbound` (cookie presence and `Authorization` scheme, never a header value) | `SignedInBrowser_ProxiedWhoAmI_ReturnsTheMachineIdentity_NotTheUser` · `SignedInBrowser_ProxiedInbound_ShowsNoCookieAndTheBearerScheme` |
 | The HTTP-path transactional outbox: `POST api/v1/orders` stages a row and sends `PlaceOrderCommand` to the Worker over SQL Server in one transaction, dispatch after commit; the correlation id flows across (#14) | `AddCloudstrapMessaging().UseSqlServer().AddCloudstrapTransactionalMessaging<DemoDbContext>()` + `IDbContextOutbox<DemoDbContext>` in `OrdersController` | `Messaging_OrderPlacedThroughTheApiOutbox_IsProcessedByTheWorker_WithTheCorrelationIdObserved` |
 | The hardened default still gates the new endpoint (#5/#14) | no `[Authorize]` on `OrdersController` | `Messaging_AnonymousOrdersPost_Returns401` |
 | Large messages: an order whose `notes` push `PlaceOrderCommand` over 200 KiB travels to the Worker as one blob in the `demo-claimcheck` container plus a reference; a small order adds no blob (#15) | `AddCloudstrapBlobStorage()` + `AddCloudstrapMessaging()....UseAzureBlobClaimCheck()` | `ClaimCheck_OrderWithNotesAboveTheThreshold_IsProcessedByTheWorker_WithLengthAndHashRecorded_AndExactlyOneNewBlobInTheClaimCheckContainer`, `ClaimCheck_OrderWithNotesBelowTheThreshold_IsProcessed_AndAddsNoBlob` |
@@ -65,5 +66,5 @@ dotnet run --project src/demo/Api        # needs LocalDB; /healthz answers 200 o
 
 Token validation is lazy: without the demo IdP on 5310 the host still boots and probes stay
 green, while authenticated calls fail loudly naming the authority. The JWT audience is
-`demo-api` — the seed stamps it into the `demo-web` and `demo-blazorserver` users' tokens, and
-deliberately **not** into the `demo-bff` machine client's.
+`demo-api` — the seed stamps it into the `demo-web` and `demo-blazorserver` users' tokens and,
+since #17, into the `demo-bff` machine client's, which the Bff's trusted-subsystem proxy forwards.
