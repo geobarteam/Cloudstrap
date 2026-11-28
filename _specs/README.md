@@ -1,0 +1,5 @@
+# Specs
+
+- **`Cloudstrap.md`** — the founding spec: package map, Decisions Made, De-NIHDI-fication Checklist, Aspire coexistence, acceptance criteria per area. Current; only the user amends it.
+- **`<FeatureName>/spec.md`** — a spec of the spec-driven workflow (`.claude/rules/spec-driven.md`), with its Scaffold and its mutation evidence `mutation-<n>.md`. Every new feature and every remaining extraction deliverable (`docs/extraction-backlog.md`) gets one, named `<N>-<Deliverable>` for a deliverable.
+- **`<N>-<Deliverable>.md` and `WasmTestProjectDemoCompletion.md`** — extraction specs written before the spec-driven workflow was adopted. They are **history**: shipped, kept for their decision logs, and verified against the code before anything is taken from them. Their references to a roadmap, plan files, a planner and human gates describe the retired process, not how work is done now. `17-TrustedSubsystemProxy.md` is an unapproved draft from that time: input for the investigation of #17, not a spec to build from.

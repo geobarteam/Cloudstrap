@@ -15,7 +15,7 @@ Use this skill when you need to clean up warnings and analyzer violations in a m
 - Prefer the compiler and SDK analyzers over custom style rule churn.
 - Favor modern C# and .NET idioms: nullable reference types, `required` members, pattern matching, switch expressions, collection expressions, `using` declarations, and `await using`.
 - Prefer clarity and correctness over unnecessary abstraction.
-- Only suppress a warning when there is a strong, documented reason.
+- Never switch a rule off in `.editorconfig`, `Directory.Build.props` or with a suppression to get a build through (`CLAUDE.md` § Project settings § Code analysis); a targeted suppression only when the user asks for it, with the reason documented.
 
 ## Preferred workflow
 
@@ -79,7 +79,7 @@ dotnet format src/Cloudstrap.sln
 | `IDE0290` | Prefer primary constructors for simple types when it improves clarity. |
 | `IDE0300` | Use collection expressions such as `[]` instead of `new List<T>()`. |
 | `IDE0301` | Simplify empty-collection initialization with `[]`. |
-| `IDE0161` | Use file-scoped namespaces. |
+| `IDE0160`/`IDE0161` | Keep **block-scoped** namespaces with `using` directives inside them — the repo's `src/.editorconfig` sets `csharp_style_namespace_declarations = block_scoped`. |
 
 ### Test analyzer rules (NUnit.Analyzers)
 
@@ -101,7 +101,7 @@ dotnet format src/Cloudstrap.sln
 ## What to avoid
 
 - Adding StyleCop packages, `stylecop.json`, or SA-rule suppressions — this repo does not use StyleCop.
-- Adding suppressions without a clear reason.
+- Adding suppressions to get a build through.
 - Chasing style-only changes that do not improve readability or correctness.
 - Using old patterns just because they are familiar if the compiler and analyzers already guide a better option.
 

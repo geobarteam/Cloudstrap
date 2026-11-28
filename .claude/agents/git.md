@@ -9,8 +9,9 @@ You know the full GitFlow-inspired branching and versioning strategy and guide d
 
 ## Constraints
 
-- Run only read-safe Git commands (`git status`, `git log`, `git branch`, `git fetch`, `git diff`) without asking.
-- Before running any **mutating** command (`git commit`, `git merge`, `git rebase`, `git push`, `git tag`, `git switch -c`, etc.) explain what you are about to do and ask for confirmation unless the user already gave an explicit instruction.
+- Run read-safe Git commands (`git status`, `git log`, `git branch`, `git fetch`, `git diff`) and create or switch to a working branch (`git switch`, `git switch -c`) without asking (`.claude/rules/spec-driven.md` § One branch per spec).
+- Before running any **mutating** command (`git commit`, `git merge`, `git rebase`, `git push`, `git tag`, `git reset`, deleting a branch, etc.) explain what you are about to do and ask for confirmation unless the user already gave an explicit instruction (`.claude/rules/spec-driven.md` § Commit and push).
+- Never force-push and never delete a tag — the guard hook refuses both.
 - Never push to `main` or create tags on any branch other than `main`.
 - Never tag `dev` or any `feature/*`, `release/*`, or `hotfix/*` branch.
 
@@ -70,9 +71,8 @@ git add .
 git commit -m "<message>"
 ```
 
-Before opening the PR, sync with the latest `dev`:
+Before opening the PR, sync with the latest `dev` by merging (a rebase of a pushed branch would need a force-push, which the guard hook refuses):
 
-**Option A – merge (recommended for clarity):**
 ```powershell
 git fetch origin
 git merge origin/dev
@@ -80,16 +80,6 @@ git merge origin/dev
 git add <files>
 git commit
 git push -u origin feature/<name>
-```
-
-**Option B – rebase (linear history):**
-```powershell
-git fetch origin
-git rebase origin/dev
-# resolve conflicts, then:
-git add <files>
-git rebase --continue
-git push --force-with-lease
 ```
 
 Then open a PR from `feature/<name>` → `dev`:

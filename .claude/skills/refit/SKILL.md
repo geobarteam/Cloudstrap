@@ -9,7 +9,7 @@ metadata:
 
 Refit generates `HttpClient` implementations from C# interfaces decorated with HTTP-method attributes. In this solution, Refit clients are the **only** way to call API endpoints from the presentation layer.
 
-> **Related:** `build-feature` skill's Presentation Layer template shows how the Refit interface fits into a full vertical slice (Refit → `*ServiceClient` → ViewModel → Page). This skill drills into the Refit interface itself — attributes, error handling, file uploads.
+> A Refit interface fits into the presentation path Refit → `*ServiceClient` → ViewModel → Page. This skill drills into the Refit interface itself — attributes, error handling, file uploads.
 
 ## Quick Reference
 

@@ -1,0 +1,32 @@
+{
+  "specsDir": "_specs",
+  "protectedBranches": ["main", "dev"],
+  "allowOnProtected": ["_specs/", ".claude/", "CLAUDE.md"],
+  "verify": {
+    "shell": "bash",
+    "failPattern": null,
+    "commands": [
+      "dotnet build src/Cloudstrap.sln -v q -nologo",
+      "src/Test/UnitTest/Cloudstrap.Core.Tests/bin/Debug/net10.0/Cloudstrap.Core.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.Extensions.Tests/bin/Debug/net10.0/Cloudstrap.Extensions.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.Observability.Tests/bin/Debug/net10.0/Cloudstrap.Observability.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.Observability.AzureMonitor.Tests/bin/Debug/net10.0/Cloudstrap.Observability.AzureMonitor.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.WebApi.Tests/bin/Debug/net10.0/Cloudstrap.WebApi.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.Mvc.Tests/bin/Debug/net10.0/Cloudstrap.Mvc.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.Worker.Tests/bin/Debug/net10.0/Cloudstrap.Worker.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.Authentication.OpenIdConnect.Tests/bin/Debug/net10.0/Cloudstrap.Authentication.OpenIdConnect.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.Authentication.ClientCredentials.Tests/bin/Debug/net10.0/Cloudstrap.Authentication.ClientCredentials.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.BlazorCommon.Tests/bin/Debug/net10.0/Cloudstrap.BlazorCommon.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.BlazorServer.Tests/bin/Debug/net10.0/Cloudstrap.BlazorServer.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.BlazorWasm.Tests/bin/Debug/net10.0/Cloudstrap.BlazorWasm.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.Messaging.Tests/bin/Debug/net10.0/Cloudstrap.Messaging.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.Messaging.AzureBlob.Tests/bin/Debug/net10.0/Cloudstrap.Messaging.AzureBlob.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.Hangfire.Tests/bin/Debug/net10.0/Cloudstrap.Hangfire.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.TestInfrastructure.Tests/bin/Debug/net10.0/Cloudstrap.TestInfrastructure.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.TestIdentityProvider.Tests/bin/Debug/net10.0/Cloudstrap.TestIdentityProvider.Tests.exe --no-ansi --no-progress",
+      "src/Test/E2E/Cloudstrap.Demo.E2E.Tests/bin/Debug/net10.0/Cloudstrap.Demo.E2E.Tests.exe --no-ansi --no-progress",
+      "dotnet format src/Cloudstrap.sln --verify-no-changes"
+    ],
+    "integration": null
+  }
+}
