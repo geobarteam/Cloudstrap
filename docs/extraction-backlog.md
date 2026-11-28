@@ -35,7 +35,7 @@ Their specs `_specs/<N>-<Deliverable>.md` are history: written before the spec-d
 | # | Deliverable | Packages | Depends on | Status |
 |---|---|---|---|---|
 | 17 | YARP trusted-subsystem proxy | Cloudstrap.Proxy | 4 ✅ (uses the #9/#10 token seams) | 📝 |
-| 18 | Hangfire dashboard proxy | Cloudstrap.Hangfire.Proxy | 16 ✅, 17 | ⬜ |
+| 18 | Hangfire dashboard proxy | Cloudstrap.Hangfire.Proxy | 16 ✅, 17 | 📝 |
 | 19 | Dashboard backend | Cloudstrap.Dashboard.Contracts + Cloudstrap.Dashboard.Api | 1 ✅, 14 ✅ | ⬜ |
 | 20 | Dashboard UI (MudBlazor) | Cloudstrap.Dashboard.Components.Shared + .Components + .Components.BlazorWasm | 11 ✅, 13 ✅, 19 | ⬜ |
 | 21 | Cookie consent | Cloudstrap.CookieConsent | 0 ✅ | ⬜ |
@@ -58,6 +58,7 @@ Source paths are relative to the read-only reference repo `D:\source\Nihdi-Core-
 - **Goal**: a consumer exposes the Hangfire dashboard securely through a proxy host.
 - **Source**: `Nihdi.Core.Configuration.Hangfire.Proxy\` (references Hangfire + Proxy; relied on `InternalsVisibleTo` from Hangfire — #16 provides a public seam instead).
 - **Risks**: ⚠️ dashboard auth path.
+- **State**: spec `_specs/18-HangfireDashboardProxy/spec.md` written as a **Draft** on 2026-11-28 (unattended job: investigation + spec + one critic pass, no interview). Open: the owner's answers to Q-1…Q-7, then approval. Build only after #17 is merged into `dev`.
 
 ### 19. Dashboard backend
 - **Goal**: a consumer mounts the ops-dashboard API: Azure Service Bus queue peek/purge/retry, diagnostics, claims viewer — without message decryption (dropped).
