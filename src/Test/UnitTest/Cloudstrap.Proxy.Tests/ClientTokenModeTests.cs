@@ -146,6 +146,12 @@ namespace Cloudstrap.Proxy.Tests
                     Does.Contain($"'{ProxyConfig.ClusterId}'")
                         .And.Contain(ProxyMetadataKeys.TokenMode)
                         .And.Contain("Cloudstrap.Authentication.ClientCredentials"));
+                Assert.That(
+                    failure.ToString(),
+                    Does.Contain($"but no {nameof(IClientAccessTokenHandlerProvider)} is registered")
+                        .And.Contain("call AddCloudstrapClientCredentials, or set the cluster metadata")
+                        .And.Contain($"'{ProxyMetadataKeys.TokenMode}' to '{nameof(ProxyTokenMode.None)}'")
+                        .And.Contain("No request is sent without the token."));
                 Assert.That(_echo.Requests, Is.Empty);
             });
         }
@@ -284,9 +290,11 @@ namespace Cloudstrap.Proxy.Tests
                 Assert.That(failure, Is.Not.Null, "startup succeeded");
                 Assert.That(
                     failure?.ToString(),
-                    Does.Contain($"'{ProxyConfig.RouteId}'")
-                        .And.Contain($"'{ProxyConfig.ClusterId}'")
-                        .And.Contain(ProxyMetadataKeys.ForwardInboundCredentials));
+                    Does.Contain($"Proxy route '{ProxyConfig.RouteId}' sets '{ProxyMetadataKeys.ForwardInboundCredentials}' = 'true', but its")
+                        .And.Contain($"'{ProxyConfig.ClusterId}'"));
+                AssertCallerCredentialsWouldReplaceTheToken(
+                    failure,
+                    $"Remove '{ProxyMetadataKeys.ForwardInboundCredentials}' from the route");
                 Assert.That(_echo.Requests, Is.Empty);
             });
         }
@@ -332,6 +340,7 @@ namespace Cloudstrap.Proxy.Tests
                     Does.Contain($"'{ProxyConfig.ClusterId}'")
                         .And.Contain("Cloudstrap:Proxy:StripInboundCredentials")
                         .And.Contain(ProxyMetadataKeys.TokenMode));
+                AssertCallerCredentialsWouldReplaceTheToken(failure, "Remove 'Cloudstrap:Proxy:StripInboundCredentials'");
                 Assert.That(_echo.Requests, Is.Empty);
             });
         }
@@ -351,8 +360,27 @@ namespace Cloudstrap.Proxy.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(failure!.ToString(), Does.Contain("InnerHandler").And.Contain($"'{ProxyConfig.ClusterId}'"));
+                Assert.That(
+                    failure.ToString(),
+                    Does.Contain("A token handler provider must return a new handler whose InnerHandler is null"));
                 Assert.That(_echo.Requests, Is.Empty);
             });
+        }
+
+        /// <summary>
+        /// The fail-closed rejection explains why the combination is refused and how to fix it: the application's
+        /// token is the one the cluster attaches, the caller's credentials would be sent in its place, and the two
+        /// remedies are removing the opt-out or switching the cluster to <c>None</c>.
+        /// </summary>
+        private static void AssertCallerCredentialsWouldReplaceTheToken(Exception? failure, string removeTheOptOut)
+        {
+            Assert.That(
+                failure?.ToString(),
+                Does.Contain($"attaches the application's token ('{ProxyMetadataKeys.TokenMode}' = '{nameof(ProxyTokenMode.Client)}')")
+                    .And.Contain("The client-credentials handler keeps an Authorization header already on the request")
+                    .And.Contain("the caller's credentials would be sent instead of the application's token")
+                    .And.Contain(removeTheOptOut)
+                    .And.Contain($"'{ProxyMetadataKeys.TokenMode}' to '{nameof(ProxyTokenMode.None)}'."));
         }
     }
 }

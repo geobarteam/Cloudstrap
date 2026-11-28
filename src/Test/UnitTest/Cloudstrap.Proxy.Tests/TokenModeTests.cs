@@ -6,9 +6,13 @@ namespace Cloudstrap.Proxy.Tests
     using Cloudstrap.Proxy.Tests.Infrastructure;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Http;
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Logging.Abstractions;
+    using Microsoft.Extensions.Options;
     using NUnit.Framework;
     using Yarp.ReverseProxy.Configuration;
+    using Yarp.ReverseProxy.Forwarder;
 
     /// <summary>
     /// AC-PX6, AC-PX10 token mode, D-6: a <c>User</c> cluster forwards with the signed-in user's token, a <c>None</c>
@@ -85,6 +89,10 @@ namespace Cloudstrap.Proxy.Tests
                         .And.Contain(ProxyMetadataKeys.TokenMode)
                         .And.Contain(nameof(IUserAccessTokenHandlerProvider))
                         .And.Contain("Cloudstrap.Authentication.OpenIdConnect"));
+                Assert.That(
+                    failure?.ToString(),
+                    Does.Contain("call AddCloudstrapOpenIdConnect, or change")
+                        .And.Contain($"the cluster metadata '{ProxyMetadataKeys.TokenMode}'. No request is sent without the token."));
                 Assert.That(_echo.Requests, Is.Empty);
             });
         }
@@ -293,6 +301,7 @@ namespace Cloudstrap.Proxy.Tests
             {
                 Assert.That(failure, Is.Not.Null, "startup succeeded");
                 Assert.That(failure?.ToString(), Does.Contain(_defaultTokenModeKey).And.Contain(_allowedValues));
+                Assert.That(failure?.ToString(), Does.Contain("(by name; numbers are not accepted)."));
                 Assert.That(_echo.Requests, Is.Empty);
             });
         }
@@ -315,6 +324,34 @@ namespace Cloudstrap.Proxy.Tests
                 Assert.That(failure?.ToString(), Does.Contain(_defaultTokenModeKey).And.Contain(_allowedValues));
                 Assert.That(_echo.Requests, Is.Empty);
             });
+        }
+
+        /// <summary>
+        /// AC-PX10 token mode, the forwarder's own guard: should an undefined mode ever get past the options validator,
+        /// the cluster's client is not built, so nothing can be forwarded without the token the cluster asked for.
+        /// </summary>
+        [Test]
+        public void ForwarderFactory_UndefinedTokenMode_RefusesToBuildTheClusterClient()
+        {
+            // Arrange: the factory alone, as YARP calls it, with options no validator has seen
+            CloudstrapForwarderHttpClientFactory factory = new(
+                NullLogger<ForwarderHttpClientFactory>.Instance,
+                new ServiceCollection().BuildServiceProvider(),
+                new ConfigurationBuilder().Build(),
+                Options.Create(new CloudstrapProxyOptions { DefaultTokenMode = (ProxyTokenMode)42 }));
+            ForwarderHttpClientContext context = new()
+            {
+                ClusterId = ProxyConfig.ClusterId,
+                NewConfig = HttpClientConfig.Empty,
+            };
+
+            // Act
+            InvalidOperationException? failure = Assert.Throws<InvalidOperationException>(() => factory.CreateClient(context));
+
+            // Assert
+            Assert.That(
+                failure?.Message,
+                Is.EqualTo($"Proxy cluster '{ProxyConfig.ClusterId}' resolved the undefined token mode '42'. Use one of: {_allowedValues}."));
         }
 
         /// <summary>

@@ -125,6 +125,53 @@ namespace Cloudstrap.Proxy.Tests
 
             // Assert
             Assert.That(failure!.Message, Does.Contain("Cloudstrap:Proxy:ConfigurationSection").And.Contain("'ReverseProxy'"));
+            Assert.That(
+                failure.Message,
+                Does.Contain("which does not exist. Add the YARP routes and clusters under 'ReverseProxy'")
+                    .And.Contain("or point the key at the section that holds them."));
+        }
+
+        /// <summary>
+        /// AC-PX10 section: a section named in code is the one YARP loads, the same as the configuration key.
+        /// </summary>
+        [Test]
+        public async Task AddCloudstrapProxy_ConfigurationSectionSetInCode_IsUsed()
+        {
+            // Arrange
+            WebApplicationBuilder builder = FrontDoor.CreateBuilder(ProxyConfig.SingleRoute(_echo.Address, section: "Gateway"));
+            builder.AddCloudstrapProxy(options => options.ConfigurationSection = "Gateway");
+            await using FrontDoor frontDoor = await FrontDoor.StartAsync(builder);
+
+            // Act
+            using HttpResponseMessage response = await frontDoor.GetAsync("/api/orders");
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(_echo.Requests, Has.Count.EqualTo(1));
+            });
+        }
+
+        /// <summary>
+        /// AC-PX10 section: a section name cleared in code fails start on the required key; nothing is proxied.
+        /// </summary>
+        [Test]
+        public void AddCloudstrapProxy_ConfigurationSectionClearedInCode_FailsStartNamingTheKey()
+        {
+            // Arrange
+            WebApplicationBuilder builder = FrontDoor.CreateBuilder(ProxyConfig.SingleRoute(_echo.Address));
+            builder.AddCloudstrapProxy(options => options.ConfigurationSection = null!);
+
+            // Act
+            OptionsValidationException? failure = Assert.ThrowsAsync<OptionsValidationException>(() => FrontDoor.StartAsync(builder));
+
+            // Assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(failure!.Message, Does.Contain("ConfigurationSection"));
+                Assert.That(_echo.Requests, Is.Empty);
+            });
         }
 
         [Test]
@@ -138,7 +185,10 @@ namespace Cloudstrap.Proxy.Tests
             InvalidOperationException? failure = Assert.Throws<InvalidOperationException>(() => builder.AddCloudstrapProxy());
 
             // Assert
-            Assert.That(failure!.Message, Does.Contain(nameof(HostApplicationBuilderExtensions.AddCloudstrapProxy)));
+            Assert.That(
+                failure!.Message,
+                Does.Contain(nameof(HostApplicationBuilderExtensions.AddCloudstrapProxy))
+                    .And.EndWith("chain further YARP configuration on the builder it returns."));
         }
 
         [Test]

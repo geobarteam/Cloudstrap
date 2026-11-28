@@ -375,6 +375,13 @@ namespace Cloudstrap.Proxy.Tests
                     Does.Contain($"'{ProxyConfig.RouteId}'")
                         .And.Contain($"'{ProxyConfig.ClusterId}'")
                         .And.Contain(ProxyMetadataKeys.AllowAnonymousWithToken));
+                Assert.That(
+                    failure?.ToString(),
+                    Does.Contain("has the authorization policy 'Anonymous', but its cluster")
+                        .And.Contain($"attaches a token ('{ProxyMetadataKeys.TokenMode}' = '")
+                        .And.Contain("Any caller could then reach the destination with that identity.")
+                        .And.Contain("Require a signed-in user on the route, set the")
+                        .And.Contain($"'{ProxyMetadataKeys.TokenMode}' to '{nameof(ProxyTokenMode.None)}', or, for a deliberately public route"));
                 Assert.That(_echo.Requests, Is.Empty);
             });
         }
