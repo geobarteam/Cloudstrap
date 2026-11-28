@@ -38,3 +38,7 @@ Thumbs.db
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# spec-driven kit: temporary kit checkout used by the setup, runner state
+.tmp-spec-driven-kit/
+.claude/spec-driven.state.json

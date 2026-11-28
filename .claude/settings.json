@@ -35,6 +35,35 @@
       "PowerShell(dotnet restore *)"
     ],
     "defaultMode": "acceptEdits"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard.mjs"
+            ],
+            "timeout": 1800
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard.mjs"
+            ],
+            "timeout": 30
+          }
+        ]
+      }
+    ]
   }
 }
-

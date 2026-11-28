@@ -214,6 +214,8 @@ src\Test\E2E\Cloudstrap.Demo.E2E.Tests\bin\Debug\net10.0\Cloudstrap.Demo.E2E.Tes
 
 ### Planning Gate
 
+> **Scope**: this Planning Gate and the workflow below govern everything except work started with the spec-driven kit's `/new-feature` skill — see **§ Project settings** at the end of this file.
+
 > **Before any tool call**: does this change need a plan? If yes → create `_plans/<FeatureName>.md` (use the `planner` subagent or follow the template in `.claude/templates/plan-template.md`) → **STOP and WAIT for approval**.
 
 | Situation | Plan required? |
@@ -329,7 +331,7 @@ The agent **stops and waits for user confirmation** at every gate. This is non-n
 
 | Command | Purpose |
 |---------|---------|
-| `/new-feature` | Scaffold a new feature end-to-end: planner subagent → build-feature skill, one approved step at a time |
+| `/plan-feature` | Scaffold a new feature end-to-end: planner subagent → build-feature skill, one approved step at a time (renamed from `/new-feature`, which is now the spec-driven kit's skill — see § Project settings) |
 
 ### Templates — `.claude/templates/`
 
@@ -355,3 +357,60 @@ The agent **stops and waits for user confirmation** at every gate. This is non-n
 - Commit format: `<type>(<scope>): <desc>`.
 - Build + test + format before push.
 - `protected Program() {}` in demo host projects (if applicable).
+
+---
+
+## Project settings
+
+The development workflow of the spec-driven kit (3.0.0, level 3, manual skills, pack `dotnet-shared`) is in `.claude/rules/spec-driven.md`. The skills and agents read the values below.
+
+The spec-driven workflow applies to features started with `/new-feature` (the kit's skill, run only when typed): their spec is `_specs/<FeatureName>/spec.md` with its Scaffold, built with `build-slice` and reviewed with `spec-reviewer`. Everything else — in particular every extraction deliverable of `_plans/ROADMAP.md` (`project-manager` → `technical-analyst` → `planner` → `build-feature`, `/plan-feature`), the Planning Gate and the Mandatory Workflow Rules above — follows the workflow described earlier in this file; there the kit's Spec Gate does not apply. Bugfixes are owned by the project's `bugfix` agent; the kit's `bugfix` skill runs only when typed (`/bugfix`).
+
+- **Reference feature**: `Cloudstrap.WebApi` with its host-level tests (`src/Test/UnitTest/Cloudstrap.WebApi.Tests/`, `Infrastructure/WebApiTestHost.cs`) and its demonstration in `Cloudstrap.Demo.Api`
+- **Risk areas** (a human go before code): auth code, public API surface, shared contracts, dependency updates (as § Scope & Boundaries says)
+- **Specs folder**: `_specs/` (the extraction specs `_specs/<Deliverable>.md` and the kit's `_specs/<FeatureName>/spec.md` live side by side)
+- **Protected branches** (never build on them): `main`, `dev`
+- **Spec branch**: `feature/<short-name>` from `dev`; one per spec, created by Claude when the spec starts, merged through a pull request
+- **Commit format**: `<type>(<scope>): <desc>`
+- **Guidelines**: testing (`.claude/rules/testing-for-agents.md`: the order of the tests and R-1 to R-7; frameworks, naming and structure stay in § Test Conventions and `.claude/instructions/tests.md`)
+- **Models** (recommended since kit 2.6.5): `build-slice` on Sonnet 5.5; spec writing (`investigate`, `write-spec`, `amend-spec`) and review (`spec-critic`, `spec-reviewer`, the final review) on Opus 5.5
+
+### Test levels
+
+- **Outer test** (the integration test first in every slice, seen failing for the right reason before any production code or unit test; at least one per slice): the host-level integration test of the package the slice changes
+- **Integration test** (every slice's outer test; mocked view models do not count): an NUnit 4 test that boots a real ASP.NET Core / generic host in process (TestServer, the package's `Infrastructure/*TestHost`), registers the package through its public `AddCloudstrap*` / `UseCloudstrap*` entry points on the real DI container and asserts through HTTP or the resolved services; only true externals (IdP, Azure, network) are faked; SQL Server / Azurite through `Cloudstrap.TestInfrastructure`
+- **Integration test location**: the package's own test project, `src/Test/UnitTest/Cloudstrap.<Package>.Tests/` (the repository keeps unit and host-level tests in one project per package)
+- **End-to-end browser test** (optional): `src/Test/E2E/Cloudstrap.Demo.E2E.Tests/` (NUnit 4 + Playwright, driving the demo apps); at most once per feature, in the final review, never a slice's outer test — the demonstration slice of workflow rule 9 still applies to extraction deliverables
+- **UI test**: bUnit in `Cloudstrap.BlazorCommon.Tests` / `Cloudstrap.BlazorServer.Tests` / `Cloudstrap.BlazorWasm.Tests`, only for what the integration test cannot observe; never a slice's outer test
+- **Unit test**: pure logic of a package (options validation, mapping, guards), Moq on interfaces at the boundary only
+- **Human check**: run a demo app from `src/demo` (e.g. `dotnet run --project src/demo/Api/Cloudstrap.Demo.Api.csproj`, http://localhost:5330; the BFF on 5300, IdP on 5310 — see `src/demo/README.md`)
+- **Browser tool**: the Playwright MCP server, when available in the session; otherwise page checks are reported as not carried out
+- **Criterion ids on tests**: the AC id in the test's XML doc `<summary>` (the existing convention, e.g. `AC-W1`), or `[Property("AC", "AC-3")]` where a filterable trait is wanted
+
+### Code analysis
+
+- **Analysis** (run once per feature, in the final review, after the feature gate, on the feature's changed code; never per slice): `dotnet build src/Cloudstrap.sln -v q -nologo` with the SDK analyzers of `Directory.Build.props` (`TreatWarningsAsErrors`, `AnalysisLevel=latest-recommended`, `EnforceCodeStyleInBuild`), then `dotnet format src/Cloudstrap.sln --verify-no-changes`. Plain .NET practice, no server and no account; it runs on the machine only and sends no code anywhere.
+- **Fix analysis**: `dotnet format src/Cloudstrap.sln` for style and the analyzers' code fixes, by hand for the rest (the `code-analysis` agent / `fix-violations` skill)
+- **Formatter**: `dotnet format src/Cloudstrap.sln`
+- **Warnings in the build**: every slice leaves no new warning in the files it touched (compiler and analyzers); a rule is never switched off in `.editorconfig`, `Directory.Build.props` or with a suppression to get a build through. The NuGet audit warnings NU1902/NU1903 already present are not code warnings and are left to the owner.
+
+### Pack values
+
+- **Test projects**: `src/Test/UnitTest/Cloudstrap.Core.Tests/Cloudstrap.Core.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.Extensions.Tests/Cloudstrap.Extensions.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.Observability.Tests/Cloudstrap.Observability.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.Observability.AzureMonitor.Tests/Cloudstrap.Observability.AzureMonitor.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.WebApi.Tests/Cloudstrap.WebApi.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.Mvc.Tests/Cloudstrap.Mvc.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.Worker.Tests/Cloudstrap.Worker.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.Authentication.OpenIdConnect.Tests/Cloudstrap.Authentication.OpenIdConnect.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.Authentication.ClientCredentials.Tests/Cloudstrap.Authentication.ClientCredentials.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.BlazorCommon.Tests/Cloudstrap.BlazorCommon.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.BlazorServer.Tests/Cloudstrap.BlazorServer.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.BlazorWasm.Tests/Cloudstrap.BlazorWasm.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.Messaging.Tests/Cloudstrap.Messaging.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.Messaging.AzureBlob.Tests/Cloudstrap.Messaging.AzureBlob.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.Hangfire.Tests/Cloudstrap.Hangfire.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.TestInfrastructure.Tests/Cloudstrap.TestInfrastructure.Tests.csproj`, `src/Test/UnitTest/Cloudstrap.TestIdentityProvider.Tests/Cloudstrap.TestIdentityProvider.Tests.csproj`, `src/Test/E2E/Cloudstrap.Demo.E2E.Tests/Cloudstrap.Demo.E2E.Tests.csproj`
+- **Mutation threshold**: `80`
+
+### Verification Commands
+
+The commands are in `.claude/spec-driven.json` under `verify.commands`, in the order build, the test executables (Microsoft.Testing.Platform, `--no-ansi --no-progress`; `dotnet test` is not supported), the format check that changes nothing. That file is the only place they are listed; a hook reads it too; they run in Git Bash (`verify.shell: bash`). The format check runs only in the feature gate, never in the slice gate. `verify.integration`: not set — the host-level integration tests live in each package's test project, so there is no single integration command to filter; the slice gate then runs every test executable.
+
+Two gates run them:
+
+- **Slice gate**, at the end of every slice of a kit spec: `node .claude/hooks/verify.mjs --slice <the slice's integration test class>`: the build and every test executable; no format check.
+- **Mutation check** (pack dotnet-shared), after the slice gate: `node scripts/mutation-check.mjs --slice <n> --base <the slice's base commit>`, Stryker.NET (`dotnet-stryker` 5.1.0, pinned in `.config/dotnet-tools.json`; run `dotnet tool restore` once) on the lines the slice changed in its production files, with every project of Pack values **Test projects**; evidence in `_specs/<FeatureName>/mutation-<n>.md`, committed with the slice; red below Pack values **Mutation threshold**.
+- **Feature gate**, once in the final review: `node .claude/hooks/verify.mjs --feature`: every command.
+
+- Not established yet: a filterable integration command (`verify.integration`)
+- Single test or class: `src/Test/UnitTest/Cloudstrap.WebApi.Tests/bin/Debug/net10.0/Cloudstrap.WebApi.Tests.exe --filter "FullyQualifiedName~WebApiDefaultsTests"`
+- Commands are written with forward slashes (`src/Test/...`), never with backslashes.
+- A step that changes no source file (docs, specs) does not need this gate; run that step's own check instead.
+- After a dependency or analyzer change, run a clean build for the proof: an incremental build can hide warnings.

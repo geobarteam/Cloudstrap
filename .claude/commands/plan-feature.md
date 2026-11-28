@@ -3,7 +3,9 @@ description: "Scaffold a new feature end-to-end using the vertical-slice workflo
 argument-hint: "<feature name> [— short description], e.g. 'Prescriptions — patient views and creates prescribed medications'"
 ---
 
-# New Vertical Slice Feature
+# New Vertical Slice Feature (planner → build-feature)
+
+> Renamed from `/new-feature` when the spec-driven kit was installed: the kit's `new-feature` skill now answers to `/new-feature` (see `CLAUDE.md` § Project settings for which workflow applies where).
 
 You are building a new feature in the Cloudstrap project. The workflow is codified across three artefacts — this command only orchestrates the hand-off between them.
 
