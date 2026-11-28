@@ -40,10 +40,12 @@ src/
 ├── Cloudstrap.Dashboard.*/         # Ops dashboard (contracts, API, components)
 ├── Cloudstrap.Analytics.*/         # IAnalyticsTracker + Matomo / GA4 adapters
 ├── Cloudstrap.Localization/        # Thin setup over ASP.NET Core localization
-├── Cloudstrap.Testing/             # Test helper utilities
+├── demo/                           # Demo apps (Api, BlazorServer, BlazorWasm, Mvc, Worker, Shared)
 └── Test/
-    ├── UnitTest/                   # MSTest v4 + Moq — one test project per package
-    └── <SUT apps>/                 # Sample/smoke-test hosts referencing the packages
+    ├── UnitTest/                   # NUnit 4 + Moq — one test project per package (unit + host-level tests)
+    ├── E2E/                        # Cloudstrap.Demo.E2E.Tests (NUnit 4 + Playwright)
+    ├── TestIdentityProvider/       # Shared OpenIddict test IdP library
+    └── TestInfrastructure/         # Shared test helpers (test-only, never packed)
 ```
 
 > The layout above is the **target** structure from `_specs/Cloudstrap.md`; during extraction, verify against the actual solution on disk.
