@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Cloudstrap.Proxy\Cloudstrap.Proxy.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Mechanic (h): the front door runs on an in-process TestServer; the downstream echo app runs on loopback Kestrel -->
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <!-- A rejected configuration reload is only observable in YARP's error log -->
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" />
+  </ItemGroup>
+
+</Project>

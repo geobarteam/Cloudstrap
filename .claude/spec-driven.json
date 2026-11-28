@@ -22,6 +22,7 @@
       "src/Test/UnitTest/Cloudstrap.Messaging.Tests/bin/Debug/net10.0/Cloudstrap.Messaging.Tests.exe --no-ansi --no-progress",
       "src/Test/UnitTest/Cloudstrap.Messaging.AzureBlob.Tests/bin/Debug/net10.0/Cloudstrap.Messaging.AzureBlob.Tests.exe --no-ansi --no-progress",
       "src/Test/UnitTest/Cloudstrap.Hangfire.Tests/bin/Debug/net10.0/Cloudstrap.Hangfire.Tests.exe --no-ansi --no-progress",
+      "src/Test/UnitTest/Cloudstrap.Proxy.Tests/bin/Debug/net10.0/Cloudstrap.Proxy.Tests.exe --no-ansi --no-progress",
       "src/Test/UnitTest/Cloudstrap.TestInfrastructure.Tests/bin/Debug/net10.0/Cloudstrap.TestInfrastructure.Tests.exe --no-ansi --no-progress",
       "src/Test/UnitTest/Cloudstrap.TestIdentityProvider.Tests/bin/Debug/net10.0/Cloudstrap.TestIdentityProvider.Tests.exe --no-ansi --no-progress",
       "src/Test/E2E/Cloudstrap.Demo.E2E.Tests/bin/Debug/net10.0/Cloudstrap.Demo.E2E.Tests.exe --no-ansi --no-progress",
