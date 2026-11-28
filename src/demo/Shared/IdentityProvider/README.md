@@ -14,7 +14,7 @@ cannot drift:
 
 | Seeded | Value | Used by |
 |---|---|---|
-| Machine client | `demo-bff` (audience `demo-selfapi`) | the Bff's `SelfApi` client-credentials flow (#9) |
+| Machine client | `demo-bff` (audiences `demo-selfapi`, `demo-api`) | the Bff's `SelfApi` client-credentials flow (#9) + the Bff's trusted-subsystem proxy to the Api (#17) |
 | Interactive client | `demo-web` (audiences `demo-selfapi`, `demo-api`) | the Bff's cookie OIDC login (#10) + the cross-process user-token hop |
 | Interactive client | `demo-blazorserver` (audience `demo-api`) | the BlazorServer demo's OIDC login |
 | User | `geobarteam` / `password` (`role: tester`) | every sign-in flow |

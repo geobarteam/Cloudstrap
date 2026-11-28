@@ -41,12 +41,15 @@ namespace Cloudstrap.Demo.IdentityProvider
             ArgumentNullException.ThrowIfNull(options);
             ArgumentNullException.ThrowIfNull(applicationBaseAddresses);
 
+            // The Bff's machine identity: valid at the Bff itself (demo-selfapi, the #9 SelfApi hop) and at
+            // the Api demo host (demo-api), where the Bff's trusted-subsystem proxy forwards /proxy/api/**
+            // with this token (deliverable #17).
             options.Clients.Add(new TestIdentityProviderClient
             {
                 ClientId = "demo-bff",
                 ClientSecret = "local-e2e-placeholder-secret",
                 Scopes = { "selfapi" },
-                Audiences = { "demo-selfapi" },
+                Audiences = { "demo-selfapi", "demo-api" },
             });
 
             // The machine client of the messaging demo (deliverable #14): the E2E MessagingTests fixture
@@ -66,8 +69,7 @@ namespace Cloudstrap.Demo.IdentityProvider
                 ClientSecret = "local-e2e-placeholder-secret-web",
                 Scopes = { "selfapi" },
                 // The signed-in user's token is valid at the Bff (demo-selfapi) AND the Api demo
-                // host (demo-api) — the cross-process user-token hop of deliverable #27. The
-                // machine client above deliberately stays Bff-only.
+                // host (demo-api) — the cross-process user-token hop of deliverable #27.
                 Audiences = { "demo-selfapi", "demo-api" },
             };
             foreach (Uri baseAddress in applicationBaseAddresses)

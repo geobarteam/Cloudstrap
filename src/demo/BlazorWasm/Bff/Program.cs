@@ -5,6 +5,7 @@ using Cloudstrap.Demo.BlazorWasm.Bff.Services;
 using Cloudstrap.Extensions;
 using Cloudstrap.Observability;
 using Cloudstrap.Observability.AzureMonitor;
+using Cloudstrap.Proxy;
 using Cloudstrap.WebApi;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -82,6 +83,13 @@ builder.Services.AddCloudstrapHttpServiceClient<ISelfApiClient, SelfApiClient>("
 // The #10 user-token demo client: flagged both AddUserAccessToken and AddClientAccessToken — the
 // signed-in user's token is the one that reaches the peer (AC-CC13 live in the running app).
 builder.Services.AddCloudstrapHttpServiceClient<IUserApiClient, UserApiClient>("UserApi");
+
+// The trusted-subsystem proxy (deliverable #17 demo): the "ReverseProxy" section forwards /proxy/api/** to
+// the Api demo host. The route has no AuthorizationPolicy, so only a signed-in user gets through; the
+// caller's Cookie and Authorization are removed, and the demo-api cluster (Cloudstrap.TokenMode: Client)
+// carries the Bff's own machine token from AddCloudstrapClientCredentials above — the Api sees the
+// application, never the browser's session.
+builder.AddCloudstrapProxy();
 builder.Services.AddHealthChecks()
     .AddCheck(
         "self",
@@ -107,6 +115,10 @@ app.UseCloudstrapWebApi(pipeline =>
         // contract the WASM client's auth state provider consumes, and issues the XSRF request
         // token in the X-XSRF-TOKEN response header.
         endpoints.MapCloudstrapBffUserEndpoint();
+
+        // The #17 proxied routes, mapped inside the pipeline (authentication and authorization run first)
+        // and before the SPA fallback, so /proxy/api/** is forwarded rather than answered with index.html.
+        endpoints.MapCloudstrapProxy();
 
         endpoints.MapFallbackToFile("index.html");
     };
