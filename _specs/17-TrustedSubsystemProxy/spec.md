@@ -9,6 +9,7 @@
 - 2026-11-28: **approved by the owner.** Next: the Q-3 mutation check, then the owner's acceptance of Slice 3, then Slice 4 on the owner's go.
 - 2026-11-28: the Q-3 mutation check ran: 95.9 % (`mutation-1-3.md`, committed in `96da9d0`).
 - 2026-11-28: job `01M8GT8NGG37JJVR8HERQZDG2J` (unattended; its instructions stood for the owner's go): the branch was re-based on `dev` @ `96da9d0`, which now carries the kit; Slice 4 built; the retired build record `_plans/17-TrustedSubsystemProxy.md` removed, its open items moved to `docs/extraction-backlog.md` §17; then the final review. Slices 3 and 4 await the owner's acceptance; the final review report is the material for the owner's last gate.
+- 2026-11-28: job `01M8GY3CR680N4BF3DR3G7EECV` (unattended check): the feature gate was run again from a clean tree (`git clean -xdf src`) on `67f339d` and ended `Verification green: feature gate (every Verification Command, every integration test).`, with the format check green. That closes the earlier run, which went red on line endings only. AC-PX14 was checked from the E2E tests, which ran 4/4 green when run alone: (a) `SignedInBrowser_ProxiedWhoAmI_ReturnsTheMachineIdentity_NotTheUser`; (b) `AnonymousCall_ToTheProxiedRoute_IsStoppedAtTheBff` (401, no `demo-api` marker) and `AnonymousCall_ToTheProxiedRoute_NeverReachesTheApi` (no trace of the call in the Api's telemetry, with a signed-in positive control); (c) `SignedInBrowser_ProxiedInbound_ShowsNoCookieAndTheBearerScheme`. Slice 4 has no mutation score (`mutation-4.md`), and that is left to the owner.
 
 ## Goal
 
